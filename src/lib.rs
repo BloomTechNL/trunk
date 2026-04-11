@@ -103,6 +103,10 @@ pub fn cmd_commit(dir: &Path, message: &str) -> Result<()> {
         );
     }
 
+    if is_detached_head(dir) {
+        bail!("You are currently time travelling. Run `g tt now` to return to the present before making changes.");
+    }
+
     git_passthrough(dir, &["add", "."])?;
     git_passthrough(dir, &["commit", "-m", message])?;
 
@@ -195,7 +199,45 @@ fn query_command(dir: &Path, args: &[&str], capture: bool) -> Result<String> {
 // g tt  — time travel (detached HEAD, no branches)
 // ---------------------------------------------------------------------------
 
+/// Returns `true` when HEAD is detached (i.e. not pointing at a branch ref).
+/// We read `.git/HEAD` directly — it contains "ref: refs/heads/<branch>" when
+/// attached, or a bare SHA when detached.
+pub fn is_detached_head(dir: &Path) -> bool {
+    let head_path = git_dir(dir).join("HEAD");
+    std::fs::read_to_string(head_path)
+        .map(|content| !content.trim_start().starts_with("ref:"))
+        .unwrap_or(false)
+}
+
+/// Detect the repository's default branch name by inspecting the remote HEAD
+/// symbolic ref, falling back to trying "main" then "master".
+fn default_branch(dir: &Path) -> String {
+    // Try the remote symbolic ref first (works when a remote called origin exists).
+    if let Ok(out) = git_capture(dir, &["symbolic-ref", "refs/remotes/origin/HEAD"]) {
+        // Output is e.g. "refs/remotes/origin/main\n"
+        if let Some(branch) = out.trim().strip_prefix("refs/remotes/origin/") {
+            return branch.to_string();
+        }
+    }
+    // Fall back: check which of main/master exists locally.
+    for candidate in &["main", "master"] {
+        if git_capture(dir, &["rev-parse", "--verify", candidate]).is_ok() {
+            return candidate.to_string();
+        }
+    }
+    "main".to_string()
+}
+
+/// `g tt now` — return to the present by checking out the default branch.
+pub fn cmd_time_travel_now(dir: &Path) -> Result<()> {
+    let branch = default_branch(dir);
+    git_passthrough(dir, &["checkout", &branch])
+}
+
 pub fn cmd_time_travel(dir: &Path, target: &str) -> Result<()> {
+    if target == "now" {
+        return cmd_time_travel_now(dir);
+    }
     // Resolve the target to a commit hash using git2 / git rev-parse so we
     // can guarantee we never check out a branch ref.
     let hash = resolve_to_commit_hash(dir, target)?;
@@ -325,6 +367,10 @@ pub fn get_revert_info(dir: &Path, hash: &str) -> Result<RevertInfo> {
 /// Perform the revert.  When `bypass_prompt` is `true` the interactive
 /// confirmation is skipped (used in tests).
 pub fn cmd_revert(dir: &Path, hash: &str, bypass_prompt: bool) -> Result<()> {
+    if is_detached_head(dir) {
+        bail!("You are currently time travelling. Run `g tt now` to return to the present before making changes.");
+    }
+
     let info = get_revert_info(dir, hash)?;
 
     if !bypass_prompt {

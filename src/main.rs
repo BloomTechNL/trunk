@@ -5,6 +5,7 @@ use clap::{Parser, Subcommand};
 use g_cli::{
     cmd_commit, cmd_commit_abort, cmd_commit_resolve, cmd_diff, cmd_log, cmd_pull, cmd_reset,
     cmd_revert, cmd_revert_abort, cmd_revert_resolve, cmd_status, cmd_time_travel,
+    cmd_time_travel_now,
 };
 
 #[derive(Parser)]

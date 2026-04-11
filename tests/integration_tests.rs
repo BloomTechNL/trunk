@@ -7,7 +7,10 @@ use std::fs;
 use std::path::Path;
 use std::process::Command;
 
-use g_cli::{cmd_commit, cmd_commit_abort, cmd_commit_resolve, cmd_log, cmd_pull, cmd_revert};
+use g_cli::{
+    cmd_commit, cmd_commit_abort, cmd_commit_resolve, cmd_log, cmd_pull, cmd_revert,
+    cmd_time_travel, cmd_time_travel_now,
+};
 use tempfile::TempDir;
 
 // ---------------------------------------------------------------------------
@@ -422,3 +425,65 @@ fn test_revert_without_remote_tracking_branch() {
         "revert commit should be in log\n{log}"
     );
 }
+
+// ---------------------------------------------------------------------------
+// 7.  Time travel: detached HEAD blocks `g c` and `g rv`; `g tt now` restores
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_time_travel_blocks_write_commands_and_now_restores() {
+    let f = Fixture::new();
+    let dir = &f.clone_a;
+
+    // Land two commits so we have a target to travel to.
+    write_file(dir, "v1.txt", "v1\n");
+    cmd_commit(dir, "v1").expect("v1");
+
+    write_file(dir, "v2.txt", "v2\n");
+    cmd_commit(dir, "v2").expect("v2");
+
+    // Grab the hash of the first commit (parent of current HEAD).
+    let parent_hash = {
+        let out = std::process::Command::new("git")
+            .args(["rev-parse", "HEAD~1"])
+            .current_dir(dir)
+            .output()
+            .unwrap();
+        String::from_utf8_lossy(&out.stdout).trim().to_string()
+    };
+
+    // Travel back in time.
+    cmd_time_travel(dir, &parent_hash).expect("g tt <hash> should succeed");
+
+    // g c must now be blocked.
+    write_file(dir, "should_fail.txt", "nope\n");
+    let err = cmd_commit(dir, "this should be blocked")
+        .expect_err("g c should be blocked while time travelling");
+    assert!(
+        err.to_string().contains("time travelling"),
+        "error should mention time travelling: {err}"
+    );
+
+    // g rv must also be blocked.
+    let err = cmd_revert(dir, "HEAD", true)
+        .expect_err("g rv should be blocked while time travelling");
+    assert!(
+        err.to_string().contains("time travelling"),
+        "error should mention time travelling: {err}"
+    );
+
+    // Return to the present.
+    cmd_time_travel_now(dir).expect("g tt now should succeed");
+
+    // We are back on the branch — g c should work again.
+    write_file(dir, "after_return.txt", "back\n");
+    cmd_commit(dir, "commit after returning from time travel")
+        .expect("g c should succeed after g tt now");
+
+    let log = cmd_log(dir, true).expect("g l");
+    assert!(
+        log.contains("commit after returning from time travel"),
+        "commit made after time travel should be in the log\n{log}"
+    );
+}
+

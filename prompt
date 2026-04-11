@@ -9,7 +9,7 @@
 
 **Technical Implementation Strategy (Hybrid Approach):**
 * **Primary Execution (Shelling out):** Do not attempt to reimplement core Git networking, hook execution, or rebase logic using `libgit2`. It will break the user's GPG signing, pre-commit hooks, and SSH agents. Use Rust's `std::process::Command` to shell out to the system's `git` binary for state-mutating operations (`pull`, `push`, `commit`, `rebase`, `reset`, `revert`) and standard queries (`log`, `status`, `diff`). Pipe standard output directly to the user's terminal so they get the exact colorized output they are used to (crucial for merge conflicts). Pass through exit codes.
-* **State Detection & Read-Only Logic:** Use standard Rust `std::fs` (e.g., checking for `.git/rebase-merge` or `.git/rebase-apply` to detect conflict states) or the `git2` crate strictly for read-only operations (finding commit hashes/messages for revert, resolving "time ago" strings).
+* **State Detection & Read-Only Logic:** Use standard Rust `std::fs` (e.g., checking for `.git/rebase-merge` or `.git/rebase-apply` to detect conflict states, or reading `.git/HEAD` to detect detached HEAD/time-travel states) or the `git2` crate strictly for read-only operations (finding commit hashes/messages for revert, resolving "time ago" strings).
 * **Libraries:** Use `clap` for CLI parsing and routing. Use `inquire` (or `dialoguer`) for the interactive revert prompt.
 * **Architecture for Testability:** Decouple the `clap` CLI parsing from the core business logic. Core functions must accept a `working_dir` path (so tests can point them at temp directories). Furthermore, to allow tests to use `g` for assertions, ensure that read-only functions (`g l`, `g s`, `g d`) either return their `stdout` output as a string or can be configured to capture output rather than strictly piping it to the terminal.
 
@@ -18,6 +18,7 @@
 **1. The Core Loop: `g c`**
 Handles the add -> commit -> sync flow, using `git pull --rebase` to maintain linear history. Must be state-aware.
 
+* **Time Travel Guard:** Before executing, check if the repository is in a detached HEAD state. If so, abort immediately and print an error instructing the user to run `g tt now` to return to the present before making changes.
 * **Happy Path:** `g c "my message"`
   * Runs: `git add .` -> `git commit -m "my message"` -> `git pull --rebase` -> `git push`.
 * **No Remote Tracking Branch:** If the current branch has no upstream tracking branch yet (i.e. it has never been pushed), skip the `pull --rebase` step entirely (there is nothing to pull) and run `git push --set-upstream origin HEAD` to publish the branch for the first time. The same applies to `g rv`.
@@ -46,15 +47,17 @@ Handles the add -> commit -> sync flow, using `git pull --rebase` to maintain li
 * `g d` -> `git diff`
 
 **4. Time Travel: `g tt` (No Branches)**
-* `g tt <hash>`: Checks out a specific commit hash (detached HEAD).
-* `g tt <time>`: Parses a relative time string (e.g., "2 hours ago") and checks out that repository state.
-* **Constraint:** The CLI must rigorously intercept and block any attempt to treat the argument as a branch name. There are no branches.
+* **`g tt now` (Return to Present):** This is the escape hatch. It dynamically detects the repository's default branch (e.g., `main` or `master` via `git symbolic-ref refs/remotes/origin/HEAD` or a safe fallback) and runs `git checkout <branch-name>` to reattach HEAD.
+* **`g tt <hash>`:** Checks out a specific commit hash (detached HEAD).
+* **`g tt <time>`:** Parses a relative time string (e.g., "2 hours ago") and checks out that repository state.
+* **Constraint:** Aside from the `now` keyword, the CLI must rigorously intercept and block any attempt to treat the argument as a branch name. There are no branches.
 
 **5. Reset: `g r`**
 * `g r` -> Exactly maps to `git reset --hard`.
 
 **6. Revert: `g rv` (Custom Interactive UX & Sync)**
 * `g rv <hash>` (or default to `HEAD` if no hash is provided).
+* **Time Travel Guard:** Like `g c`, abort immediately if in a detached HEAD state and tell the user to run `g tt now`.
 * **Behavior:** Intercept the flow. Fetch the target commit's short hash, author, and subject line.
 * Display a sleek interactive prompt using `inquire`:
   > ⏪ Revert Commit: a1b2c3d - "Update database schema" (by Alice)
@@ -98,3 +101,4 @@ Provide the complete Rust implementation. Include `Cargo.toml` with dependencies
 2. A `g p` flow that gets blocked due to unpushed commits, and one that succeeds.
 3. A `g c` merge conflict scenario, successfully completed via `g c --resolve`.
 4. A `g rv` flow that reverts a commit and syncs.
+5. A time-travel flow that blocks a `g c` command, then successfully returns to the present via `g tt now`.
