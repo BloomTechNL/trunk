@@ -20,6 +20,7 @@ Handles the add -> commit -> sync flow, using `git pull --rebase` to maintain li
 
 * **Happy Path:** `g c "my message"`
   * Runs: `git add .` -> `git commit -m "my message"` -> `git pull --rebase` -> `git push`.
+* **No Remote Tracking Branch:** If the current branch has no upstream tracking branch yet (i.e. it has never been pushed), skip the `pull --rebase` step entirely (there is nothing to pull) and run `git push --set-upstream origin HEAD` to publish the branch for the first time. The same applies to `g rv`.
 * **Conflict Path (Exact UX Flow Required):**
   * If `pull --rebase` hits a conflict, output the standard git merge conflict output.
   * Append this custom message exactly:

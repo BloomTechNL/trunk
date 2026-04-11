@@ -83,6 +83,12 @@ fn git_dir(dir: &Path) -> std::path::PathBuf {
 // g c  — commit + sync
 // ---------------------------------------------------------------------------
 
+/// Returns `true` when the current branch has a remote tracking branch
+/// configured (i.e. it has been pushed at least once).
+fn has_remote_tracking(dir: &Path) -> bool {
+    git_capture(dir, &["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"]).is_ok()
+}
+
 pub fn cmd_commit(dir: &Path, message: &str) -> Result<()> {
     if is_rebasing(dir) {
         bail!(
@@ -93,14 +99,16 @@ pub fn cmd_commit(dir: &Path, message: &str) -> Result<()> {
     git_passthrough(dir, &["add", "."])?;
     git_passthrough(dir, &["commit", "-m", message])?;
 
+    if !has_remote_tracking(dir) {
+        // First push — no upstream exists yet, nothing to pull.
+        return git_passthrough(dir, &["push", "--set-upstream", "origin", "HEAD"]);
+    }
+
     let pull_result = git_passthrough(dir, &["pull", "--rebase"]);
     if pull_result.is_err() {
-        // Git already printed the conflict details; append our guidance.
         eprintln!(
             "\nAfter resolving the conflict, run\n  g c --resolve\nOr run\n  g c --abort\nTo give up (will softly reset your commit)"
         );
-        // Treat this as a non-fatal outcome from `g`'s perspective — the
-        // process should exit non-zero but we don't want to double-print.
         bail!("Conflict during rebase — see instructions above");
     }
 
@@ -325,6 +333,10 @@ pub fn cmd_revert(dir: &Path, hash: &str, bypass_prompt: bool) -> Result<()> {
     let full_hash = git_capture(dir, &["rev-parse", hash])?.trim().to_string();
 
     git_passthrough(dir, &["revert", "--no-edit", &full_hash])?;
+
+    if !has_remote_tracking(dir) {
+        return git_passthrough(dir, &["push", "--set-upstream", "origin", "HEAD"]);
+    }
 
     let pull_result = git_passthrough(dir, &["pull", "--rebase"]);
     if pull_result.is_err() {

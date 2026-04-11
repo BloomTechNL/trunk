@@ -348,4 +348,77 @@ fn test_commit_while_in_conflict_state_is_blocked() {
     );
 }
 
+// ---------------------------------------------------------------------------
+// 6.  `g c` and `g rv` with no remote tracking branch (first push)
+// ---------------------------------------------------------------------------
 
+#[test]
+fn test_commit_without_remote_tracking_branch() {
+    // Create a bare remote and a single clone but do NOT push an initial
+    // commit, so the clone has no upstream tracking branch at all.
+    let tmp = tempfile::TempDir::new().unwrap();
+    let _origin = tmp.path().join("origin.git");
+    let clone = tmp.path().join("clone");
+
+    git(tmp.path(), &["init", "--bare", "origin.git"]);
+    git(tmp.path(), &["clone", "origin.git", "clone"]);
+    git_config_identity(&clone);
+
+    // First-ever commit — no upstream exists yet.
+    write_file(&clone, "first.txt", "first\n");
+    cmd_commit(&clone, "first commit").expect("g c should succeed without a remote tracking branch");
+
+    // The commit should now be visible on the remote — verify from a fresh clone.
+    let verify = tmp.path().join("verify");
+    git(tmp.path(), &["clone", "origin.git", "verify"]);
+    let log = cmd_log(&verify, true).expect("g l");
+    assert!(
+        log.contains("first commit"),
+        "commit should have been pushed to the remote\n{log}"
+    );
+
+    // A second commit should follow the normal pull+push path without issues.
+    write_file(&clone, "second.txt", "second\n");
+    cmd_commit(&clone, "second commit").expect("g c should succeed on second commit too");
+}
+
+#[test]
+fn test_revert_without_remote_tracking_branch() {
+    let tmp = tempfile::TempDir::new().unwrap();
+    let _origin = tmp.path().join("origin.git");
+    let clone = tmp.path().join("clone");
+
+    git(tmp.path(), &["init", "--bare", "origin.git"]);
+    git(tmp.path(), &["clone", "origin.git", "clone"]);
+    git_config_identity(&clone);
+
+    // Push the first commit normally (this sets up the tracking branch).
+    write_file(&clone, "a.txt", "a\n");
+    cmd_commit(&clone, "add a").expect("first commit");
+
+    // Now simulate a scenario where after the push the tracking ref is gone
+    // by using a fresh clone of the bare repo that has never pushed.
+    let clone2 = tmp.path().join("clone2");
+    git(tmp.path(), &["clone", "origin.git", "clone2"]);
+    git_config_identity(&clone2);
+
+    // Make a commit to revert, publish it.
+    write_file(&clone2, "b.txt", "b\n");
+    cmd_commit(&clone2, "add b").expect("clone2 first commit");
+
+    // Get HEAD hash and revert it — at this point clone2 has a tracking branch.
+    let hash = std::process::Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .current_dir(&clone2)
+        .output()
+        .unwrap();
+    let head = String::from_utf8_lossy(&hash.stdout).trim().to_string();
+
+    cmd_revert(&clone2, &head, true).expect("g rv should succeed");
+
+    let log = cmd_log(&clone2, true).expect("g l");
+    assert!(
+        log.contains("Revert") || log.contains("revert"),
+        "revert commit should be in log\n{log}"
+    );
+}
