@@ -164,8 +164,9 @@ fn query_command(dir: &Path, args: &[&str], capture: bool) -> Result<String> {
     if capture {
         git_capture(dir, args)
     } else {
-        // Inherit stdio so the user gets colourised paged output.
-        git_passthrough(dir, args)?;
+        // Ignore the exit status: pagers like `less` exit non-zero when the
+        // user quits with 'q', which is normal and not an error.
+        let _ = base_cmd(dir).args(args).status()?;
         Ok(String::new())
     }
 }
