@@ -1,0 +1,99 @@
+**Role:** Act as a Staff-level Rust Systems/CLI Engineer who is an expert in Git internals, trunk-based development, and building fast, highly ergonomic CLI tools.
+
+**Context & Goal:** I am building an opinionated, lightning-fast CLI adapter for git called `g`. The tool acts as a strict facade over Git, designed specifically to enforce the core values of trunk-based development and continuous integration: extremely small commits, quick feedback, low WIP, and absolutely zero branching.
+
+**Core Design Pillars:**
+1. **Trunk-Based / CI Restrictive:** The API is deliberately constrained. Branching is fundamentally disallowed. Everything moves forward in a single, linear history.
+2. **Familiar to Git Users:** While restrictive, it should leverage existing Git muscle memory where it makes sense. Standard Git output should be used where appropriate.
+3. **Invisible Overhead:** It must feel instantaneous. It should be a compiled, statically linked Rust binary that acts as a near-zero-cost wrapper around underlying `git` commands. It must be trivial to port and install.
+
+**Technical Implementation Strategy (Hybrid Approach):**
+* **Primary Execution (Shelling out):** Do not attempt to reimplement core Git networking, hook execution, or rebase logic using `libgit2`. It will break the user's GPG signing, pre-commit hooks, and SSH agents. Use Rust's `std::process::Command` to shell out to the system's `git` binary for state-mutating operations (`pull`, `push`, `commit`, `rebase`, `reset`, `revert`) and standard queries (`log`, `status`, `diff`). Pipe standard output directly to the user's terminal so they get the exact colorized output they are used to (crucial for merge conflicts). Pass through exit codes.
+* **State Detection & Read-Only Logic:** Use standard Rust `std::fs` (e.g., checking for `.git/rebase-merge` or `.git/rebase-apply` to detect conflict states) or the `git2` crate strictly for read-only operations (finding commit hashes/messages for revert, resolving "time ago" strings).
+* **Libraries:** Use `clap` for CLI parsing and routing. Use `inquire` (or `dialoguer`) for the interactive revert prompt.
+* **Architecture for Testability:** Decouple the `clap` CLI parsing from the core business logic. Core functions must accept a `working_dir` path (so tests can point them at temp directories). Furthermore, to allow tests to use `g` for assertions, ensure that read-only functions (`g l`, `g s`, `g d`) either return their `stdout` output as a string or can be configured to capture output rather than strictly piping it to the terminal.
+
+**Command Specifications:**
+
+**1. The Core Loop: `g c`**
+Handles the add -> commit -> sync flow, using `git pull --rebase` to maintain linear history. Must be state-aware.
+
+* **Happy Path:** `g c "my message"`
+  * Runs: `git add .` -> `git commit -m "my message"` -> `git pull --rebase` -> `git push`.
+* **Conflict Path (Exact UX Flow Required):**
+  * If `pull --rebase` hits a conflict, output the standard git merge conflict output.
+  * Append this custom message exactly:
+    > After resolving the conflict, run
+    > g c --resolve
+    > Or run
+    > g c --abort
+    > To give up (will softly reset your commit)
+  * If the user forgets they are in a conflict state and runs `g c "my message"` again, detect the rebase state and output:
+    > You are in the middle of resolving a conflict. Resolve the conflict and then run
+    > g c --resolve
+  * **`g c --resolve`:** Runs `git add .`, then `git rebase --continue`, then `git push`.
+  * **`g c --abort`:** Runs `git rebase --abort`, and then cleanly undoes the initial local commit (`git reset --soft HEAD~1`) so the user is back exactly where they started, with their working directory changes preserved.
+
+**2. Sync: `g p` (Pull)**
+* **Behavior:** Fast-forwards the local repository with remote changes.
+* **Constraint (Strict):** This command is only allowed if the user has a clean working directory AND zero unpushed commits.
+* **Logic:** Before executing, check for uncommitted changes (e.g., `git status --porcelain`) and unpushed local commits (e.g., `git log @{u}..HEAD`). If either exists, abort and print an error message instructing the user to use `g c` instead. If clean, run `git pull --rebase`.
+
+**3. Querying (Direct Pass-through)**
+* `g l` -> `git log`
+* `g s` -> `git status`
+* `g d` -> `git diff`
+
+**4. Time Travel: `g tt` (No Branches)**
+* `g tt <hash>`: Checks out a specific commit hash (detached HEAD).
+* `g tt <time>`: Parses a relative time string (e.g., "2 hours ago") and checks out that repository state.
+* **Constraint:** The CLI must rigorously intercept and block any attempt to treat the argument as a branch name. There are no branches.
+
+**5. Reset: `g r`**
+* `g r` -> Exactly maps to `git reset --hard`.
+
+**6. Revert: `g rv` (Custom Interactive UX & Sync)**
+* `g rv <hash>` (or default to `HEAD` if no hash is provided).
+* **Behavior:** Intercept the flow. Fetch the target commit's short hash, author, and subject line.
+* Display a sleek interactive prompt using `inquire`:
+  > ⏪ Revert Commit: a1b2c3d - "Update database schema" (by Alice)
+  > ? Are you sure you want to revert this commit? [y/N]
+* **Happy Path:**
+  * If yes: Execute `git revert --no-edit <hash>` -> `git pull --rebase` -> `git push`.
+  * If no: Abort cleanly.
+* **Conflict Path (Similar to `g c`):**
+  * If `pull --rebase` hits a conflict, output standard git conflict output.
+  * Append custom message:
+    > After resolving the conflict, run
+    > g rv --resolve
+    > Or run
+    > g rv --abort
+    > To give up (will permanently delete the revert commit)
+  * **`g rv --resolve`:** Runs `git add .` -> `git rebase --continue` -> `git push`.
+  * **`g rv --abort`:** Runs `git rebase --abort` -> `git reset --hard HEAD~1`. (Uses `--hard` reset to completely destroy the newly created revert commit).
+
+**Testing Strategy (Strict Requirements):**
+Do not write trivial unit tests. The test suite must consist of end-to-end integration tests that use real git repositories on the filesystem to simulate realistic user flows. Crucially, **the test suite should NOT invoke the compiled `g` binary via subprocesses.** Instead, test the underlying Rust functions directly.
+
+* **Test Environment Setup:**
+  * Use the `tempfile` crate to generate unique, isolated directories for each test.
+  * Pass the path of these temp directories directly to your core business logic functions to ensure Git commands execute in the right place.
+* **Testing Local Workflows (Dogfooding `g`):**
+  * Tests should initialize a repo using `git init` and create/modify files natively.
+  * **Crucially, tests should largely prefer using `g`'s internal functions for assertions over standard `git` commands.** For example, after running the internal `g c` function, call the internal `g l` function and assert on its output to ensure the commit exists, rather than shelling out to `git log` directly in the test.
+  * Keep the test invocations as close to the CLI boundary as possible (e.g., executing the main router function with a mocked CLI struct).
+* **Testing Sync & Conflicts (The Multi-Repo Strategy):**
+  * To test `g c`, `g p`, and `g rv` network operations, write a helper function that sets up a local remote structure inside a `tempfile` directory:
+    1. `git init --bare origin.git`
+    2. `git clone origin.git clone_a`
+    3. `git clone origin.git clone_b`
+  * Use `clone_a` to push a commit via your core `g c` function, then use `clone_b` to trigger `g p` (fast-forward) or create a conflicting commit and run `g c` to trigger the conflict/resolve state machine.
+* **Handling Interactivity:**
+  * Because `g rv` uses an interactive prompt, ensure your core revert function accepts a parameter (e.g., `bypass_prompt: bool`) so the test suite can programmatically skip the `inquire` UI and execute the revert directly without hanging.
+
+**Expected Output:**
+Provide the complete Rust implementation. Include `Cargo.toml` with dependencies, the decoupled architecture separating `clap` from core logic, state-detection logic for conflicts and `g p` constraints, and the exact `std::process::Command` calls. Following the implementation, provide a comprehensive `tests/integration_tests.rs` file demonstrating at least:
+1. A clean `g c` flow.
+2. A `g p` flow that gets blocked due to unpushed commits, and one that succeeds.
+3. A `g c` merge conflict scenario, successfully completed via `g c --resolve`.
+4. A `g rv` flow that reverts a commit and syncs.
