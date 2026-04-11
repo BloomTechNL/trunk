@@ -89,6 +89,13 @@ fn has_remote_tracking(dir: &Path) -> bool {
     git_capture(dir, &["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"]).is_ok()
 }
 
+/// Returns `true` when at least one remote is configured for this repo.
+fn has_remote(dir: &Path) -> bool {
+    git_capture(dir, &["remote"])
+        .map(|out| !out.trim().is_empty())
+        .unwrap_or(false)
+}
+
 pub fn cmd_commit(dir: &Path, message: &str) -> Result<()> {
     if is_rebasing(dir) {
         bail!(
@@ -98,6 +105,11 @@ pub fn cmd_commit(dir: &Path, message: &str) -> Result<()> {
 
     git_passthrough(dir, &["add", "."])?;
     git_passthrough(dir, &["commit", "-m", message])?;
+
+    if !has_remote(dir) {
+        // Local-only repo — nothing to push to.
+        return Ok(());
+    }
 
     if !has_remote_tracking(dir) {
         // First push — no upstream exists yet, nothing to pull.
@@ -333,6 +345,10 @@ pub fn cmd_revert(dir: &Path, hash: &str, bypass_prompt: bool) -> Result<()> {
     let full_hash = git_capture(dir, &["rev-parse", hash])?.trim().to_string();
 
     git_passthrough(dir, &["revert", "--no-edit", &full_hash])?;
+
+    if !has_remote(dir) {
+        return Ok(());
+    }
 
     if !has_remote_tracking(dir) {
         return git_passthrough(dir, &["push", "--set-upstream", "origin", "HEAD"]);
