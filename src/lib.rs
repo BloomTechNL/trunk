@@ -51,6 +51,43 @@ pub fn git_capture(dir: &Path, args: &[&str]) -> Result<String> {
     }
 }
 
+/// Like `git_capture` but discards stderr entirely.  Use for probe commands
+/// where a failure is expected in some configurations and the error message
+/// would be confusing to the user.
+fn git_capture_silent(dir: &Path, args: &[&str]) -> Result<String> {
+    let output = base_cmd(dir)
+        .args(args)
+        .stderr(Stdio::null())
+        .output()?;
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+    } else {
+        bail!(
+            "git {} exited with status {}",
+            args.join(" "),
+            output.status.code().unwrap_or(-1)
+        )
+    }
+}
+
+/// Like `git_passthrough` but discards stderr.  Use when git would otherwise
+/// print informational noise that `g` supersedes with its own UX.
+fn git_passthrough_silent(dir: &Path, args: &[&str]) -> Result<()> {
+    let status = base_cmd(dir)
+        .args(args)
+        .stderr(Stdio::null())
+        .status()?;
+    if status.success() {
+        Ok(())
+    } else {
+        bail!(
+            "git {} exited with status {}",
+            args.join(" "),
+            status.code().unwrap_or(-1)
+        )
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Rebase-state detection
 // ---------------------------------------------------------------------------
@@ -212,16 +249,16 @@ pub fn is_detached_head(dir: &Path) -> bool {
 /// Detect the repository's default branch name by inspecting the remote HEAD
 /// symbolic ref, falling back to trying "main" then "master".
 fn default_branch(dir: &Path) -> String {
-    // Try the remote symbolic ref first (works when a remote called origin exists).
-    if let Ok(out) = git_capture(dir, &["symbolic-ref", "refs/remotes/origin/HEAD"]) {
-        // Output is e.g. "refs/remotes/origin/main\n"
+    // Use the silent variant — this probe fails in repos where the remote HEAD
+    // is not a symbolic ref, and the "fatal:" message would confuse the user.
+    if let Ok(out) = git_capture_silent(dir, &["symbolic-ref", "refs/remotes/origin/HEAD"]) {
         if let Some(branch) = out.trim().strip_prefix("refs/remotes/origin/") {
             return branch.to_string();
         }
     }
     // Fall back: check which of main/master exists locally.
     for candidate in &["main", "master"] {
-        if git_capture(dir, &["rev-parse", "--verify", candidate]).is_ok() {
+        if git_capture_silent(dir, &["rev-parse", "--verify", candidate]).is_ok() {
             return candidate.to_string();
         }
     }
@@ -231,7 +268,9 @@ fn default_branch(dir: &Path) -> String {
 /// `g tt now` — return to the present by checking out the default branch.
 pub fn cmd_time_travel_now(dir: &Path) -> Result<()> {
     let branch = default_branch(dir);
-    git_passthrough(dir, &["checkout", &branch])
+    // Use the silent variant: git prints "Switched to branch '...'" to stderr,
+    // which is noise when `g tt now` is the UX boundary.
+    git_passthrough_silent(dir, &["checkout", &branch])
 }
 
 pub fn cmd_time_travel(dir: &Path, target: &str) -> Result<()> {
@@ -241,7 +280,9 @@ pub fn cmd_time_travel(dir: &Path, target: &str) -> Result<()> {
     // Resolve the target to a commit hash using git2 / git rev-parse so we
     // can guarantee we never check out a branch ref.
     let hash = resolve_to_commit_hash(dir, target)?;
-    git_passthrough(dir, &["checkout", &hash])
+    // Use the silent variant: git prints "Previous HEAD position was ..."
+    // and "HEAD is now at ..." to stderr — noise that g supersedes.
+    git_passthrough_silent(dir, &["checkout", &hash])
 }
 
 /// Resolve `spec` to a full commit SHA, refusing to resolve anything that
