@@ -144,7 +144,7 @@ pub fn cmd_commit(dir: &Path, message: &str) -> Result<()> {
         bail!("You are currently time travelling. Run `g tt now` to return to the present before making changes.");
     }
 
-    git_passthrough(dir, &["add", "."])?;
+    git_passthrough(dir, &["add", "-A"])?;
     git_passthrough(dir, &["commit", "-m", message])?;
 
     if !has_remote(dir) {
@@ -169,7 +169,7 @@ pub fn cmd_commit(dir: &Path, message: &str) -> Result<()> {
 }
 
 pub fn cmd_commit_resolve(dir: &Path) -> Result<()> {
-    git_passthrough(dir, &["add", "."])?;
+    git_passthrough(dir, &["add", "-A"])?;
     git_passthrough(dir, &["rebase", "--continue"])?;
     git_passthrough(dir, &["push"])
 }
@@ -453,7 +453,7 @@ pub fn cmd_revert(dir: &Path, hash: &str, bypass_prompt: bool) -> Result<()> {
 }
 
 pub fn cmd_revert_resolve(dir: &Path) -> Result<()> {
-    git_passthrough(dir, &["add", "."])?;
+    git_passthrough(dir, &["add", "-A"])?;
     git_passthrough(dir, &["rebase", "--continue"])?;
     git_passthrough(dir, &["push"])
 }

@@ -427,6 +427,40 @@ fn test_revert_without_remote_tracking_branch() {
 }
 
 // ---------------------------------------------------------------------------
+// 8.  `g c` stages deletions (git add -A, not git add .)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_commit_stages_deleted_files() {
+    let f = Fixture::new();
+    let dir = &f.clone_a;
+
+    write_file(dir, "to_delete.txt", "goodbye\n");
+    cmd_commit(dir, "add file that will be deleted").expect("g c seed");
+
+    fs::remove_file(dir.join("to_delete.txt")).expect("remove file");
+
+    cmd_commit(dir, "delete the file").expect("g c with deletion");
+
+    let log = cmd_log(dir, true).expect("g l");
+    assert!(
+        log.contains("delete the file"),
+        "deletion commit should be in log\n{log}"
+    );
+
+    assert!(
+        !dir.join("to_delete.txt").exists(),
+        "deleted file should not exist after commit"
+    );
+
+    git(&f.clone_b, &["pull", "--rebase"]);
+    assert!(
+        !f.clone_b.join("to_delete.txt").exists(),
+        "deletion should have been pushed to the remote and visible in clone_b"
+    );
+}
+
+// ---------------------------------------------------------------------------
 // 7.  Time travel: detached HEAD blocks `g c` and `g rv`; `g tt now` restores
 // ---------------------------------------------------------------------------
 
