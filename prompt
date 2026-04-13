@@ -20,7 +20,7 @@ Handles the add -> commit -> sync flow, using `git pull --rebase` to maintain li
 
 * **Time Travel Guard:** Before executing, check if the repository is in a detached HEAD state. If so, abort immediately and print an error instructing the user to run `g tt now` to return to the present before making changes.
 * **Happy Path:** `g c "my message"`
-  * Runs: `git add .` -> `git commit -m "my message"` -> `git pull --rebase` -> `git push`.
+  * Runs: `git add -A` -> `git commit -m "my message"` -> `git pull --rebase` -> `git push`.
 * **No Remote Tracking Branch:** If the current branch has no upstream tracking branch yet (i.e. it has never been pushed), skip the `pull --rebase` step entirely (there is nothing to pull) and run `git push --set-upstream origin HEAD` to publish the branch for the first time. The same applies to `g rv`.
 * **Conflict Path (Exact UX Flow Required):**
   * If `pull --rebase` hits a conflict, output the standard git merge conflict output.
@@ -33,7 +33,7 @@ Handles the add -> commit -> sync flow, using `git pull --rebase` to maintain li
   * If the user forgets they are in a conflict state and runs `g c "my message"` again, detect the rebase state and output:
     > You are in the middle of resolving a conflict. Resolve the conflict and then run
     > g c --resolve
-  * **`g c --resolve`:** Runs `git add .`, then `git rebase --continue`, then `git push`.
+  * **`g c --resolve`:** Runs `git add -A`, then `git rebase --continue`, then `git push`.
   * **`g c --abort`:** Runs `git rebase --abort`, and then cleanly undoes the initial local commit (`git reset --soft HEAD~1`) so the user is back exactly where they started, with their working directory changes preserved.
 
 **2. Sync: `g p` (Pull)**
@@ -73,7 +73,7 @@ Handles the add -> commit -> sync flow, using `git pull --rebase` to maintain li
     > Or run
     > g rv --abort
     > To give up (will permanently delete the revert commit)
-  * **`g rv --resolve`:** Runs `git add .` -> `git rebase --continue` -> `git push`.
+  * **`g rv --resolve`:** Runs `git add -A` -> `git rebase --continue` -> `git push`.
   * **`g rv --abort`:** Runs `git rebase --abort` -> `git reset --hard HEAD~1`. (Uses `--hard` reset to completely destroy the newly created revert commit).
 
 **Testing Strategy (Strict Requirements):**
