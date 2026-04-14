@@ -7,8 +7,15 @@ use g_cli::{
     cmd_revert, cmd_revert_abort, cmd_revert_resolve, cmd_status, cmd_time_travel,
 };
 
+fn version_string() -> &'static str {
+    match option_env!("GIT_HASH") {
+        Some(h) => h,
+        None => "unknown",
+    }
+}
+
 #[derive(Parser)]
-#[command(name = "g", about = "An opinionated trunk-based git adapter")]
+#[command(name = "g", about = "An opinionated trunk-based git adapter", version = version_string())]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
