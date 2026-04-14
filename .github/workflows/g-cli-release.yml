@@ -1,0 +1,64 @@
+name: g_cli release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: bash scripts/run_tests.sh
+
+  build-and-release:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tools/g_cli
+
+      - name: Setup Zig
+        uses: goto-bus-stop/setup-zig@v2
+
+      - name: Install cargo-zigbuild
+        run: pip install cargo-zigbuild
+
+      - name: Download macOS SDK
+        run: |
+          wget https://github.com/joseluisq/macosx-sdks/releases/download/13.3/MacOSX13.3.sdk.tar.xz
+          mkdir -p /opt/apple-sdk
+          tar -xf MacOSX13.3.sdk.tar.xz -C /opt/apple-sdk/
+
+      - name: Build binary
+        env:
+          SDKROOT: /opt/apple-sdk/MacOSX13.3.sdk
+        run: cargo zigbuild --release --target aarch64-apple-darwin
+
+      - name: Stage binary
+        run: mv target/aarch64-apple-darwin/release/g g
+
+      - name: Update latest tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -f latest
+          git push -f origin latest
+
+      - name: Publish rolling release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create latest --title "Latest Build" --notes "Automated rolling release." || true
+          gh release upload latest g --clobber
+
