@@ -53,7 +53,7 @@ Handles the add -> commit -> sync flow, using `git pull --rebase` to maintain li
 * **Constraint:** Aside from the `now` keyword, the CLI must rigorously intercept and block any attempt to treat the argument as a branch name. There are no branches.
 
 **5. Reset: `g r`**
-* `g r` -> Exactly maps to `git reset --hard`.
+* `g r` -> Exactly maps to `git reset --hard && git clean -df :/`.
 
 **6. Revert: `g rv` (Custom Interactive UX & Sync)**
 * `g rv <hash>` (or default to `HEAD` if no hash is provided).

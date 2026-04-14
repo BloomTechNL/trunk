@@ -9,6 +9,6 @@ use crate::git::git_passthrough;
 // ---------------------------------------------------------------------------
 
 pub fn cmd_reset(dir: &Path) -> Result<()> {
-    git_passthrough(dir, &["reset", "--hard"])
+    git_passthrough(dir, &["reset", "--hard"])?;
+    git_passthrough(dir, &["clean", "-df", ":/"])
 }
-

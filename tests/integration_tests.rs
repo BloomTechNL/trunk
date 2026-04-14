@@ -8,7 +8,7 @@ use std::path::Path;
 use std::process::Command;
 
 use g_cli::{
-    cmd_commit, cmd_commit_abort, cmd_commit_resolve, cmd_log, cmd_pull, cmd_revert,
+    cmd_commit, cmd_commit_abort, cmd_commit_resolve, cmd_log, cmd_pull, cmd_reset, cmd_revert,
     cmd_time_travel, cmd_time_travel_now,
 };
 use tempfile::TempDir;
@@ -518,6 +518,54 @@ fn test_time_travel_blocks_write_commands_and_now_restores() {
     assert!(
         log.contains("commit after returning from time travel"),
         "commit made after time travel should be in the log\n{log}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// 9.  `g r` hard-resets and removes untracked files/dirs
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_reset_clears_tracked_and_untracked_changes() {
+    let f = Fixture::new();
+    let dir = &f.clone_a;
+
+    // Create a subdirectory to run cmd_reset *from*, simulating the user
+    // being inside a subfolder of the repo.
+    let subdir = dir.join("subdir");
+    fs::create_dir(&subdir).unwrap();
+
+    // Untracked file at the repo root — outside `subdir`.
+    // Without `:/`, `git clean -df` run from `subdir` would NOT remove this.
+    write_file(dir, "untracked_at_root.txt", "I should disappear\n");
+
+    // Untracked file inside the subdir we're running from.
+    write_file(&subdir, "untracked_in_subdir.txt", "also gone\n");
+
+    // Modify a tracked file at the root.
+    write_file(dir, "README.md", "dirty modification\n");
+
+    // Run reset from the subdirectory — :/ ensures root-relative clean.
+    cmd_reset(&subdir).expect("g r should succeed");
+
+    // Tracked file should be restored.
+    let readme = fs::read_to_string(dir.join("README.md")).expect("README.md should exist");
+    assert!(
+        !readme.contains("dirty modification"),
+        "README.md should have been reset\n{readme}"
+    );
+
+    // The untracked file at the repo root must be gone — this only passes
+    // when `git clean -df :/` is used (the :/ makes it repo-root-relative).
+    assert!(
+        !dir.join("untracked_at_root.txt").exists(),
+        "untracked_at_root.txt should have been removed by git clean :/"
+    );
+
+    // The untracked file inside the subdir should also be gone.
+    assert!(
+        !subdir.join("untracked_in_subdir.txt").exists(),
+        "untracked_in_subdir.txt should have been removed by git clean"
     );
 }
 
