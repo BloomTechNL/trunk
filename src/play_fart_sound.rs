@@ -14,8 +14,10 @@ pub fn play_fart_sound() -> Result<()> {
     let asset = Asset::get(&file_name)
         .with_context(|| format!("Failed to find {} in bundled assets", file_name))?;
 
-    let handle = DeviceSinkBuilder::open_default_sink()
+    let mut handle = DeviceSinkBuilder::open_default_sink()
         .context("Could not open default audio output device")?;
+
+    handle.log_on_drop(false);
 
     let player = Player::connect_new(&handle.mixer());
 
