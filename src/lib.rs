@@ -1,3 +1,4 @@
+pub mod cli;
 pub mod commit;
 pub mod git;
 pub mod pull;
@@ -7,6 +8,7 @@ pub mod revert;
 pub mod time_travel;
 pub mod play_fart_sound;
 
+pub use cli::{run_cli, Cli, Commands};
 pub use commit::{cmd_commit, cmd_commit_abort, cmd_commit_resolve};
 pub use pull::cmd_pull;
 pub use query::{cmd_diff, cmd_log, cmd_status};
