@@ -4,7 +4,7 @@ use std::process;
 use clap::{Parser, Subcommand};
 use g_cli::{
     cmd_commit, cmd_commit_abort, cmd_commit_resolve, cmd_diff, cmd_log, cmd_pull, cmd_reset,
-    cmd_revert, cmd_revert_abort, cmd_revert_resolve, cmd_status, cmd_time_travel,
+    cmd_revert, cmd_revert_abort, cmd_revert_resolve, cmd_status, cmd_time_travel, play_fart_sound,
 };
 
 fn version_string() -> &'static str {
@@ -68,6 +68,9 @@ enum Commands {
         #[arg(long)]
         abort: bool,
     },
+    /// Play a fart sound
+    #[command(name = "fart")]
+    Fart,
 }
 
 fn main() {
@@ -110,7 +113,8 @@ fn main() {
                 let h = hash.unwrap_or_else(|| "HEAD".to_string());
                 cmd_revert(&dir, &h, false)
             }
-        }
+        },
+        Commands::Fart => play_fart_sound()
     };
 
     if let Err(e) = result {

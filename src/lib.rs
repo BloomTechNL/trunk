@@ -5,6 +5,7 @@ pub mod query;
 pub mod reset;
 pub mod revert;
 pub mod time_travel;
+pub mod play_fart_sound;
 
 pub use commit::{cmd_commit, cmd_commit_abort, cmd_commit_resolve};
 pub use pull::cmd_pull;
@@ -12,3 +13,4 @@ pub use query::{cmd_diff, cmd_log, cmd_status};
 pub use reset::cmd_reset;
 pub use revert::{cmd_revert, cmd_revert_abort, cmd_revert_resolve, get_revert_info, RevertInfo};
 pub use time_travel::{cmd_time_travel, cmd_time_travel_now};
+pub use play_fart_sound::play_fart_sound;

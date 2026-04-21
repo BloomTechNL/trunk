@@ -12,6 +12,9 @@ clap = { version = "4", features = ["derive"] }
 git2 = { version = "0.19", default-features = false }
 inquire = "0.7"
 anyhow = "1"
+rust-embed = "8.11.0"
+rodio = "0.22.2"
+rand = "0.10.1"
 
 [dev-dependencies]
 tempfile = "3"
