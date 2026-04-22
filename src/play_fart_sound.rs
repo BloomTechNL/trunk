@@ -7,7 +7,7 @@ use std::io::Cursor;
 #[folder = "assets/"]
 struct Asset;
 
-fn play_fart_sound() -> Result<()> {
+pub fn play_fart_sound() -> Result<()> {
     let random_index = rand::random_range(1..=6);
     let file_name = format!("fart-{}.mp3", random_index);
 
@@ -29,15 +29,4 @@ fn play_fart_sound() -> Result<()> {
     player.sleep_until_end();
 
     Ok(())
-}
-
-pub trait FartPlayer {
-    fn play(&self) -> Result<()>;
-}
-
-pub struct RealFartPlayer;
-impl FartPlayer for RealFartPlayer {
-    fn play(&self) -> Result<()> {
-        play_fart_sound()
-    }
 }
