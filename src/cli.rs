@@ -6,7 +6,7 @@ use clap::{Parser, Subcommand};
 use crate::{
     cmd_commit, cmd_commit_abort, cmd_commit_resolve, cmd_diff, cmd_log, cmd_pull, cmd_reset,
     cmd_revert, cmd_revert_abort, cmd_revert_resolve, cmd_status, cmd_time_travel,
-    cmd_time_travel_now, play_fart_sound,
+    cmd_time_travel_now, FartPlayer,
 };
 
 fn version_string() -> &'static str {
@@ -75,7 +75,7 @@ pub enum Commands {
     Fart,
 }
 
-pub fn run_cli(cli: Cli, dir: &Path) -> Result<()> {
+pub fn run_cli<F: FartPlayer>(cli: Cli, dir: &Path, player: &F) -> Result<()> {
     match cli.command {
         Commands::Commit { message, resolve, abort } => {
             if resolve {
@@ -110,6 +110,6 @@ pub fn run_cli(cli: Cli, dir: &Path) -> Result<()> {
                 cmd_revert(dir, &h, false)
             }
         }
-        Commands::Fart => play_fart_sound(),
+        Commands::Fart => player.play(),
     }
 }
