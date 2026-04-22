@@ -7,12 +7,19 @@ use std::fs;
 use std::path::Path;
 use std::process::Command;
 
-use g_cli::{cmd_log, cmd_revert, run_cli, Cli, Commands};
+use g_cli::{cmd_log, cmd_revert, run_cli, Cli, Commands, FartPlayer};
 use tempfile::TempDir;
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+struct MockFartPlayer;
+impl FartPlayer for MockFartPlayer {
+    fn play(&self) -> anyhow::Result<()> {
+        Ok(())
+    }
+}
 
 fn git_config_identity(dir: &Path) {
     for (k, v) in &[
@@ -54,6 +61,7 @@ fn g_commit(dir: &Path, message: &str) -> anyhow::Result<()> {
             },
         },
         dir,
+        &MockFartPlayer,
     )
 }
 
@@ -67,6 +75,7 @@ fn g_commit_resolve(dir: &Path) -> anyhow::Result<()> {
             },
         },
         dir,
+        &MockFartPlayer,
     )
 }
 
@@ -80,15 +89,16 @@ fn g_commit_abort(dir: &Path) -> anyhow::Result<()> {
             },
         },
         dir,
+        &MockFartPlayer,
     )
 }
 
 fn g_pull(dir: &Path) -> anyhow::Result<()> {
-    run_cli(Cli { command: Commands::Pull }, dir)
+    run_cli(Cli { command: Commands::Pull }, dir, &MockFartPlayer)
 }
 
 fn g_reset(dir: &Path) -> anyhow::Result<()> {
-    run_cli(Cli { command: Commands::Reset }, dir)
+    run_cli(Cli { command: Commands::Reset }, dir, &MockFartPlayer)
 }
 
 // bypass_prompt=true so tests never hang waiting for stdin
@@ -104,6 +114,7 @@ fn g_time_travel(dir: &Path, target: &str) -> anyhow::Result<()> {
             },
         },
         dir,
+        &MockFartPlayer
     )
 }
 
