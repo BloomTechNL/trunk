@@ -536,6 +536,20 @@ fn test_reset_clears_tracked_and_untracked_changes() {
     );
 }
 
+#[test]
+fn test_fart_plays_fart_sound() {
+    let f = Fixture::new();
+    let dir = &f.clone_a;
+    let player = MockFartPlayer::new();
+
+    run_cli(Cli { command: Commands::Fart }, dir, &player);
+
+    assert!(
+        player.was_played(),
+        "A fart sound should have played",
+    );
+}
+
 // ---------------------------------------------------------------------------
 // 10.  Fart plays when stash is non-empty
 // ---------------------------------------------------------------------------
