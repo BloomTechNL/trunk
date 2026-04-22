@@ -83,7 +83,7 @@ pub fn run_cli(cli: Cli, dir: &Path, fart_player: &dyn FartPlayer) -> Result<()>
         .output();
     if let Ok(out) = stash_output {
         if !out.stdout.is_empty() {
-            let _ = fart_player.play();
+            let _ = fart_player.play_asynchronously();
         }
     }
 

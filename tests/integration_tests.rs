@@ -31,6 +31,11 @@ impl FartPlayer for MockFartPlayer {
         self.played.set(true);
         Ok(())
     }
+
+    fn play_asynchronously(&self) -> anyhow::Result<()> {
+        self.played.set(true);
+        Ok(())
+    }
 }
 
 fn git_config_identity(dir: &Path) {

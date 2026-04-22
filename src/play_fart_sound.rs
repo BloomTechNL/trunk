@@ -33,11 +33,26 @@ fn play_fart_sound() -> Result<()> {
 
 pub trait FartPlayer {
     fn play(&self) -> Result<()>;
+    fn play_asynchronously(&self) -> Result<()>;
 }
 
 pub struct RealFartPlayer;
 impl FartPlayer for RealFartPlayer {
     fn play(&self) -> Result<()> {
         play_fart_sound()
+    }
+
+    fn play_asynchronously(&self) -> Result<()> {
+        let exe = std::env::current_exe().context("Failed to get current executable path")?;
+
+        std::process::Command::new(exe)
+            .arg("internal-fart-daemon")
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .context("Failed to spawn fart daemon process")?;
+
+        Ok(())
     }
 }
