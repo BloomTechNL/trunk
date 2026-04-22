@@ -70,9 +70,6 @@ pub enum Commands {
         #[arg(long)]
         abort: bool,
     },
-    /// Play a fart sound
-    #[command(name = "fart")]
-    Fart,
 }
 
 pub fn run_cli(cli: Cli, dir: &Path, fart_player: &dyn FartPlayer) -> Result<()> {
@@ -121,6 +118,5 @@ pub fn run_cli(cli: Cli, dir: &Path, fart_player: &dyn FartPlayer) -> Result<()>
                 cmd_revert(dir, &h, false)
             }
         }
-        Commands::Fart => fart_player.play(),
     }
 }
