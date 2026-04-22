@@ -541,9 +541,41 @@ fn test_fart_plays_fart_sound() {
     let f = Fixture::new();
     let dir = &f.clone_a;
     let player = MockFartPlayer::new();
+
     run_cli(Cli { command: Commands::Fart }, dir, &player);
+
     assert!(
         player.was_played(),
         "A fart sound should have played",
     );
+}
+
+// ---------------------------------------------------------------------------
+// 10.  Fart plays when stash is non-empty
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_fart_plays_when_stash_is_non_empty() {
+    let f = Fixture::new();
+    let dir = &f.clone_a;
+
+    write_file(dir, "stashed.txt", "stash me\n");
+    git(dir, &["add", "."]);
+    git(dir, &["stash"]);
+
+    let player = MockFartPlayer::new();
+    run_cli(Cli { command: Commands::Pull }, dir, &player).expect("g p");
+
+    assert!(player.was_played(), "a fart should play when the stash is non-empty");
+}
+
+#[test]
+fn test_fart_does_not_play_when_stash_is_empty() {
+    let f = Fixture::new();
+    let dir = &f.clone_a;
+
+    let player = MockFartPlayer::new();
+    run_cli(Cli { command: Commands::Pull }, dir, &player).expect("g p");
+
+    assert!(!player.was_played(), "no fart should play when the stash is empty");
 }
