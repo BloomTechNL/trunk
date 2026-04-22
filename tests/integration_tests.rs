@@ -4,6 +4,7 @@
 /// temporary directories.  No compiled `g` binary is invoked — the core
 /// library functions are called directly.
 use std::fs;
+use std::cell::Cell;
 use std::path::Path;
 use std::process::Command;
 
@@ -14,9 +15,20 @@ use tempfile::TempDir;
 // Helpers
 // ---------------------------------------------------------------------------
 
-struct MockFartPlayer;
+struct MockFartPlayer {
+    played: Cell<bool>,
+}
+impl MockFartPlayer {
+    fn new() -> Self {
+        Self { played: Cell::new(false) }
+    }
+    fn was_played(&self) -> bool {
+        self.played.get()
+    }
+}
 impl FartPlayer for MockFartPlayer {
     fn play(&self) -> anyhow::Result<()> {
+        self.played.set(true);
         Ok(())
     }
 }
@@ -61,7 +73,7 @@ fn g_commit(dir: &Path, message: &str) -> anyhow::Result<()> {
             },
         },
         dir,
-        &MockFartPlayer,
+        &MockFartPlayer::new(),
     )
 }
 
@@ -75,7 +87,7 @@ fn g_commit_resolve(dir: &Path) -> anyhow::Result<()> {
             },
         },
         dir,
-        &MockFartPlayer,
+        &MockFartPlayer::new(),
     )
 }
 
@@ -89,16 +101,16 @@ fn g_commit_abort(dir: &Path) -> anyhow::Result<()> {
             },
         },
         dir,
-        &MockFartPlayer,
+        &MockFartPlayer::new(),
     )
 }
 
 fn g_pull(dir: &Path) -> anyhow::Result<()> {
-    run_cli(Cli { command: Commands::Pull }, dir, &MockFartPlayer)
+    run_cli(Cli { command: Commands::Pull }, dir, &MockFartPlayer::new())
 }
 
 fn g_reset(dir: &Path) -> anyhow::Result<()> {
-    run_cli(Cli { command: Commands::Reset }, dir, &MockFartPlayer)
+    run_cli(Cli { command: Commands::Reset }, dir, &MockFartPlayer::new())
 }
 
 // bypass_prompt=true so tests never hang waiting for stdin
@@ -114,7 +126,7 @@ fn g_time_travel(dir: &Path, target: &str) -> anyhow::Result<()> {
             },
         },
         dir,
-        &MockFartPlayer
+        &MockFartPlayer::new()
     )
 }
 
@@ -524,3 +536,14 @@ fn test_reset_clears_tracked_and_untracked_changes() {
     );
 }
 
+#[test]
+fn test_fart_plays_fart_sound() {
+    let f = Fixture::new();
+    let dir = &f.clone_a;
+    let player = MockFartPlayer::new();
+    run_cli(Cli { command: Commands::Fart }, dir, &player);
+    assert!(
+        player.was_played(),
+        "A fart sound should have played",
+    );
+}
