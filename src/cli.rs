@@ -77,7 +77,7 @@ pub enum Commands {
 
 pub fn run_cli(cli: Cli, dir: &Path, fart_player: &dyn FartPlayer) -> Result<()> {
     if has_stash(dir) {
-        fart_player.play_asynchronously();
+        let _ = fart_player.play_asynchronously();
     }
 
     match cli.command {
