@@ -7,6 +7,7 @@ pub mod reset;
 pub mod revert;
 pub mod time_travel;
 pub mod play_fart_sound;
+pub mod has_stash;
 
 pub use cli::{run_cli, Cli, Commands};
 pub use commit::{cmd_commit, cmd_commit_abort, cmd_commit_resolve};
@@ -16,3 +17,4 @@ pub use reset::cmd_reset;
 pub use revert::{cmd_revert, cmd_revert_abort, cmd_revert_resolve, get_revert_info, RevertInfo};
 pub use time_travel::{cmd_time_travel, cmd_time_travel_now};
 pub use play_fart_sound::{FartPlayer, RealFartPlayer};
+pub use has_stash::has_stash;
