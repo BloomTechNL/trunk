@@ -46,7 +46,7 @@ impl FartPlayer for RealFartPlayer {
         let exe = std::env::current_exe().context("Failed to get current executable path")?;
 
         std::process::Command::new(exe)
-            .arg("internal-fart-daemon")
+            .arg("fart")
             .stdin(std::process::Stdio::null())
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null())

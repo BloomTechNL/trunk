@@ -23,6 +23,7 @@ pub struct Cli {
     pub command: Commands,
 }
 
+#[derive(PartialEq)]
 #[derive(Subcommand)]
 pub enum Commands {
     /// Commit, pull --rebase, and push.
@@ -76,7 +77,7 @@ pub enum Commands {
 }
 
 pub fn run_cli(cli: Cli, dir: &Path, fart_player: &dyn FartPlayer) -> Result<()> {
-    if has_stash(dir) {
+    if cli.command != Commands::Fart && has_stash(dir) {
         let _ = fart_player.play_asynchronously();
     }
 
