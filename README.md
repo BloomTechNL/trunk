@@ -16,6 +16,10 @@ check your installation by running
 ```bash
 g --version
 ```
+If you have the OhMyZsh git plugin installed, you may need to run
+```bash
+unalias g
+```
 
 ### Linux
 Ensure you have the Rust toolchain installed, in particular `cargo`. Then,
@@ -25,6 +29,10 @@ cd trunk
 cargo build --release
 cargo install --path .
 g --version
+```
+If you have the OhMyZsh git plugin installed, you may need to run
+```bash
+unalias g
 ```
 
 ### Windows
