@@ -74,6 +74,9 @@ pub enum Commands {
     /// Play a fart sound
     #[command(name = "fart")]
     Fart,
+    /// Run the fart daemon (internal use)
+    #[command(name = "_fart_daemon", hide = true)]
+    FartDaemon,
 }
 
 pub fn run_cli(cli: Cli, dir: &Path, fart_player: &dyn FartPlayer) -> Result<()> {
@@ -116,5 +119,6 @@ pub fn run_cli(cli: Cli, dir: &Path, fart_player: &dyn FartPlayer) -> Result<()>
             }
         }
         Commands::Fart => fart_player.play(),
+        Commands::FartDaemon => fart_player.run_daemon(dir),
     }
 }

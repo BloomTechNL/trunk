@@ -5,7 +5,7 @@
 /// library functions are called directly.
 use std::fs;
 use std::cell::Cell;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use g_cli::{cmd_log, cmd_revert, run_cli, Cli, Commands, FartPlayer};
@@ -35,6 +35,10 @@ impl FartPlayer for MockFartPlayer {
     fn play_asynchronously(&self) -> anyhow::Result<()> {
         self.played.set(true);
         Ok(())
+    }
+
+    fn run_daemon(&self, dir: &Path) -> anyhow::Result<()> {
+        g_cli::run_fart_daemon(self, dir)
     }
 }
 
@@ -547,7 +551,7 @@ fn test_fart_plays_fart_sound() {
     let dir = &f.clone_a;
     let player = MockFartPlayer::new();
 
-    run_cli(Cli { command: Commands::Fart }, dir, &player);
+    let _ = run_cli(Cli { command: Commands::Fart }, dir, &player);
 
     assert!(
         player.was_played(),
@@ -583,4 +587,55 @@ fn test_fart_does_not_play_when_stash_is_empty() {
     run_cli(Cli { command: Commands::Pull }, dir, &player).expect("g p");
 
     assert!(!player.was_played(), "no fart should play when the stash is empty");
+}
+
+#[test]
+fn test_fart_daemon_registration() {
+    let f = Fixture::new();
+    let dir = &f.clone_a;
+    let vault = PathBuf::from("/tmp/.trunk/fart_vault");
+
+    // Clean up before test
+    if vault.exists() {
+        let _ = fs::remove_file(&vault);
+    }
+
+    let _player = MockFartPlayer::new();
+    // We can't easily test the background process spawning because we're not running as a binary here
+    // But we can test the registration/unregistration logic if we call run_daemon directly with a fake "empty" stash
+    // Wait, run_daemon loops while has_stash is true.
+
+    write_file(dir, "stashed.txt", "stash me\n");
+    git(dir, &["add", "."]);
+    git(dir, &["stash"]);
+
+    assert!(g_cli::has_stash(dir));
+
+    // To test run_daemon without it looping forever, we can run it in a thread and then clear the stash
+    let dir_clone = dir.clone();
+    let handle = std::thread::spawn(move || {
+        std::env::set_var("DAEMON_TEST_FAST_MODE", "1");
+        let p = MockFartPlayer::new();
+        // This will loop because stash is non-empty
+        // But we want to check if it registered itself
+        let _ = p.run_daemon(&dir_clone);
+        assert!(p.was_played());
+    });
+
+    // Wait a bit for the thread to register
+    std::thread::sleep(std::time::Duration::from_millis(500));
+
+    assert!(vault.exists(), "Vault should be created");
+    let content = fs::read_to_string(&vault).unwrap();
+    assert!(content.contains(&fs::canonicalize(dir).unwrap().to_string_lossy().to_string()), "Vault should contain the repo path");
+
+    // Now clear the stash to let the daemon terminate
+    git(dir, &["stash", "drop"]);
+    assert!(!g_cli::has_stash(dir));
+
+    // Wait for the thread to finish
+    handle.join().unwrap();
+
+    let content_after = fs::read_to_string(&vault).unwrap_or_default();
+    assert!(!content_after.contains(&fs::canonicalize(dir).unwrap().to_string_lossy().to_string()), "Vault should no longer contain the repo path");
 }

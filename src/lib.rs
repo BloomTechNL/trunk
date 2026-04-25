@@ -16,5 +16,5 @@ pub use query::{cmd_diff, cmd_log, cmd_status};
 pub use reset::cmd_reset;
 pub use revert::{cmd_revert, cmd_revert_abort, cmd_revert_resolve, get_revert_info, RevertInfo};
 pub use time_travel::{cmd_time_travel, cmd_time_travel_now};
-pub use play_fart_sound::{FartPlayer, RealFartPlayer};
+pub use play_fart_sound::{FartPlayer, RealFartPlayer, run_fart_daemon};
 pub use has_stash::has_stash;
