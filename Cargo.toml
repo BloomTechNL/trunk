@@ -15,6 +15,7 @@ anyhow = "1"
 rust-embed = "8.11.0"
 rodio = "0.22.2"
 rand = "0.10.1"
+nix = { version = "0.31.2", features = ["signal", "process"] }
 
 [dev-dependencies]
 tempfile = "3"

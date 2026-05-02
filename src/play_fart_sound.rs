@@ -6,6 +6,8 @@ use std::fs;
 use std::io::Cursor;
 use std::time::Duration;
 use rand::RngExt;
+use nix::unistd::Pid;
+use nix::sys::signal::{self};
 
 #[derive(RustEmbed)]
 #[folder = "assets/"]
@@ -119,17 +121,9 @@ fn is_daemon_running(dir: &Path) -> Result<bool> {
             let path_str = parts[1];
             if path_str == abs_dir.to_string_lossy() {
                 if let Ok(pid) = pid_str.parse::<i32>() {
-                    // Check if process exists. On Unix, kill -0 pid checks existence.
-                    let status = std::process::Command::new("kill")
-                        .arg("-0")
-                        .arg(pid.to_string())
-                        .stdout(std::process::Stdio::null())
-                        .stderr(std::process::Stdio::null())
-                        .status();
-                    if let Ok(status) = status {
-                        if status.success() {
-                            return Ok(true);
-                        }
+                    match signal::kill(Pid::from_raw(pid), None) {
+                        Ok(_) => return Ok(true),
+                        Err(_) => (),
                     }
                 }
             }
