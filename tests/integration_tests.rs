@@ -174,6 +174,15 @@ impl Fixture {
         )
     }
 
+    fn fart(&self, dir: &Path) -> anyhow::Result<()> {
+        self.app().dispatch_command(
+            Cli {
+                command: Commands::Fart,
+            },
+            dir.to_path_buf(),
+        )
+    }
+
     fn revert(&self, dir: &Path, hash: &str) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {
@@ -565,5 +574,113 @@ fn test_reset_clears_tracked_and_untracked_changes() {
     assert!(
         !subdir.join("untracked_in_subdir.txt").exists(),
         "untracked_in_subdir.txt should have been removed by git clean"
+    );
+}
+
+#[test]
+fn test_clean_commit_flow() {
+    let f = Fixture::new();
+
+    write_file(&f.clone_a, "hello.txt", "hello world\n");
+    f.commit(&f.clone_a, "add hello.txt").expect("g c should succeed");
+
+    let log = cmd_log(&f.clone_a, true).expect("g l");
+    assert!(
+        log.contains("add hello.txt"),
+        "log should contain the commit message\n{log}"
+    );
+
+    git(&f.clone_b, &["pull", "--rebase"]);
+    let log_b = cmd_log(&f.clone_b, true).expect("g l on clone_b");
+    assert!(
+        log_b.contains("add hello.txt"),
+        "commit should be visible from clone_b\n{log_b}"
+    );
+}
+
+#[test]
+fn test_pull_blocked_by_unpushed_commits() {
+    let f = Fixture::new();
+    let dir = &f.clone_a;
+
+    write_file(dir, "local.txt", "local only\n");
+    git(dir, &["add", "."]);
+    git(dir, &["commit", "-m", "local unpushed"]);
+
+    let err = f.pull(dir).expect_err("should fail");
+
+    assert!(
+        err.to_string().to_lowercase().contains("unpushed"),
+        "error should mention unpushed commits"
+    );
+}
+
+#[test]
+fn test_pull_blocked_by_dirty_working_dir() {
+    let f = Fixture::new();
+    let dir = &f.clone_a;
+
+    write_file(dir, "dirty.txt", "not yet committed\n");
+
+    let err = f.pull(dir).expect_err("should fail");
+
+    assert!(
+        err.to_string().to_lowercase().contains("uncommitted"),
+        "error should mention uncommitted changes: {err}"
+    );
+}
+
+#[test]
+fn test_pull_succeeds_when_clean() {
+    let f = Fixture::new();
+
+    write_file(&f.clone_a, "new_feature.txt", "feature\n");
+    f.commit(&f.clone_a, "add feature").expect("g c succeeds");
+    f.pull(&f.clone_b).expect("g p succeeds");
+
+    let log = cmd_log(&f.clone_b, true).expect("g l");
+    assert!(
+        log.contains("add feature"),
+        "clone_b should have the new commit\n{log}"
+    );
+}
+
+#[test]
+fn test_fart_plays_fart_sound() {
+    let f = Fixture::new();
+    let dir = &f.clone_a;
+
+    f.fart(dir).expect("Fart should succeed");
+
+    assert!(f.was_fart_played(), "A fart sound should have played");
+}
+
+#[test]
+fn test_fart_plays_when_stash_is_non_empty() {
+    let f = Fixture::new();
+    let dir = &f.clone_a;
+
+    write_file(dir, "stashed.txt", "stash me\n");
+    git(dir, &["add", "."]);
+    git(dir, &["stash"]);
+
+    f.pull(dir).expect("g p should succeed");
+
+    assert!(
+        f.was_fart_played(),
+        "a fart should play when the stash is non-empty"
+    );
+}
+
+#[test]
+fn test_fart_does_not_play_when_stash_is_empty() {
+    let f = Fixture::new();
+    let dir = &f.clone_a;
+
+    f.pull(dir).expect("g p should succeed");
+
+    assert!(
+        !f.was_fart_played(),
+        "no fart should play when the stash is empty"
     );
 }
