@@ -106,3 +106,13 @@ pub fn run_cli(cli: Cli, dir: &Path, fart_player: &dyn FartPlayer) -> Result<()>
         Commands::FartDaemon => fart_player.run_daemon(dir),
     }
 }
+
+pub struct AppService<'a, FP: FartPlayer> {
+    pub fart_player: &'a FP,
+}
+
+impl<'a, FP: FartPlayer> AppService<'a, FP> {
+    pub fn dispatch_command(&self, cli: Cli, repo: PathBuf) -> Result<()> {
+        run_cli(cli, repo.as_path(), self.fart_player)
+    }
+}

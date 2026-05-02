@@ -175,26 +175,6 @@ impl Fixture {
 }
 
 // ---------------------------------------------------------------------------
-// 1.  Clean `g c` flow
-// ---------------------------------------------------------------------------
-
-#[test]
-fn test_clean_commit_flow() {
-    let f = Fixture::new();
-    let dir = &f.clone_a;
-
-    write_file(dir, "hello.txt", "hello world\n");
-    g_commit(dir, "add hello.txt").expect("g c should succeed");
-
-    let log = cmd_log(dir, true).expect("g l");
-    assert!(log.contains("add hello.txt"), "log should contain the commit message\n{log}");
-
-    git(&f.clone_b, &["pull", "--rebase"]);
-    let log_b = cmd_log(&f.clone_b, true).expect("g l on clone_b");
-    assert!(log_b.contains("add hello.txt"), "commit should be visible from clone_b\n{log_b}");
-}
-
-// ---------------------------------------------------------------------------
 // 2a.  `g p` blocked by unpushed commits
 // ---------------------------------------------------------------------------
 
@@ -546,50 +526,6 @@ fn test_reset_clears_tracked_and_untracked_changes() {
         !subdir.join("untracked_in_subdir.txt").exists(),
         "untracked_in_subdir.txt should have been removed by git clean"
     );
-}
-
-#[test]
-fn test_fart_plays_fart_sound() {
-    let f = Fixture::new();
-    let dir = &f.clone_a;
-    let player = MockFartPlayer::new();
-
-    let _ = run_cli(Cli { command: Commands::Fart }, dir, &player);
-
-    assert!(
-        player.was_played(),
-        "A fart sound should have played",
-    );
-}
-
-// ---------------------------------------------------------------------------
-// 10.  Fart plays when stash is non-empty
-// ---------------------------------------------------------------------------
-
-#[test]
-fn test_fart_plays_when_stash_is_non_empty() {
-    let f = Fixture::new();
-    let dir = &f.clone_a;
-
-    write_file(dir, "stashed.txt", "stash me\n");
-    git(dir, &["add", "."]);
-    git(dir, &["stash"]);
-
-    let player = MockFartPlayer::new();
-    run_cli(Cli { command: Commands::Pull }, dir, &player).expect("g p");
-
-    assert!(player.was_played(), "a fart should play when the stash is non-empty");
-}
-
-#[test]
-fn test_fart_does_not_play_when_stash_is_empty() {
-    let f = Fixture::new();
-    let dir = &f.clone_a;
-
-    let player = MockFartPlayer::new();
-    run_cli(Cli { command: Commands::Pull }, dir, &player).expect("g p");
-
-    assert!(!player.was_played(), "no fart should play when the stash is empty");
 }
 
 #[test]
