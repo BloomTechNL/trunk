@@ -107,19 +107,25 @@ fn is_daemon_running(dir: &Path) -> Result<bool> {
     for line in content.lines() {
         let parts: Vec<&str> = line.splitn(2, ':').collect();
         if parts.len() == 2 {
-            let pid_str = parts[0];
             let path_str = parts[1];
-            if path_str == abs_dir.to_string_lossy() {
-                if let Ok(pid) = pid_str.parse::<i32>() {
-                    match signal::kill(Pid::from_raw(pid), None) {
-                        Ok(_) => return Ok(true),
-                        Err(_) => (),
-                    }
+            if path_str != abs_dir.to_string_lossy() {
+                continue
+            }
+
+            let pid_str = parts[0];
+            if let Ok(pid) = parse_pid(pid_str) {
+                if signal::kill(pid, None).is_ok() {
+                    return Ok(true)
                 }
             }
         }
     }
     Ok(false)
+}
+
+fn parse_pid(raw: &str) -> Result<Pid, ()> {
+    let pid: i32 = raw.parse().map_err(|_| ())?;
+    Ok(Pid::from_raw(pid))
 }
 
 fn register_daemon(dir: &Path, pid: u32) -> Result<()> {
