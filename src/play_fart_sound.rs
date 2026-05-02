@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use anyhow::{Context, Result};
 use rust_embed::RustEmbed;
 use rodio::{Decoder, DeviceSinkBuilder, Player};
@@ -92,32 +93,46 @@ pub fn run_fart_daemon(player: &dyn FartPlayer, dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn vault_path() -> PathBuf {
-    PathBuf::from("/tmp/.trunk/fart_vault")
+struct FartVault {
+    processes: HashMap<PathBuf, Pid>,
+}
+
+impl FartVault {
+    fn vault_path() -> PathBuf {
+        PathBuf::from("/tmp/.trunk/fart_vault")
+    }
+
+    fn get() -> Self {
+        let mut vault = FartVault {
+            processes: HashMap::new(),
+        };
+        let vault_path = &FartVault::vault_path();
+        if !vault_path.exists() {
+            return vault
+        }
+
+        let vault_file_content = fs::read_to_string(&FartVault::vault_path()).expect("uh oh");
+        for line in vault_file_content.lines() {
+            let (repo, pid) = FartVault::parse_vault_line(line);
+            vault.processes.insert(repo, pid);
+        }
+        vault
+    }
+
+    fn parse_vault_line(raw: &str) -> (PathBuf, Pid) {
+        let parts: Vec<&str> = raw.splitn(2, ':').collect();
+        let repo = PathBuf::from(parts[1]);
+        let pid = parse_pid(parts[0]).expect(&format!("Failed to parse pid {}", parts[0]));
+        (repo, pid)
+    }
 }
 
 fn is_daemon_running(dir: &Path) -> Result<bool> {
-    let vault = vault_path();
-    if !vault.exists() {
-        return Ok(false);
-    }
-
+    let vault = FartVault::get();
     let abs_dir = fs::canonicalize(dir)?;
-    let content = fs::read_to_string(&vault)?;
-    for line in content.lines() {
-        let parts: Vec<&str> = line.splitn(2, ':').collect();
-        if parts.len() == 2 {
-            let path_str = parts[1];
-            if path_str != abs_dir.to_string_lossy() {
-                continue
-            }
-
-            let pid_str = parts[0];
-            if let Ok(pid) = parse_pid(pid_str) {
-                if signal::kill(pid, None).is_ok() {
-                    return Ok(true)
-                }
-            }
+    if let Some(pid) = vault.processes.get(&abs_dir) {
+        if signal::kill(*pid, None).is_ok() {
+            return Ok(true);
         }
     }
     Ok(false)
@@ -129,7 +144,7 @@ fn parse_pid(raw: &str) -> Result<Pid, ()> {
 }
 
 fn register_daemon(dir: &Path, pid: u32) -> Result<()> {
-    let vault = vault_path();
+    let vault = FartVault::vault_path();
     if let Some(parent) = vault.parent() {
         fs::create_dir_all(parent)?;
     }
@@ -149,7 +164,7 @@ fn register_daemon(dir: &Path, pid: u32) -> Result<()> {
 }
 
 fn unregister_daemon(dir: &Path) -> Result<()> {
-    let vault = vault_path();
+    let vault = FartVault::vault_path();
     if !vault.exists() {
         return Ok(());
     }
