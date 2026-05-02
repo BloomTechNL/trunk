@@ -6,7 +6,7 @@ use clap::{Parser, Subcommand};
 use crate::{
     cmd_diff, cmd_log, cmd_pull, cmd_reset,
     cmd_revert, cmd_revert_abort, cmd_revert_resolve, cmd_status, cmd_time_travel,
-    cmd_time_travel_now, play_fart_sound::FartPlayer, has_stash
+    play_fart_sound::FartPlayer, has_stash
 };
 use crate::commit::{commit, CommitInput};
 
@@ -93,13 +93,7 @@ pub fn run_cli(cli: Cli, dir: &Path, fart_player: &dyn FartPlayer) -> Result<()>
         Commands::Log => cmd_log(dir, false).map(|_| ()),
         Commands::Status => cmd_status(dir, false).map(|_| ()),
         Commands::Diff => cmd_diff(dir, false).map(|_| ()),
-        Commands::TimeTravel { target } => {
-            if target == "now" {
-                cmd_time_travel_now(dir)
-            } else {
-                cmd_time_travel(dir, &target)
-            }
-        }
+        Commands::TimeTravel { target } => cmd_time_travel(dir, &target),
         Commands::Reset => cmd_reset(dir),
         Commands::Revert { hash, resolve, abort } => {
             if resolve {

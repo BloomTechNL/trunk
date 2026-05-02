@@ -22,7 +22,7 @@ fn default_branch(dir: &Path) -> String {
     "main".to_string()
 }
 
-pub fn cmd_time_travel_now(dir: &Path) -> Result<()> {
+fn cmd_time_travel_now(dir: &Path) -> Result<()> {
     let branch = default_branch(dir);
     git_passthrough_silent(dir, &["checkout", &branch])
 }
