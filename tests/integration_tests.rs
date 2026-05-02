@@ -145,7 +145,6 @@ fn g_time_travel(dir: &Path, target: &str) -> anyhow::Result<()> {
 
 struct Fixture {
     _tmp: TempDir,
-    pub origin: std::path::PathBuf,
     pub clone_a: std::path::PathBuf,
     pub clone_b: std::path::PathBuf,
 }
@@ -153,7 +152,6 @@ struct Fixture {
 impl Fixture {
     fn new() -> Self {
         let tmp = TempDir::new().unwrap();
-        let origin = tmp.path().join("origin.git");
         let clone_a = tmp.path().join("clone_a");
         let clone_b = tmp.path().join("clone_b");
 
@@ -167,7 +165,7 @@ impl Fixture {
         git(tmp.path(), &["clone", "origin.git", "clone_b"]);
         git_config_identity(&clone_b);
 
-        Fixture { _tmp: tmp, origin, clone_a, clone_b }
+        Fixture { _tmp: tmp, clone_a, clone_b }
     }
 }
 
