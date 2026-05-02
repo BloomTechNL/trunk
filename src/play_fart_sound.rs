@@ -53,16 +53,6 @@ impl FartPlayer for RealFartPlayer {
         let exe = std::env::current_exe().context("Failed to get current executable path")?;
         let dir = std::env::current_dir().context("Failed to get current directory")?;
 
-        // 1. Play immediate fart
-        std::process::Command::new(&exe)
-            .arg("fart")
-            .stdin(std::process::Stdio::null())
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .spawn()
-            .context("Failed to spawn immediate fart process")?;
-
-        // 2. Start/ensure background daemon
         if !is_daemon_running(&dir)? {
             std::process::Command::new(&exe)
                 .arg("_fart_daemon")
