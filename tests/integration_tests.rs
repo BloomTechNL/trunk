@@ -8,7 +8,7 @@ use std::cell::Cell;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use g_cli::{cmd_log, cmd_revert, run_cli, Cli, Commands, FartPlayer};
+use g_cli::{cmd_log, run_cli, Cli, Commands, FartPlayer};
 use tempfile::TempDir;
 
 // ---------------------------------------------------------------------------
@@ -124,7 +124,12 @@ fn g_reset(dir: &Path) -> anyhow::Result<()> {
 
 // bypass_prompt=true so tests never hang waiting for stdin
 fn g_revert(dir: &Path, hash: &str) -> anyhow::Result<()> {
-    cmd_revert(dir, hash, true)
+    run_cli( Cli { command: Commands::Revert {
+        resolve: false,
+        abort: false,
+        noninteractive: true,
+        hash: Some(String::from(hash))
+    } }, dir, &MockFartPlayer::new())
 }
 
 fn g_time_travel(dir: &Path, target: &str) -> anyhow::Result<()> {
@@ -490,7 +495,7 @@ fn test_time_travel_blocks_write_commands_and_now_restores() {
         "error should mention time travelling: {err}"
     );
 
-    let err = cmd_revert(dir, "HEAD", true)
+    let err = g_revert(dir, "HEAD")
         .expect_err("g rv should be blocked while time travelling");
     assert!(
         err.to_string().contains("time travelling"),

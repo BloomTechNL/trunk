@@ -5,10 +5,11 @@ use clap::{Parser, Subcommand};
 
 use crate::{
     cmd_diff, cmd_log, cmd_pull, cmd_reset,
-    cmd_revert, cmd_revert_abort, cmd_revert_resolve, cmd_status, cmd_time_travel,
+    cmd_status, cmd_time_travel,
     play_fart_sound::FartPlayer, has_stash
 };
 use crate::commit::{commit, CommitInput};
+use crate::revert::{revert, RevertInput};
 
 fn version_string() -> &'static str {
     match option_env!("GIT_HASH") {
@@ -71,6 +72,9 @@ pub enum Commands {
         /// Abort -- runs git rebase --abort then git reset --hard HEAD~1.
         #[arg(long)]
         abort: bool,
+        /// Abort -- disables interactive mode
+        #[arg(long)]
+        noninteractive: bool,
     },
     /// Play a fart sound
     #[command(name = "fart")]
@@ -95,15 +99,8 @@ pub fn run_cli(cli: Cli, dir: &Path, fart_player: &dyn FartPlayer) -> Result<()>
         Commands::Diff => cmd_diff(dir, false).map(|_| ()),
         Commands::TimeTravel { target } => cmd_time_travel(dir, &target),
         Commands::Reset => cmd_reset(dir),
-        Commands::Revert { hash, resolve, abort } => {
-            if resolve {
-                cmd_revert_resolve(dir)
-            } else if abort {
-                cmd_revert_abort(dir)
-            } else {
-                let h = hash.unwrap_or_else(|| "HEAD".to_string());
-                cmd_revert(dir, &h, false)
-            }
+        Commands::Revert { hash, resolve, abort, noninteractive } => {
+            revert(&RevertInput::from_cli(PathBuf::from(dir), hash, resolve, abort, !noninteractive))
         }
         Commands::Fart => fart_player.play(),
         Commands::FartDaemon => fart_player.run_daemon(dir),

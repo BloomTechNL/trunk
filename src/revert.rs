@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Result};
 
@@ -36,7 +36,7 @@ pub fn get_revert_info(dir: &Path, hash: &str) -> Result<RevertInfo> {
     })
 }
 
-pub fn cmd_revert(dir: &Path, hash: &str, bypass_prompt: bool) -> Result<()> {
+fn cmd_revert(dir: &Path, hash: &str, bypass_prompt: bool) -> Result<()> {
     if is_detached_head(dir) {
         bail!("You are currently time travelling. Run `g tt now` to return to the present before making changes.");
     }
@@ -79,14 +79,52 @@ pub fn cmd_revert(dir: &Path, hash: &str, bypass_prompt: bool) -> Result<()> {
     git_passthrough(dir, &["push"])
 }
 
-pub fn cmd_revert_resolve(dir: &Path) -> Result<()> {
+fn cmd_revert_resolve(dir: &Path) -> Result<()> {
     git_passthrough(dir, &["add", "-A"])?;
     git_passthrough(dir, &["rebase", "--continue"])?;
     git_passthrough(dir, &["push"])
 }
 
-pub fn cmd_revert_abort(dir: &Path) -> Result<()> {
+fn cmd_revert_abort(dir: &Path) -> Result<()> {
     git_passthrough(dir, &["rebase", "--abort"])?;
     git_passthrough(dir, &["reset", "--hard", "HEAD~1"])
 }
 
+pub enum RevertOpt {
+    Ref(String),
+    Resolve,
+    Abort,
+}
+
+pub struct RevertInput {
+    pub repo: PathBuf,
+    pub opt: RevertOpt,
+    pub interactive: bool,
+}
+
+impl RevertInput {
+    pub fn from_cli(repo: PathBuf, hash: Option<String>, resolve: bool, abort: bool, interactive: bool) -> Self {
+        let opt: RevertOpt;
+        if abort {
+            opt = RevertOpt::Abort;
+        } else if resolve {
+            opt = RevertOpt::Resolve;
+        } else {
+            opt = RevertOpt::Ref(hash.unwrap_or_else(|| "HEAD".to_string()));
+        }
+        RevertInput {
+            repo,
+            opt,
+            interactive,
+        }
+    }
+}
+
+
+pub fn revert(input: &RevertInput) -> Result<()> {
+    match input.opt {
+        RevertOpt::Ref(ref reference) => cmd_revert(&input.repo, &reference, !input.interactive),
+        RevertOpt::Resolve => cmd_revert_resolve(&input.repo),
+        RevertOpt::Abort => cmd_revert_abort(&input.repo),
+    }
+}
