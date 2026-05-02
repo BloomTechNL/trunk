@@ -1,13 +1,14 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 use crate::{
-    cmd_commit, cmd_commit_abort, cmd_commit_resolve, cmd_diff, cmd_log, cmd_pull, cmd_reset,
+    cmd_diff, cmd_log, cmd_pull, cmd_reset,
     cmd_revert, cmd_revert_abort, cmd_revert_resolve, cmd_status, cmd_time_travel,
     cmd_time_travel_now, play_fart_sound::FartPlayer, has_stash
 };
+use crate::commit::{commit, CommitInput};
 
 fn version_string() -> &'static str {
     match option_env!("GIT_HASH") {
@@ -86,15 +87,7 @@ pub fn run_cli(cli: Cli, dir: &Path, fart_player: &dyn FartPlayer) -> Result<()>
 
     match cli.command {
         Commands::Commit { message, resolve, abort } => {
-            if resolve {
-                cmd_commit_resolve(dir)
-            } else if abort {
-                cmd_commit_abort(dir)
-            } else if let Some(msg) = message {
-                cmd_commit(dir, &msg)
-            } else {
-                anyhow::bail!("Usage: g c <message> | g c --resolve | g c --abort");
-            }
+            commit(&CommitInput::from_cli(PathBuf::from(dir), message, resolve, abort))
         }
         Commands::Pull => cmd_pull(dir),
         Commands::Log => cmd_log(dir, false).map(|_| ()),

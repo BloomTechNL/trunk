@@ -10,7 +10,6 @@ pub mod play_fart_sound;
 pub mod has_stash;
 
 pub use cli::{run_cli, Cli, Commands};
-pub use commit::{cmd_commit, cmd_commit_abort, cmd_commit_resolve};
 pub use pull::cmd_pull;
 pub use query::{cmd_diff, cmd_log, cmd_status};
 pub use reset::cmd_reset;

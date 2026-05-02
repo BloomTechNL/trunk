@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Result};
 
@@ -29,7 +29,7 @@ pub fn has_remote_tracking(dir: &Path) -> bool {
 // g c  — commit + sync
 // ---------------------------------------------------------------------------
 
-pub fn cmd_commit(dir: &Path, message: &str) -> Result<()> {
+fn cmd_commit(dir: &Path, message: &str) -> Result<()> {
     if is_rebasing(dir) {
         bail!(
             "You are in the middle of resolving a conflict. Resolve the conflict and then run\n  g c --resolve"
@@ -62,14 +62,50 @@ pub fn cmd_commit(dir: &Path, message: &str) -> Result<()> {
     git_passthrough(dir, &["push"])
 }
 
-pub fn cmd_commit_resolve(dir: &Path) -> Result<()> {
+fn cmd_commit_resolve(dir: &Path) -> Result<()> {
     git_passthrough(dir, &["add", "-A"])?;
     git_passthrough(dir, &["rebase", "--continue"])?;
     git_passthrough(dir, &["push"])
 }
 
-pub fn cmd_commit_abort(dir: &Path) -> Result<()> {
+fn cmd_commit_abort(dir: &Path) -> Result<()> {
     git_passthrough(dir, &["rebase", "--abort"])?;
     git_passthrough(dir, &["reset", "--soft", "HEAD~1"])
 }
 
+pub enum CommitOpt {
+    Message(String),
+    Resolve,
+    Abort,
+}
+
+pub struct CommitInput {
+    pub repo: PathBuf,
+    pub opt: CommitOpt
+}
+
+impl CommitInput {
+    pub fn from_cli(repo: PathBuf, message: Option<String>, resolve: bool, abort: bool) -> Self {
+        let opt: CommitOpt;
+        if abort {
+            opt = CommitOpt::Abort;
+        } else if resolve {
+            opt = CommitOpt::Resolve
+        } else {
+            opt = CommitOpt::Message(message.unwrap())
+        }
+        CommitInput {
+            repo,
+            opt,
+        }
+    }
+}
+
+
+pub fn commit(input: &CommitInput) -> Result<()> {
+    match input.opt {
+        CommitOpt::Message(ref message) => cmd_commit(input.repo.as_path(), message),
+        CommitOpt::Resolve => cmd_commit_resolve(input.repo.as_path()),
+        CommitOpt::Abort => cmd_commit_abort(input.repo.as_path()),
+    }
+}
