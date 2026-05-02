@@ -36,10 +36,7 @@ pub fn git_passthrough(dir: &Path, args: &[&str]) -> Result<()> {
 
 /// Run a git command in `dir` and capture its stdout as a `String`.
 pub fn git_capture(dir: &Path, args: &[&str]) -> Result<String> {
-    let output = base_cmd(dir)
-        .args(args)
-        .stderr(Stdio::inherit())
-        .output()?;
+    let output = base_cmd(dir).args(args).stderr(Stdio::inherit()).output()?;
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).into_owned())
     } else {
@@ -55,10 +52,7 @@ pub fn git_capture(dir: &Path, args: &[&str]) -> Result<String> {
 /// where a failure is expected in some configurations and the error message
 /// would be confusing to the user.
 pub fn git_capture_silent(dir: &Path, args: &[&str]) -> Result<String> {
-    let output = base_cmd(dir)
-        .args(args)
-        .stderr(Stdio::null())
-        .output()?;
+    let output = base_cmd(dir).args(args).stderr(Stdio::null()).output()?;
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).into_owned())
     } else {
@@ -73,10 +67,7 @@ pub fn git_capture_silent(dir: &Path, args: &[&str]) -> Result<String> {
 /// Like `git_passthrough` but discards stderr.  Use when git would otherwise
 /// print informational noise that `g` supersedes with its own UX.
 pub fn git_passthrough_silent(dir: &Path, args: &[&str]) -> Result<()> {
-    let status = base_cmd(dir)
-        .args(args)
-        .stderr(Stdio::null())
-        .status()?;
+    let status = base_cmd(dir).args(args).stderr(Stdio::null()).status()?;
     if status.success() {
         Ok(())
     } else {
@@ -120,4 +111,3 @@ pub fn is_detached_head(dir: &Path) -> bool {
         .map(|content| !content.trim_start().starts_with("ref:"))
         .unwrap_or(false)
 }
-

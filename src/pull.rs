@@ -21,4 +21,3 @@ pub fn cmd_pull(dir: &Path) -> Result<()> {
 
     git_passthrough(dir, &["pull", "--rebase"])
 }
-

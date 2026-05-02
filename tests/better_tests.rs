@@ -3,9 +3,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use g_cli::cli::AppService;
 use g_cli::{cmd_log, Cli, Commands, FartPlayer};
 use tempfile::TempDir;
-use g_cli::cli::AppService;
 // ---------------------------------------------------------------------------
 // In-memory test adapter
 // ---------------------------------------------------------------------------
@@ -124,25 +124,22 @@ impl Fixture {
     }
 }
 
-// ---------------------------------------------------------------------------
-// 1.  Clean `g c` flow
-// ---------------------------------------------------------------------------
-
 #[test]
 fn test_clean_commit_flow() {
     let f = Fixture::new();
 
     write_file(&f.clone_a, "hello.txt", "hello world\n");
-    f.app().dispatch_command(
-        Cli {
-            command: Commands::Commit {
-                message: Some("add hello.txt".to_string()),
-                resolve: false,
-                abort: false,
+    f.app()
+        .dispatch_command(
+            Cli {
+                command: Commands::Commit {
+                    message: Some("add hello.txt".to_string()),
+                    resolve: false,
+                    abort: false,
+                },
             },
-        },
-        f.clone_a.clone(),
-    )
+            f.clone_a.clone(),
+        )
         .expect("g c should succeed");
 
     let log = cmd_log(&f.clone_a, true).expect("g l");
@@ -160,16 +157,101 @@ fn test_clean_commit_flow() {
 }
 
 #[test]
+fn test_pull_blocked_by_unpushed_commits() {
+    let f = Fixture::new();
+    let dir = &f.clone_a;
+
+    write_file(dir, "local.txt", "local only\n");
+    git(dir, &["add", "."]);
+    git(dir, &["commit", "-m", "local unpushed"]);
+
+    let err = f
+        .app()
+        .dispatch_command(
+            Cli {
+                command: Commands::Pull,
+            },
+            PathBuf::from(dir),
+        )
+        .expect_err("should fail");
+
+    assert!(
+        err.to_string().to_lowercase().contains("unpushed"),
+        "error should mention unpushed commits"
+    );
+}
+
+#[test]
+fn test_pull_blocked_by_dirty_working_dir() {
+    let f = Fixture::new();
+    let dir = &f.clone_a;
+
+    write_file(dir, "dirty.txt", "not yet committed\n");
+
+    let err = f
+        .app()
+        .dispatch_command(
+            Cli {
+                command: Commands::Pull,
+            },
+            PathBuf::from(dir),
+        )
+        .expect_err("should fail");
+
+    assert!(
+        err.to_string().to_lowercase().contains("uncommitted"),
+        "error should mention uncommitted changes: {err}"
+    );
+}
+
+#[test]
+fn test_pull_succeeds_when_clean() {
+    let f = Fixture::new();
+
+    write_file(&f.clone_a, "new_feature.txt", "feature\n");
+    f.app()
+        .dispatch_command(
+            Cli {
+                command: Commands::Commit {
+                    message: Some(String::from("add feature")),
+                    resolve: false,
+                    abort: false,
+                },
+            },
+            PathBuf::from(&f.clone_a),
+        )
+        .expect("g c succeeds");
+    f.app()
+        .dispatch_command(
+            Cli {
+                command: Commands::Pull,
+            },
+            PathBuf::from(&f.clone_b),
+        )
+        .expect("g p succeeds");
+
+    let log = cmd_log(&f.clone_b, true).expect("g l");
+    assert!(
+        log.contains("add feature"),
+        "clone_b should have the new commit\n{log}"
+    );
+}
+
+#[test]
 fn test_fart_plays_fart_sound() {
     let f = Fixture::new();
     let dir = &f.clone_a;
 
-    f.app().dispatch_command(Cli { command: Commands::Fart }, PathBuf::from(dir)).expect("Fart should succeed");
+    f.app()
+        .dispatch_command(
+            Cli {
+                command: Commands::Fart,
+            },
+            PathBuf::from(dir),
+        )
+        .expect("Fart should succeed");
 
-    assert!(
-        f.was_fart_played(),
-        "A fart sound should have played",
-    );
+    assert!(f.was_fart_played(), "A fart sound should have played",);
 }
 
 #[test]
@@ -181,9 +263,19 @@ fn test_fart_plays_when_stash_is_non_empty() {
     git(dir, &["add", "."]);
     git(dir, &["stash"]);
 
-    f.app().dispatch_command(Cli { command: Commands::Pull }, PathBuf::from(dir)).expect("g p should succeed");
+    f.app()
+        .dispatch_command(
+            Cli {
+                command: Commands::Pull,
+            },
+            PathBuf::from(dir),
+        )
+        .expect("g p should succeed");
 
-    assert!(f.was_fart_played(), "a fart should play when the stash is non-empty");
+    assert!(
+        f.was_fart_played(),
+        "a fart should play when the stash is non-empty"
+    );
 }
 
 #[test]
@@ -191,10 +283,17 @@ fn test_fart_does_not_play_when_stash_is_empty() {
     let f = Fixture::new();
     let dir = &f.clone_a;
 
-    f.app().dispatch_command(
-        Cli { command: Commands::Pull },
-        PathBuf::from(dir),
-    ).expect("g p should succeed");
+    f.app()
+        .dispatch_command(
+            Cli {
+                command: Commands::Pull,
+            },
+            PathBuf::from(dir),
+        )
+        .expect("g p should succeed");
 
-    assert!(!f.was_fart_played(), "no fart should play when the stash is empty");
+    assert!(
+        !f.was_fart_played(),
+        "no fart should play when the stash is empty"
+    );
 }

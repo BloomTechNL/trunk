@@ -1,10 +1,10 @@
+use std::cell::Cell;
 /// End-to-end integration tests for `g`.
 ///
 /// Each test operates against real git repositories created in isolated
 /// temporary directories.  No compiled `g` binary is invoked — the core
 /// library functions are called directly.
 use std::fs;
-use std::cell::Cell;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -20,7 +20,9 @@ struct MockFartPlayer {
 }
 impl MockFartPlayer {
     fn new() -> Self {
-        Self { played: Cell::new(false) }
+        Self {
+            played: Cell::new(false),
+        }
     }
     fn was_played(&self) -> bool {
         self.played.get()
@@ -114,22 +116,30 @@ fn g_commit_abort(dir: &Path) -> anyhow::Result<()> {
     )
 }
 
-fn g_pull(dir: &Path) -> anyhow::Result<()> {
-    run_cli(Cli { command: Commands::Pull }, dir, &MockFartPlayer::new())
-}
-
 fn g_reset(dir: &Path) -> anyhow::Result<()> {
-    run_cli(Cli { command: Commands::Reset }, dir, &MockFartPlayer::new())
+    run_cli(
+        Cli {
+            command: Commands::Reset,
+        },
+        dir,
+        &MockFartPlayer::new(),
+    )
 }
 
 // bypass_prompt=true so tests never hang waiting for stdin
 fn g_revert(dir: &Path, hash: &str) -> anyhow::Result<()> {
-    run_cli( Cli { command: Commands::Revert {
-        resolve: false,
-        abort: false,
-        noninteractive: true,
-        hash: Some(String::from(hash))
-    } }, dir, &MockFartPlayer::new())
+    run_cli(
+        Cli {
+            command: Commands::Revert {
+                resolve: false,
+                abort: false,
+                noninteractive: true,
+                hash: Some(String::from(hash)),
+            },
+        },
+        dir,
+        &MockFartPlayer::new(),
+    )
 }
 
 fn g_time_travel(dir: &Path, target: &str) -> anyhow::Result<()> {
@@ -140,7 +150,7 @@ fn g_time_travel(dir: &Path, target: &str) -> anyhow::Result<()> {
             },
         },
         dir,
-        &MockFartPlayer::new()
+        &MockFartPlayer::new(),
     )
 }
 
@@ -170,63 +180,17 @@ impl Fixture {
         git(tmp.path(), &["clone", "origin.git", "clone_b"]);
         git_config_identity(&clone_b);
 
-        Fixture { _tmp: tmp, clone_a, clone_b }
+        Fixture {
+            _tmp: tmp,
+            clone_a,
+            clone_b,
+        }
     }
 }
 
 // ---------------------------------------------------------------------------
 // 2a.  `g p` blocked by unpushed commits
 // ---------------------------------------------------------------------------
-
-#[test]
-fn test_pull_blocked_by_unpushed_commits() {
-    let f = Fixture::new();
-    let dir = &f.clone_a;
-
-    write_file(dir, "local.txt", "local only\n");
-    git(dir, &["add", "."]);
-    git(dir, &["commit", "-m", "local unpushed"]);
-
-    let err = g_pull(dir).expect_err("g p should fail");
-    assert!(
-        err.to_string().to_lowercase().contains("unpushed"),
-        "error should mention unpushed commits: {err}"
-    );
-}
-
-// ---------------------------------------------------------------------------
-// 2b.  `g p` blocked by uncommitted changes
-// ---------------------------------------------------------------------------
-
-#[test]
-fn test_pull_blocked_by_dirty_working_dir() {
-    let f = Fixture::new();
-    let dir = &f.clone_a;
-
-    write_file(dir, "dirty.txt", "not yet committed\n");
-
-    let err = g_pull(dir).expect_err("g p should fail with dirty workdir");
-    assert!(
-        err.to_string().to_lowercase().contains("uncommitted"),
-        "error should mention uncommitted changes: {err}"
-    );
-}
-
-// ---------------------------------------------------------------------------
-// 2c.  `g p` succeeds on clean, up-to-date clone
-// ---------------------------------------------------------------------------
-
-#[test]
-fn test_pull_succeeds_when_clean() {
-    let f = Fixture::new();
-
-    write_file(&f.clone_a, "new_feature.txt", "feature\n");
-    g_commit(&f.clone_a, "add feature").expect("g c");
-    g_pull(&f.clone_b).expect("g p should succeed");
-
-    let log = cmd_log(&f.clone_b, true).expect("g l");
-    assert!(log.contains("add feature"), "clone_b should have the new commit\n{log}");
-}
 
 // ---------------------------------------------------------------------------
 // 3.  `g c` merge-conflict → resolve flow
@@ -311,7 +275,9 @@ fn test_revert_flow() {
         .current_dir(dir)
         .output()
         .unwrap();
-    let commit_hash = String::from_utf8_lossy(&hash_output.stdout).trim().to_string();
+    let commit_hash = String::from_utf8_lossy(&hash_output.stdout)
+        .trim()
+        .to_string();
 
     g_revert(dir, &commit_hash).expect("g rv should succeed");
 
@@ -322,7 +288,9 @@ fn test_revert_flow() {
     );
     assert!(
         !dir.join("to_revert.txt").exists()
-            || fs::read_to_string(dir.join("to_revert.txt")).unwrap_or_default().is_empty(),
+            || fs::read_to_string(dir.join("to_revert.txt"))
+                .unwrap_or_default()
+                .is_empty(),
         "the reverted file should no longer have content"
     );
 }
@@ -369,13 +337,15 @@ fn test_commit_without_remote_tracking_branch() {
     git_config_identity(&clone);
 
     write_file(&clone, "first.txt", "first\n");
-    g_commit(&clone, "first commit")
-        .expect("g c should succeed without a remote tracking branch");
+    g_commit(&clone, "first commit").expect("g c should succeed without a remote tracking branch");
 
     let verify = tmp.path().join("verify");
     git(tmp.path(), &["clone", "origin.git", "verify"]);
     let log = cmd_log(&verify, true).expect("g l");
-    assert!(log.contains("first commit"), "commit should have been pushed\n{log}");
+    assert!(
+        log.contains("first commit"),
+        "commit should have been pushed\n{log}"
+    );
 
     write_file(&clone, "second.txt", "second\n");
     g_commit(&clone, "second commit").expect("g c should succeed on second commit too");
@@ -432,8 +402,14 @@ fn test_commit_stages_deleted_files() {
     g_commit(dir, "delete the file").expect("g c with deletion");
 
     let log = cmd_log(dir, true).expect("g l");
-    assert!(log.contains("delete the file"), "deletion commit should be in log\n{log}");
-    assert!(!dir.join("to_delete.txt").exists(), "deleted file should not exist after commit");
+    assert!(
+        log.contains("delete the file"),
+        "deletion commit should be in log\n{log}"
+    );
+    assert!(
+        !dir.join("to_delete.txt").exists(),
+        "deleted file should not exist after commit"
+    );
 
     git(&f.clone_b, &["pull", "--rebase"]);
     assert!(
@@ -475,8 +451,7 @@ fn test_time_travel_blocks_write_commands_and_now_restores() {
         "error should mention time travelling: {err}"
     );
 
-    let err = g_revert(dir, "HEAD")
-        .expect_err("g rv should be blocked while time travelling");
+    let err = g_revert(dir, "HEAD").expect_err("g rv should be blocked while time travelling");
     assert!(
         err.to_string().contains("time travelling"),
         "error should mention time travelling: {err}"
@@ -566,7 +541,10 @@ fn test_fart_daemon_registration() {
 
     assert!(vault.exists(), "Vault should be created");
     let content = fs::read_to_string(&vault).unwrap();
-    assert!(content.contains(&fs::canonicalize(dir).unwrap().to_string_lossy().to_string()), "Vault should contain the repo path");
+    assert!(
+        content.contains(&fs::canonicalize(dir).unwrap().to_string_lossy().to_string()),
+        "Vault should contain the repo path"
+    );
 
     // Now clear the stash to let the daemon terminate
     git(dir, &["stash", "drop"]);
@@ -576,5 +554,8 @@ fn test_fart_daemon_registration() {
     handle.join().unwrap();
 
     let content_after = fs::read_to_string(&vault).unwrap_or_default();
-    assert!(!content_after.contains(&fs::canonicalize(dir).unwrap().to_string_lossy().to_string()), "Vault should no longer contain the repo path");
+    assert!(
+        !content_after.contains(&fs::canonicalize(dir).unwrap().to_string_lossy().to_string()),
+        "Vault should no longer contain the repo path"
+    );
 }

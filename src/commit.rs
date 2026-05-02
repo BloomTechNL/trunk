@@ -81,7 +81,7 @@ pub enum CommitOpt {
 
 pub struct CommitInput {
     pub repo: PathBuf,
-    pub opt: CommitOpt
+    pub opt: CommitOpt,
 }
 
 impl CommitInput {
@@ -94,13 +94,9 @@ impl CommitInput {
         } else {
             opt = CommitOpt::Message(message.unwrap())
         }
-        CommitInput {
-            repo,
-            opt,
-        }
+        CommitInput { repo, opt }
     }
 }
-
 
 pub fn commit(input: &CommitInput) -> Result<()> {
     match input.opt {

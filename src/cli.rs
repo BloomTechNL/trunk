@@ -3,13 +3,12 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
-use crate::{
-    cmd_diff, cmd_log, cmd_pull, cmd_reset,
-    cmd_status, cmd_time_travel,
-    play_fart_sound::FartPlayer, has_stash
-};
 use crate::commit::{commit, CommitInput};
 use crate::revert::{revert, RevertInput};
+use crate::{
+    cmd_diff, cmd_log, cmd_pull, cmd_reset, cmd_status, cmd_time_travel, has_stash,
+    play_fart_sound::FartPlayer,
+};
 
 fn version_string() -> &'static str {
     match option_env!("GIT_HASH") {
@@ -25,8 +24,7 @@ pub struct Cli {
     pub command: Commands,
 }
 
-#[derive(PartialEq)]
-#[derive(Subcommand)]
+#[derive(PartialEq, Subcommand)]
 pub enum Commands {
     /// Commit, pull --rebase, and push.
     #[command(name = "c")]
@@ -90,18 +88,34 @@ pub fn run_cli(cli: Cli, dir: &Path, fart_player: &dyn FartPlayer) -> Result<()>
     }
 
     match cli.command {
-        Commands::Commit { message, resolve, abort } => {
-            commit(&CommitInput::from_cli(PathBuf::from(dir), message, resolve, abort))
-        }
+        Commands::Commit {
+            message,
+            resolve,
+            abort,
+        } => commit(&CommitInput::from_cli(
+            PathBuf::from(dir),
+            message,
+            resolve,
+            abort,
+        )),
         Commands::Pull => cmd_pull(dir),
         Commands::Log => cmd_log(dir, false).map(|_| ()),
         Commands::Status => cmd_status(dir, false).map(|_| ()),
         Commands::Diff => cmd_diff(dir, false).map(|_| ()),
         Commands::TimeTravel { target } => cmd_time_travel(dir, &target),
         Commands::Reset => cmd_reset(dir),
-        Commands::Revert { hash, resolve, abort, noninteractive } => {
-            revert(&RevertInput::from_cli(PathBuf::from(dir), hash, resolve, abort, !noninteractive))
-        }
+        Commands::Revert {
+            hash,
+            resolve,
+            abort,
+            noninteractive,
+        } => revert(&RevertInput::from_cli(
+            PathBuf::from(dir),
+            hash,
+            resolve,
+            abort,
+            !noninteractive,
+        )),
         Commands::Fart => fart_player.play(),
         Commands::FartDaemon => fart_player.run_daemon(dir),
     }

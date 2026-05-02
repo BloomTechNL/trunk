@@ -96,4 +96,3 @@ fn try_resolve_time_ago(repo: &git2::Repository, spec: &str) -> Option<String> {
     }
     None
 }
-

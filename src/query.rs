@@ -30,4 +30,3 @@ fn query_command(dir: &Path, args: &[&str], capture: bool) -> Result<String> {
         Ok(String::new())
     }
 }
-

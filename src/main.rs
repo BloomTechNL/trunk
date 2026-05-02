@@ -2,8 +2,8 @@ use std::path::PathBuf;
 use std::process;
 
 use clap::Parser;
-use g_cli::{Cli, RealFartPlayer};
 use g_cli::cli::AppService;
+use g_cli::{Cli, RealFartPlayer};
 
 fn main() {
     let cli = Cli::parse();

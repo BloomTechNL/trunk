@@ -103,7 +103,13 @@ pub struct RevertInput {
 }
 
 impl RevertInput {
-    pub fn from_cli(repo: PathBuf, hash: Option<String>, resolve: bool, abort: bool, interactive: bool) -> Self {
+    pub fn from_cli(
+        repo: PathBuf,
+        hash: Option<String>,
+        resolve: bool,
+        abort: bool,
+        interactive: bool,
+    ) -> Self {
         let opt: RevertOpt;
         if abort {
             opt = RevertOpt::Abort;
@@ -119,7 +125,6 @@ impl RevertInput {
         }
     }
 }
-
 
 pub fn revert(input: &RevertInput) -> Result<()> {
     match input.opt {

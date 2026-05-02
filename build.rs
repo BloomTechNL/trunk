@@ -17,4 +17,3 @@ fn main() {
 
     println!("cargo:rustc-env=GIT_HASH={hash}");
 }
-

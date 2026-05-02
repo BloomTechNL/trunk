@@ -1,14 +1,14 @@
-use std::collections::HashMap;
 use anyhow::{Context, Result};
-use rust_embed::RustEmbed;
+use nix::sys::signal::{self};
+use nix::unistd::Pid;
+use rand::RngExt;
 use rodio::{Decoder, DeviceSinkBuilder, Player};
-use std::path::{Path, PathBuf};
+use rust_embed::RustEmbed;
+use std::collections::HashMap;
 use std::fs;
 use std::io::Cursor;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
-use rand::RngExt;
-use nix::unistd::Pid;
-use nix::sys::signal::{self};
 
 #[derive(RustEmbed)]
 #[folder = "assets/"]
@@ -29,8 +29,7 @@ fn play_fart_sound() -> Result<()> {
     let player = Player::connect_new(&handle.mixer());
 
     let cursor = Cursor::new(asset.data);
-    let source = Decoder::new(cursor)
-        .context("Failed to decode MP3 data")?;
+    let source = Decoder::new(cursor).context("Failed to decode MP3 data")?;
 
     player.append(source);
     player.sleep_until_end();
@@ -108,7 +107,7 @@ impl FartVault {
         };
         let vault_path = &FartVault::vault_path();
         if !vault_path.exists() {
-            return vault
+            return vault;
         }
 
         let vault_file_content = fs::read_to_string(&FartVault::vault_path()).expect("uh oh");
@@ -183,6 +182,9 @@ fn unregister_daemon(dir: &Path) -> Result<()> {
         })
         .collect();
 
-    fs::write(vault, new_content.join("\n") + if new_content.is_empty() { "" } else { "\n" })?;
+    fs::write(
+        vault,
+        new_content.join("\n") + if new_content.is_empty() { "" } else { "\n" },
+    )?;
     Ok(())
 }

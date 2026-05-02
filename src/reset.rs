@@ -8,7 +8,9 @@ pub fn cmd_reset(dir: &Path) -> Result<()> {
         .with_context(|| format!("Failed to discover git repository from {:?}", dir))?;
 
     let head = repo.head().context("Failed to resolve HEAD")?;
-    let target = head.peel_to_commit().context("Failed to peel HEAD to commit")?;
+    let target = head
+        .peel_to_commit()
+        .context("Failed to peel HEAD to commit")?;
 
     repo.reset(target.as_object(), ResetType::Hard, None)
         .context("Failed to execute hard reset")?;
@@ -18,7 +20,8 @@ pub fn cmd_reset(dir: &Path) -> Result<()> {
         .recurse_untracked_dirs(false)
         .include_ignored(false);
 
-    let statuses = repo.statuses(Some(&mut opts))
+    let statuses = repo
+        .statuses(Some(&mut opts))
         .context("Failed to read repository statuses")?;
 
     let workdir = repo.workdir().unwrap_or(dir);
