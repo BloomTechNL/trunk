@@ -46,25 +46,6 @@ impl FartPlayer for MockFartPlayer {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Git helpers
-// ---------------------------------------------------------------------------
-
-fn git_config_identity(dir: &Path) {
-    for (k, v) in &[
-        ("user.email", "test@example.com"),
-        ("user.name", "Test User"),
-        ("commit.gpgsign", "false"),
-        ("rebase.autostash", "false"),
-    ] {
-        Command::new("git")
-            .args(["config", k, v])
-            .current_dir(dir)
-            .status()
-            .expect("git config");
-    }
-}
-
 fn git(dir: &Path, args: &[&str]) {
     let status = Command::new("git")
         .args(args)
@@ -344,11 +325,8 @@ fn test_commit_while_in_conflict_state_is_blocked() {
 #[test]
 fn test_commit_without_remote_tracking_branch() {
     let tmp = TempDir::new().unwrap();
-    let clone = tmp.path().join("clone");
-
-    git(tmp.path(), &["init", "--bare", "origin.git"]);
-    git(tmp.path(), &["clone", "origin.git", "clone"]);
-    git_config_identity(&clone);
+    let origin = set_up_remote(tmp.path());
+    let clone = clone_repo(tmp.path(), "clone", origin);
 
     // Create a standalone player for this test (no need for persistence across calls)
     let player = MockFartPlayer::new();
@@ -394,11 +372,8 @@ fn test_commit_without_remote_tracking_branch() {
 #[test]
 fn test_revert_without_remote_tracking_branch() {
     let tmp = TempDir::new().unwrap();
-    let clone = tmp.path().join("clone");
-
-    git(tmp.path(), &["init", "--bare", "origin.git"]);
-    git(tmp.path(), &["clone", "origin.git", "clone"]);
-    git_config_identity(&clone);
+    let origin = set_up_remote(tmp.path());
+    let clone = clone_repo(tmp.path(), "clone", origin);
 
     let player = MockFartPlayer::new();
     let app = AppService {
@@ -418,9 +393,7 @@ fn test_revert_without_remote_tracking_branch() {
     )
     .expect("first commit");
 
-    let clone2 = tmp.path().join("clone2");
-    git(tmp.path(), &["clone", "origin.git", "clone2"]);
-    git_config_identity(&clone2);
+    let clone2 = clone_repo(tmp.path(), "clone2", origin);
 
     write_file(&clone2, "b.txt", "b\n");
     let app2 = AppService {

@@ -29,7 +29,6 @@ fn git_config_identity(dir: &Path) {
 
 pub fn set_up_remote(dir: &Path) -> &str {
     git(dir, &["init", "--bare", "origin.git"]);
-    git_config_identity(&dir);
     "origin.git"
 }
 
