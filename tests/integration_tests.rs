@@ -94,16 +94,15 @@ struct Fixture {
 impl Fixture {
     fn new() -> Self {
         let tmp = TempDir::new().unwrap();
-        let clone_b = tmp.path().join("clone_b");
 
         let origin = set_up_remote(tmp.path());
         let clone_a = clone_repo(tmp.path(), "clone_a", origin);
+        let clone_b = clone_repo(tmp.path(), "clone_b", origin);
         git_config_identity(&clone_a);
         write_file(&clone_a, "README.md", "# project\n");
         git(&clone_a, &["add", "."]);
         git(&clone_a, &["commit", "-m", "init"]);
         git(&clone_a, &["push"]);
-        git(tmp.path(), &["clone", origin, "clone_b"]);
         git_config_identity(&clone_b);
 
         let player = MockFartPlayer::new();
