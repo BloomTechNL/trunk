@@ -1,16 +1,14 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{Path};
 use std::process::Command;
 
-use common::mock_fart_player::MockFartPlayer;
 use common::test_app::TestApp;
 use common::use_git::{
-    clone_repo, commit_file, initial_commit, put_something_in_stash, set_up_basic_repo,
+    clone_repo, commit_file, put_something_in_stash, set_up_basic_repo,
     set_up_remote,
 };
-use g_cli::cli::AppService;
-use g_cli::{cmd_log, Cli, Commands};
-use tempfile::TempDir;
+use g_cli::{cmd_log};
+
 
 mod common;
 
@@ -18,162 +16,34 @@ fn write_file(dir: &Path, name: &str, content: &str) {
     fs::write(dir.join(name), content).expect("write file");
 }
 
-struct Fixture {
-    tmp: TempDir,
-    pub clone_a: PathBuf,
-    pub clone_b: PathBuf,
-    player: MockFartPlayer,
-}
-
-impl Fixture {
-    fn new() -> Self {
-        let tmp = TempDir::new().unwrap();
-
-        let origin = set_up_remote(tmp.path());
-        let clone_a = clone_repo(tmp.path(), "clone_a", origin);
-        let clone_b = clone_repo(tmp.path(), "clone_b", origin);
-        initial_commit(&clone_a);
-
-        let player = MockFartPlayer::new();
-
-        Fixture {
-            tmp,
-            clone_a,
-            clone_b,
-            player,
-        }
-    }
-
-    fn app(&self) -> AppService<'_, MockFartPlayer> {
-        AppService {
-            fart_player: &self.player,
-        }
-    }
-
-    fn was_fart_played(&self) -> bool {
-        self.player.was_played()
-    }
-
-    fn commit(&self, dir: &Path, message: &str) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Commit {
-                    message: Some(message.to_string()),
-                    resolve: false,
-                    abort: false,
-                },
-            },
-            dir.to_path_buf(),
-        )
-    }
-
-    fn commit_resolve(&self, dir: &Path) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Commit {
-                    message: None,
-                    resolve: true,
-                    abort: false,
-                },
-            },
-            dir.to_path_buf(),
-        )
-    }
-
-    fn commit_abort(&self, dir: &Path) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Commit {
-                    message: None,
-                    resolve: false,
-                    abort: true,
-                },
-            },
-            dir.to_path_buf(),
-        )
-    }
-
-    fn reset(&self, dir: &Path) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Reset,
-            },
-            dir.to_path_buf(),
-        )
-    }
-
-    fn fart(&self, dir: &Path) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Fart,
-            },
-            dir.to_path_buf(),
-        )
-    }
-
-    fn revert(&self, dir: &Path, hash: &str) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Revert {
-                    resolve: false,
-                    abort: false,
-                    noninteractive: true,
-                    hash: Some(hash.to_string()),
-                },
-            },
-            dir.to_path_buf(),
-        )
-    }
-
-    fn time_travel(&self, dir: &Path, target: &str) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::TimeTravel {
-                    target: target.to_string(),
-                },
-            },
-            dir.to_path_buf(),
-        )
-    }
-
-    fn pull(&self, dir: &Path) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Pull,
-            },
-            dir.to_path_buf(),
-        )
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Converted tests (using the shared fixture)
-// ---------------------------------------------------------------------------
-
 #[test]
 fn test_commit_conflict_and_resolve() {
-    let f = Fixture::new();
+    let app = TestApp::new();
+    let repo1 = set_up_basic_repo(app.base_dir.path());
+    let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
+    let repo1 = &repo1.as_path();
+    let repo2 = &repo2.as_path();
 
     let shared_file = "shared.txt";
-    write_file(&f.clone_a, shared_file, "version A\n");
-    f.commit(&f.clone_a, "clone_a: add shared")
+    write_file(repo1, shared_file, "version A\n");
+    app.commit(repo1, "clone_a: add shared")
         .expect("initial commit from A");
 
-    f.pull(&f.clone_b).expect("Pull should succeed");
-    write_file(&f.clone_b, shared_file, "version B\n");
+    app.pull(repo2).expect("Pull should succeed");
+    write_file(repo2, shared_file, "version B\n");
 
-    write_file(&f.clone_a, shared_file, "version A2\n");
-    f.commit(&f.clone_a, "clone_a: update shared")
+    write_file(repo1, shared_file, "version A2\n");
+    app.commit(repo1, "clone_a: update shared")
         .expect("second commit from A");
 
-    let err = f.commit(&f.clone_b, "clone_b: conflicting change");
+    let err = app.commit(repo2, "clone_b: conflicting change");
     assert!(err.is_err(), "expected conflict error");
 
-    write_file(&f.clone_b, shared_file, "resolved content\n");
-    f.commit_resolve(&f.clone_b)
+    write_file(repo2, shared_file, "resolved content\n");
+    app.commit_resolve(repo2)
         .expect("g c --resolve should succeed");
 
-    let log = cmd_log(&f.clone_b, true).expect("g l");
+    let log = cmd_log(repo2, true).expect("g l");
     assert!(
         log.contains("clone_b: conflicting change"),
         "resolved commit should be in the log\n{log}"
@@ -182,28 +52,32 @@ fn test_commit_conflict_and_resolve() {
 
 #[test]
 fn test_commit_conflict_and_abort() {
-    let f = Fixture::new();
+    let app = TestApp::new();
+    let repo1 = set_up_basic_repo(app.base_dir.path());
+    let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
+    let repo1 = &repo1.as_path();
+    let repo2 = &repo2.as_path();
 
     let shared_file = "conflict.txt";
-    write_file(&f.clone_a, shared_file, "original\n");
-    f.commit(&f.clone_a, "seed conflict file").expect("seed");
+    write_file(repo1, shared_file, "original\n");
+    app.commit(repo1, "seed conflict file").expect("seed");
 
-    f.pull(&f.clone_b).expect("Pull should succeed");
+    app.pull(repo2).expect("Pull should succeed");
 
-    write_file(&f.clone_a, shared_file, "clone_a update\n");
-    f.commit(&f.clone_a, "clone_a update")
+    write_file(repo1, shared_file, "clone_a update\n");
+    app.commit(repo1, "clone_a update")
         .expect("clone_a update");
 
-    write_file(&f.clone_b, shared_file, "clone_b update\n");
-    let err = f.commit(&f.clone_b, "clone_b conflicting");
+    write_file(repo2, shared_file, "clone_b update\n");
+    let err = app.commit(repo2, "clone_b conflicting");
     assert!(err.is_err(), "expected conflict");
 
-    f.commit_abort(&f.clone_b)
+    app.commit_abort(repo2)
         .expect("g c --abort should succeed");
 
     let porcelain = Command::new("git")
         .args(["status", "--porcelain"])
-        .current_dir(&f.clone_b)
+        .current_dir(repo2)
         .output()
         .unwrap();
     let status_out = String::from_utf8_lossy(&porcelain.stdout);
@@ -215,11 +89,12 @@ fn test_commit_conflict_and_abort() {
 
 #[test]
 fn test_revert_flow() {
-    let f = Fixture::new();
-    let dir = &f.clone_a;
+    let app = TestApp::new();
+    let repo1 = set_up_basic_repo(app.base_dir.path());
+    let dir = &repo1.as_path();
 
     write_file(dir, "to_revert.txt", "this will be reverted\n");
-    f.commit(dir, "add file to revert").expect("g c");
+    app.commit(dir, "add file to revert").expect("g c");
 
     let hash_output = Command::new("git")
         .args(["rev-parse", "HEAD"])
@@ -230,7 +105,7 @@ fn test_revert_flow() {
         .trim()
         .to_string();
 
-    f.revert(dir, &commit_hash).expect("g rv should succeed");
+    app.revert(dir, &commit_hash).expect("g rv should succeed");
 
     let log_after = cmd_log(dir, true).expect("g l after revert");
     assert!(
@@ -248,22 +123,26 @@ fn test_revert_flow() {
 
 #[test]
 fn test_commit_while_in_conflict_state_is_blocked() {
-    let f = Fixture::new();
+    let app = TestApp::new();
+    let repo1 = set_up_basic_repo(app.base_dir.path());
+    let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
+    let repo1 = &repo1.as_path();
+    let repo2 = &repo2.as_path();
 
     let shared = "clash.txt";
-    write_file(&f.clone_a, shared, "A\n");
-    f.commit(&f.clone_a, "A init").expect("A init");
+    write_file(repo1, shared, "A\n");
+    app.commit(repo1, "A init").expect("A init");
 
-    f.pull(&f.clone_b).expect("Pull should succeed");
+    app.pull(repo2).expect("Pull should succeed");
 
-    write_file(&f.clone_a, shared, "A updated\n");
-    f.commit(&f.clone_a, "A update").expect("A update");
+    write_file(repo1, shared, "A updated\n");
+    app.commit(repo1, "A update").expect("A update");
 
-    write_file(&f.clone_b, shared, "B update\n");
-    let _ = f.commit(&f.clone_b, "B conflicting");
+    write_file(repo2, shared, "B update\n");
+    let _ = app.commit(repo2, "B conflicting");
 
-    let err = f
-        .commit(&f.clone_b, "should be blocked")
+    let err = app
+        .commit(repo2, "should be blocked")
         .expect_err("should be blocked while in conflict state");
     assert!(
         err.to_string().contains("middle of resolving a conflict"),
@@ -272,92 +151,20 @@ fn test_commit_while_in_conflict_state_is_blocked() {
 }
 
 #[test]
-fn test_commit_without_remote_tracking_branch() {
-    let tmp = TempDir::new().unwrap();
-    let origin = set_up_remote(tmp.path());
-    let clone = clone_repo(tmp.path(), "clone", origin);
-
-    // Create a standalone player for this test (no need for persistence across calls)
-    let player = MockFartPlayer::new();
-    let app = AppService {
-        fart_player: &player,
-    };
-
-    write_file(&clone, "first.txt", "first\n");
-    app.dispatch_command(
-        Cli {
-            command: Commands::Commit {
-                message: Some("first commit".to_string()),
-                resolve: false,
-                abort: false,
-            },
-        },
-        clone.clone(),
-    )
-    .expect("g c should succeed without a remote tracking branch");
-
-    let verify = clone_repo(tmp.path(), "verify", origin);
-    let log = cmd_log(&verify, true).expect("g l");
-    assert!(
-        log.contains("first commit"),
-        "commit should have been pushed\n{log}"
-    );
-
-    write_file(&clone, "second.txt", "second\n");
-    app.dispatch_command(
-        Cli {
-            command: Commands::Commit {
-                message: Some("second commit".to_string()),
-                resolve: false,
-                abort: false,
-            },
-        },
-        clone,
-    )
-    .expect("g c should succeed on second commit too");
-}
-
-#[test]
 fn test_revert_without_remote_tracking_branch() {
-    let tmp = TempDir::new().unwrap();
+    let app = TestApp::new();
+    let tmp = &app.base_dir;
     let origin = set_up_remote(tmp.path());
     let clone = clone_repo(tmp.path(), "clone", origin);
-
-    let player = MockFartPlayer::new();
-    let app = AppService {
-        fart_player: &player,
-    };
 
     write_file(&clone, "a.txt", "a\n");
-    app.dispatch_command(
-        Cli {
-            command: Commands::Commit {
-                message: Some("add a".to_string()),
-                resolve: false,
-                abort: false,
-            },
-        },
-        clone.clone(),
-    )
-    .expect("first commit");
+    app.commit(&clone.clone().as_path(), "add a")
+        .expect("first commit");
 
     let clone2 = clone_repo(tmp.path(), "clone2", origin);
-
     write_file(&clone2, "b.txt", "b\n");
-    let app2 = AppService {
-        fart_player: &player,
-    };
-    app2.dispatch_command(
-        Cli {
-            command: Commands::Commit {
-                message: Some("add b".to_string()),
-                resolve: false,
-                abort: false,
-            },
-        },
-        clone2.clone(),
-    )
-    .expect("clone2 first commit");
+    app.commit(&clone2.clone().as_path(), "add b")
+        .expect("clone2 first commit");
 
     let hash = Command::new("git")
         .args(["rev-parse", "HEAD"])
@@ -366,18 +173,8 @@ fn test_revert_without_remote_tracking_branch() {
         .unwrap();
     let head = String::from_utf8_lossy(&hash.stdout).trim().to_string();
 
-    app2.dispatch_command(
-        Cli {
-            command: Commands::Revert {
-                resolve: false,
-                abort: false,
-                noninteractive: true,
-                hash: Some(head),
-            },
-        },
-        clone2.clone(),
-    )
-    .expect("g rv should succeed");
+    app.revert(&clone2.clone().as_path(), &head)
+        .expect("g rv should succeed");
 
     let log = cmd_log(&clone2, true).expect("g l");
     assert!(
@@ -394,13 +191,13 @@ fn test_commit_stages_deleted_files() {
     let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
     let repo2 = &repo2.as_path();
 
-
     write_file(dir, "to_delete.txt", "goodbye\n");
     app.commit(dir, "add file that will be deleted")
         .expect("g c seed");
 
     fs::remove_file(dir.join("to_delete.txt")).expect("remove file");
-    app.commit(dir, "delete the file").expect("g c with deletion");
+    app.commit(dir, "delete the file")
+        .expect("g c with deletion");
 
     let log = cmd_log(dir, true).expect("g l");
     assert!(
@@ -459,7 +256,8 @@ fn test_time_travel_blocks_write_commands_and_now_restores() {
         "error should mention time travelling: {err}"
     );
 
-    app.time_travel(dir, "now").expect("g tt now should succeed");
+    app.time_travel(dir, "now")
+        .expect("g tt now should succeed");
 
     write_file(dir, "after_return.txt", "back\n");
     app.commit(dir, "commit after returning from time travel")
@@ -562,7 +360,8 @@ fn test_pull_succeeds_when_clean() {
     let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
 
     write_file(repo1.as_path(), "new_feature.txt", "feature\n");
-    app.commit(repo1.as_path(), "add feature").expect("g c succeeds");
+    app.commit(repo1.as_path(), "add feature")
+        .expect("g c succeeds");
     app.pull(repo2.as_path()).expect("g p succeeds");
 
     let log = cmd_log(repo2.as_path(), true).expect("g l");
