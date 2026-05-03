@@ -35,5 +35,6 @@ pub fn set_up_remote(dir: &Path) -> &str {
 
 pub fn clone_repo(dir: &Path, repo_name: &str, from: &str) -> PathBuf {
     let repo_dir = dir.join(repo_name);
+    git(dir, &["clone", from, repo_name]);
     repo_dir
 }

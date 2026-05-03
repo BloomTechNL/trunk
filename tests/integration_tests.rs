@@ -98,7 +98,6 @@ impl Fixture {
 
         let origin = set_up_remote(tmp.path());
         let clone_a = clone_repo(tmp.path(), "clone_a", origin);
-        git(tmp.path(), &["clone", origin, "clone_a"]);
         git_config_identity(&clone_a);
         write_file(&clone_a, "README.md", "# project\n");
         git(&clone_a, &["add", "."]);
