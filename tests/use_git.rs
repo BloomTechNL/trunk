@@ -1,3 +1,4 @@
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -10,6 +11,10 @@ fn git(dir: &Path, args: &[&str]) {
         .status()
         .expect("git command failed");
     assert!(status.success(), "git {} failed", args.join(" "));
+}
+
+fn write_file(dir: &Path, name: &str, content: &str) {
+    fs::write(dir.join(name), content).expect("write file");
 }
 
 fn git_config_identity(dir: &Path) {
@@ -37,4 +42,11 @@ pub fn clone_repo(dir: &Path, repo_name: &str, from: &str) -> PathBuf {
     git(dir, &["clone", from, repo_name]);
     git_config_identity(&repo_dir);
     repo_dir
+}
+
+pub fn initial_commit(repo_dir: &Path) {
+    write_file(&repo_dir, "README.md", "# project\n");
+    git(&repo_dir, &["add", "."]);
+    git(&repo_dir, &["commit", "-m", "init"]);
+    git(&repo_dir, &["push"]);
 }

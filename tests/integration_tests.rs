@@ -3,7 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use crate::use_git::{clone_repo, set_up_remote};
+use crate::use_git::{clone_repo, initial_commit, set_up_remote};
 use g_cli::cli::AppService;
 use g_cli::{cmd_log, Cli, Commands, FartPlayer};
 use tempfile::TempDir;
@@ -79,10 +79,7 @@ impl Fixture {
         let origin = set_up_remote(tmp.path());
         let clone_a = clone_repo(tmp.path(), "clone_a", origin);
         let clone_b = clone_repo(tmp.path(), "clone_b", origin);
-        write_file(&clone_a, "README.md", "# project\n");
-        git(&clone_a, &["add", "."]);
-        git(&clone_a, &["commit", "-m", "init"]);
-        git(&clone_a, &["push"]);
+        initial_commit(&clone_a);
 
         let player = MockFartPlayer::new();
 
@@ -104,7 +101,6 @@ impl Fixture {
         self.player.was_played()
     }
 
-    // Convenience command methods
     fn commit(&self, dir: &Path, message: &str) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {
