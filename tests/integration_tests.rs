@@ -131,7 +131,7 @@ fn test_commit_while_in_conflict_state_is_blocked() {
     app.commit(repo1, "A update").expect("A update");
 
     write_file(repo2, shared, "B update\n");
-    let _ = app.commit(repo2, "B conflicting");
+    app.commit(repo2, "B conflicting").expect_err("fails because of conflicts");
 
     let err = app
         .commit(repo2, "should be blocked")
