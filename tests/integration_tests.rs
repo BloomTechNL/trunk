@@ -1,14 +1,12 @@
 use std::fs;
-use std::path::{Path};
 use std::process::Command;
 
+use crate::common::write_file::write_file;
 use common::test_app::TestApp;
 use common::use_git::{
-    clone_repo, commit_file, put_something_in_stash, set_up_basic_repo,
-    set_up_remote,
+    clone_repo, commit_file, put_something_in_stash, set_up_basic_repo, set_up_remote,
 };
-use g_cli::{cmd_log};
-use crate::common::write_file::write_file;
+use g_cli::cmd_log;
 
 mod common;
 
@@ -61,15 +59,13 @@ fn test_commit_conflict_and_abort() {
     app.pull(repo2).expect("Pull should succeed");
 
     write_file(repo1, shared_file, "clone_a update\n");
-    app.commit(repo1, "clone_a update")
-        .expect("clone_a update");
+    app.commit(repo1, "clone_a update").expect("clone_a update");
 
     write_file(repo2, shared_file, "clone_b update\n");
     let err = app.commit(repo2, "clone_b conflicting");
     assert!(err.is_err(), "expected conflict");
 
-    app.commit_abort(repo2)
-        .expect("g c --abort should succeed");
+    app.commit_abort(repo2).expect("g c --abort should succeed");
 
     let porcelain = Command::new("git")
         .args(["status", "--porcelain"])

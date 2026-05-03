@@ -1,6 +1,6 @@
+use crate::common::write_file::write_file;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use crate::common::write_file::write_file;
 
 fn git(dir: &Path, args: &[&str]) {
     let status = Command::new("git")
