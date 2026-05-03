@@ -1,4 +1,3 @@
-use std::cell::Cell;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -7,43 +6,12 @@ use crate::use_git::{
     clone_repo, commit_file, initial_commit, put_something_in_stash, set_up_remote,
 };
 use g_cli::cli::AppService;
-use g_cli::{cmd_log, Cli, Commands, FartPlayer};
+use g_cli::{cmd_log, Cli, Commands};
 use tempfile::TempDir;
+use mock_fart_player::MockFartPlayer;
 
 mod use_git;
-
-#[derive(Clone)]
-struct MockFartPlayer {
-    played: Cell<bool>,
-}
-
-impl MockFartPlayer {
-    fn new() -> Self {
-        Self {
-            played: Cell::new(false),
-        }
-    }
-
-    fn was_played(&self) -> bool {
-        self.played.get()
-    }
-}
-
-impl FartPlayer for MockFartPlayer {
-    fn play(&self) -> anyhow::Result<()> {
-        self.played.set(true);
-        Ok(())
-    }
-
-    fn play_asynchronously(&self) -> anyhow::Result<()> {
-        self.played.set(true);
-        Ok(())
-    }
-
-    fn run_daemon(&self, dir: &Path) -> anyhow::Result<()> {
-        g_cli::run_fart_daemon(self, dir)
-    }
-}
+mod mock_fart_player;
 
 fn write_file(dir: &Path, name: &str, content: &str) {
     fs::write(dir.join(name), content).expect("write file");
