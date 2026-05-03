@@ -388,15 +388,19 @@ fn test_revert_without_remote_tracking_branch() {
 
 #[test]
 fn test_commit_stages_deleted_files() {
-    let f = Fixture::new();
-    let dir = &f.clone_a;
+    let app = TestApp::new();
+    let repo1 = set_up_basic_repo(app.base_dir.path());
+    let dir = &repo1.as_path();
+    let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
+    let repo2 = &repo2.as_path();
+
 
     write_file(dir, "to_delete.txt", "goodbye\n");
-    f.commit(dir, "add file that will be deleted")
+    app.commit(dir, "add file that will be deleted")
         .expect("g c seed");
 
     fs::remove_file(dir.join("to_delete.txt")).expect("remove file");
-    f.commit(dir, "delete the file").expect("g c with deletion");
+    app.commit(dir, "delete the file").expect("g c with deletion");
 
     let log = cmd_log(dir, true).expect("g l");
     assert!(
@@ -408,22 +412,23 @@ fn test_commit_stages_deleted_files() {
         "deleted file should not exist after commit"
     );
 
-    f.pull(&f.clone_b).expect("Pull should succeed");
+    app.pull(repo2).expect("Pull should succeed");
     assert!(
-        !f.clone_b.join("to_delete.txt").exists(),
+        !repo2.join("to_delete.txt").exists(),
         "deletion should have been pushed to the remote and visible in clone_b"
     );
 }
 
 #[test]
 fn test_time_travel_blocks_write_commands_and_now_restores() {
-    let f = Fixture::new();
-    let dir = &f.clone_a;
+    let app = TestApp::new();
+    let repo1 = set_up_basic_repo(app.base_dir.path());
+    let dir = &repo1.as_path();
 
     write_file(dir, "v1.txt", "v1\n");
-    f.commit(dir, "v1").expect("v1");
+    app.commit(dir, "v1").expect("v1");
     write_file(dir, "v2.txt", "v2\n");
-    f.commit(dir, "v2").expect("v2");
+    app.commit(dir, "v2").expect("v2");
 
     let parent_hash = {
         let out = Command::new("git")
@@ -434,11 +439,11 @@ fn test_time_travel_blocks_write_commands_and_now_restores() {
         String::from_utf8_lossy(&out.stdout).trim().to_string()
     };
 
-    f.time_travel(dir, &parent_hash)
+    app.time_travel(dir, &parent_hash)
         .expect("g tt <hash> should succeed");
 
     write_file(dir, "should_fail.txt", "nope\n");
-    let err = f
+    let err = app
         .commit(dir, "this should be blocked")
         .expect_err("g c should be blocked while time travelling");
     assert!(
@@ -446,7 +451,7 @@ fn test_time_travel_blocks_write_commands_and_now_restores() {
         "error should mention time travelling: {err}"
     );
 
-    let err = f
+    let err = app
         .revert(dir, "HEAD")
         .expect_err("g rv should be blocked while time travelling");
     assert!(
@@ -454,10 +459,10 @@ fn test_time_travel_blocks_write_commands_and_now_restores() {
         "error should mention time travelling: {err}"
     );
 
-    f.time_travel(dir, "now").expect("g tt now should succeed");
+    app.time_travel(dir, "now").expect("g tt now should succeed");
 
     write_file(dir, "after_return.txt", "back\n");
-    f.commit(dir, "commit after returning from time travel")
+    app.commit(dir, "commit after returning from time travel")
         .expect("g c should succeed after g tt now");
 
     let log = cmd_log(dir, true).expect("g l");
@@ -469,8 +474,9 @@ fn test_time_travel_blocks_write_commands_and_now_restores() {
 
 #[test]
 fn test_reset_clears_tracked_and_untracked_changes() {
-    let f = Fixture::new();
-    let dir = &f.clone_a;
+    let app = TestApp::new();
+    let repo1 = set_up_basic_repo(app.base_dir.path());
+    let dir = &repo1.as_path();
 
     let subdir = dir.join("subdir");
     fs::create_dir(&subdir).unwrap();
@@ -479,7 +485,7 @@ fn test_reset_clears_tracked_and_untracked_changes() {
     write_file(&subdir, "untracked_in_subdir.txt", "also gone\n");
     write_file(dir, "README.md", "dirty modification\n");
 
-    f.reset(&subdir).expect("g r should succeed");
+    app.reset(&subdir).expect("g r should succeed");
 
     let readme = fs::read_to_string(dir.join("README.md")).expect("README.md should exist");
     assert!(
@@ -498,20 +504,22 @@ fn test_reset_clears_tracked_and_untracked_changes() {
 
 #[test]
 fn test_clean_commit_flow() {
-    let f = Fixture::new();
+    let app = TestApp::new();
+    let repo1 = set_up_basic_repo(app.base_dir.path());
+    let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
 
-    write_file(&f.clone_a, "hello.txt", "hello world\n");
-    f.commit(&f.clone_a, "add hello.txt")
+    write_file(repo1.as_path(), "hello.txt", "hello world\n");
+    app.commit(repo1.as_path(), "add hello.txt")
         .expect("g c should succeed");
 
-    let log = cmd_log(&f.clone_a, true).expect("g l");
+    let log = cmd_log(repo1.as_path(), true).expect("g l");
     assert!(
         log.contains("add hello.txt"),
         "log should contain the commit message\n{log}"
     );
 
-    f.pull(&f.clone_b).expect("Pull should succeed");
-    let log_b = cmd_log(&f.clone_b, true).expect("g l on clone_b");
+    app.pull(repo2.as_path()).expect("Pull should succeed");
+    let log_b = cmd_log(repo2.as_path(), true).expect("g l on clone_b");
     assert!(
         log_b.contains("add hello.txt"),
         "commit should be visible from clone_b\n{log_b}"
@@ -520,11 +528,11 @@ fn test_clean_commit_flow() {
 
 #[test]
 fn test_pull_blocked_by_unpushed_commits() {
-    let f = Fixture::new();
-    let dir = &f.clone_a;
-    commit_file(dir);
+    let app = TestApp::new();
+    let repo_dir = set_up_basic_repo(app.base_dir.path());
+    commit_file(repo_dir.as_path());
 
-    let err = f.pull(dir).expect_err("should fail");
+    let err = app.pull(repo_dir.as_path()).expect_err("should fail");
 
     assert!(
         err.to_string().to_lowercase().contains("unpushed"),
@@ -534,12 +542,12 @@ fn test_pull_blocked_by_unpushed_commits() {
 
 #[test]
 fn test_pull_blocked_by_dirty_working_dir() {
-    let f = Fixture::new();
-    let dir = &f.clone_a;
+    let app = TestApp::new();
+    let repo_dir = set_up_basic_repo(app.base_dir.path());
 
-    write_file(dir, "dirty.txt", "not yet committed\n");
+    write_file(repo_dir.as_path(), "dirty.txt", "not yet committed\n");
 
-    let err = f.pull(dir).expect_err("should fail");
+    let err = app.pull(repo_dir.as_path()).expect_err("should fail");
 
     assert!(
         err.to_string().to_lowercase().contains("uncommitted"),
@@ -549,38 +557,41 @@ fn test_pull_blocked_by_dirty_working_dir() {
 
 #[test]
 fn test_pull_succeeds_when_clean() {
-    let f = Fixture::new();
+    let app = TestApp::new();
+    let repo1 = set_up_basic_repo(app.base_dir.path());
+    let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
 
-    write_file(&f.clone_a, "new_feature.txt", "feature\n");
-    f.commit(&f.clone_a, "add feature").expect("g c succeeds");
-    f.pull(&f.clone_b).expect("g p succeeds");
+    write_file(repo1.as_path(), "new_feature.txt", "feature\n");
+    app.commit(repo1.as_path(), "add feature").expect("g c succeeds");
+    app.pull(repo2.as_path()).expect("g p succeeds");
 
-    let log = cmd_log(&f.clone_b, true).expect("g l");
+    let log = cmd_log(repo2.as_path(), true).expect("g l");
     assert!(
         log.contains("add feature"),
-        "clone_b should have the new commit\n{log}"
+        "clone2 should have the new commit\n{log}"
     );
 }
 
 #[test]
 fn test_fart_plays_fart_sound() {
-    let f = Fixture::new();
+    let app = TestApp::new();
 
-    f.fart(&f.clone_a).expect("Fart should succeed");
+    app.fart(app.base_dir.path()).expect("Fart should succeed");
 
-    assert!(f.was_fart_played(), "A fart sound should have played");
+    assert!(app.was_fart_played(), "A fart sound should have played");
 }
 
 #[test]
 fn test_fart_plays_when_stash_is_non_empty() {
-    let f = Fixture::new();
+    let app = TestApp::new();
+    let repo_dir = set_up_basic_repo(app.base_dir.path());
 
-    put_something_in_stash(&f.clone_a);
+    put_something_in_stash(repo_dir.as_path());
 
-    f.pull(&f.clone_a).expect("g p should succeed");
+    app.pull(repo_dir.as_path()).expect("g p should succeed");
 
     assert!(
-        f.was_fart_played(),
+        app.was_fart_played(),
         "a fart should play when the stash is non-empty"
     );
 }
