@@ -3,10 +3,12 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use crate::use_git::{clone_repo, set_up_remote};
 use g_cli::cli::AppService;
 use g_cli::{cmd_log, Cli, Commands, FartPlayer};
 use tempfile::TempDir;
 
+mod use_git;
 // ---------------------------------------------------------------------------
 // Mock FartPlayer (shared)
 // ---------------------------------------------------------------------------
@@ -83,7 +85,7 @@ fn write_file(dir: &Path, name: &str, content: &str) {
 // ---------------------------------------------------------------------------
 
 struct Fixture {
-    _tmp: TempDir,
+    tmp: TempDir,
     pub clone_a: PathBuf,
     pub clone_b: PathBuf,
     player: MockFartPlayer,
@@ -95,20 +97,20 @@ impl Fixture {
         let clone_a = tmp.path().join("clone_a");
         let clone_b = tmp.path().join("clone_b");
 
-        git(tmp.path(), &["init", "--bare", "origin.git"]);
-        git(tmp.path(), &["clone", "origin.git", "clone_a"]);
+        let origin = set_up_remote(tmp.path());
+        git(tmp.path(), &["clone", origin, "clone_a"]);
         git_config_identity(&clone_a);
         write_file(&clone_a, "README.md", "# project\n");
         git(&clone_a, &["add", "."]);
         git(&clone_a, &["commit", "-m", "init"]);
         git(&clone_a, &["push"]);
-        git(tmp.path(), &["clone", "origin.git", "clone_b"]);
+        git(tmp.path(), &["clone", origin, "clone_b"]);
         git_config_identity(&clone_b);
 
         let player = MockFartPlayer::new();
 
         Fixture {
-            _tmp: tmp,
+            tmp,
             clone_a,
             clone_b,
             player,
@@ -582,7 +584,8 @@ fn test_clean_commit_flow() {
     let f = Fixture::new();
 
     write_file(&f.clone_a, "hello.txt", "hello world\n");
-    f.commit(&f.clone_a, "add hello.txt").expect("g c should succeed");
+    f.commit(&f.clone_a, "add hello.txt")
+        .expect("g c should succeed");
 
     let log = cmd_log(&f.clone_a, true).expect("g l");
     assert!(
