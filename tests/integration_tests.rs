@@ -3,15 +3,14 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use crate::use_git::{clone_repo, initial_commit, set_up_remote};
+use crate::use_git::{
+    clone_repo, commit_file, initial_commit, put_something_in_stash, set_up_remote,
+};
 use g_cli::cli::AppService;
 use g_cli::{cmd_log, Cli, Commands, FartPlayer};
 use tempfile::TempDir;
 
 mod use_git;
-// ---------------------------------------------------------------------------
-// Mock FartPlayer (shared)
-// ---------------------------------------------------------------------------
 
 #[derive(Clone)]
 struct MockFartPlayer {
@@ -46,24 +45,9 @@ impl FartPlayer for MockFartPlayer {
     }
 }
 
-fn git(dir: &Path, args: &[&str]) {
-    let status = Command::new("git")
-        .args(args)
-        .current_dir(dir)
-        .env("GIT_EDITOR", "true")
-        .env("GIT_TERMINAL_PROMPT", "0")
-        .status()
-        .expect("git command failed");
-    assert!(status.success(), "git {} failed", args.join(" "));
-}
-
 fn write_file(dir: &Path, name: &str, content: &str) {
     fs::write(dir.join(name), content).expect("write file");
 }
-
-// ---------------------------------------------------------------------------
-// Fixture (holds real repos + shared MockFartPlayer)
-// ---------------------------------------------------------------------------
 
 struct Fixture {
     tmp: TempDir,
@@ -206,7 +190,7 @@ fn test_commit_conflict_and_resolve() {
     f.commit(&f.clone_a, "clone_a: add shared")
         .expect("initial commit from A");
 
-    git(&f.clone_b, &["pull", "--rebase"]);
+    f.pull(&f.clone_b).expect("Pull should succeed");
     write_file(&f.clone_b, shared_file, "version B\n");
 
     write_file(&f.clone_a, shared_file, "version A2\n");
@@ -235,7 +219,7 @@ fn test_commit_conflict_and_abort() {
     write_file(&f.clone_a, shared_file, "original\n");
     f.commit(&f.clone_a, "seed conflict file").expect("seed");
 
-    git(&f.clone_b, &["pull", "--rebase"]);
+    f.pull(&f.clone_b).expect("Pull should succeed");
 
     write_file(&f.clone_a, shared_file, "clone_a update\n");
     f.commit(&f.clone_a, "clone_a update")
@@ -301,7 +285,7 @@ fn test_commit_while_in_conflict_state_is_blocked() {
     write_file(&f.clone_a, shared, "A\n");
     f.commit(&f.clone_a, "A init").expect("A init");
 
-    git(&f.clone_b, &["pull", "--rebase"]);
+    f.pull(&f.clone_b).expect("Pull should succeed");
 
     write_file(&f.clone_a, shared, "A updated\n");
     f.commit(&f.clone_a, "A update").expect("A update");
@@ -343,8 +327,7 @@ fn test_commit_without_remote_tracking_branch() {
     )
     .expect("g c should succeed without a remote tracking branch");
 
-    let verify = tmp.path().join("verify");
-    git(tmp.path(), &["clone", "origin.git", "verify"]);
+    let verify = clone_repo(tmp.path(), "verify", origin);
     let log = cmd_log(&verify, true).expect("g l");
     assert!(
         log.contains("first commit"),
@@ -456,7 +439,7 @@ fn test_commit_stages_deleted_files() {
         "deleted file should not exist after commit"
     );
 
-    git(&f.clone_b, &["pull", "--rebase"]);
+    f.pull(&f.clone_b).expect("Pull should succeed");
     assert!(
         !f.clone_b.join("to_delete.txt").exists(),
         "deletion should have been pushed to the remote and visible in clone_b"
@@ -558,7 +541,7 @@ fn test_clean_commit_flow() {
         "log should contain the commit message\n{log}"
     );
 
-    git(&f.clone_b, &["pull", "--rebase"]);
+    f.pull(&f.clone_b).expect("Pull should succeed");
     let log_b = cmd_log(&f.clone_b, true).expect("g l on clone_b");
     assert!(
         log_b.contains("add hello.txt"),
@@ -570,10 +553,7 @@ fn test_clean_commit_flow() {
 fn test_pull_blocked_by_unpushed_commits() {
     let f = Fixture::new();
     let dir = &f.clone_a;
-
-    write_file(dir, "local.txt", "local only\n");
-    git(dir, &["add", "."]);
-    git(dir, &["commit", "-m", "local unpushed"]);
+    commit_file(dir);
 
     let err = f.pull(dir).expect_err("should fail");
 
@@ -616,9 +596,8 @@ fn test_pull_succeeds_when_clean() {
 #[test]
 fn test_fart_plays_fart_sound() {
     let f = Fixture::new();
-    let dir = &f.clone_a;
 
-    f.fart(dir).expect("Fart should succeed");
+    f.fart(&f.clone_a).expect("Fart should succeed");
 
     assert!(f.was_fart_played(), "A fart sound should have played");
 }
@@ -626,13 +605,10 @@ fn test_fart_plays_fart_sound() {
 #[test]
 fn test_fart_plays_when_stash_is_non_empty() {
     let f = Fixture::new();
-    let dir = &f.clone_a;
 
-    write_file(dir, "stashed.txt", "stash me\n");
-    git(dir, &["add", "."]);
-    git(dir, &["stash"]);
+    put_something_in_stash(&f.clone_a);
 
-    f.pull(dir).expect("g p should succeed");
+    f.pull(&f.clone_a).expect("g p should succeed");
 
     assert!(
         f.was_fart_played(),
@@ -643,9 +619,8 @@ fn test_fart_plays_when_stash_is_non_empty() {
 #[test]
 fn test_fart_does_not_play_when_stash_is_empty() {
     let f = Fixture::new();
-    let dir = &f.clone_a;
 
-    f.pull(dir).expect("g p should succeed");
+    f.pull(&f.clone_a).expect("g p should succeed");
 
     assert!(
         !f.was_fart_played(),

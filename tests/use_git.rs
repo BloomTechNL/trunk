@@ -50,3 +50,15 @@ pub fn initial_commit(repo_dir: &Path) {
     git(&repo_dir, &["commit", "-m", "init"]);
     git(&repo_dir, &["push"]);
 }
+
+pub fn put_something_in_stash(repo_dir: &Path) {
+    write_file(repo_dir, "stashed.txt", "stash me\n");
+    git(repo_dir, &["add", "."]);
+    git(repo_dir, &["stash"]);
+}
+
+pub fn commit_file(repo_dir: &Path) {
+    write_file(repo_dir, "local.txt", "local only\n");
+    git(repo_dir, &["add", "."]);
+    git(repo_dir, &["commit", "-m", "local unpushed"]);
+}
