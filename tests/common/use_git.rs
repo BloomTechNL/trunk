@@ -1,6 +1,6 @@
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use crate::common::write_file::write_file;
 
 fn git(dir: &Path, args: &[&str]) {
     let status = Command::new("git")
@@ -11,10 +11,6 @@ fn git(dir: &Path, args: &[&str]) {
         .status()
         .expect("git command failed");
     assert!(status.success(), "git {} failed", args.join(" "));
-}
-
-fn write_file(dir: &Path, name: &str, content: &str) {
-    fs::write(dir.join(name), content).expect("write file");
 }
 
 fn git_config_identity(dir: &Path) {

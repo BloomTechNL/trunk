@@ -8,13 +8,9 @@ use common::use_git::{
     set_up_remote,
 };
 use g_cli::{cmd_log};
-
+use crate::common::write_file::write_file;
 
 mod common;
-
-fn write_file(dir: &Path, name: &str, content: &str) {
-    fs::write(dir.join(name), content).expect("write file");
-}
 
 #[test]
 fn test_commit_conflict_and_resolve() {
