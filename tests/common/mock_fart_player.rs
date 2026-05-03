@@ -1,6 +1,6 @@
+use g_cli::FartPlayer;
 use std::cell::Cell;
 use std::path::Path;
-use g_cli::FartPlayer;
 
 #[derive(Clone)]
 pub struct MockFartPlayer {

@@ -2,16 +2,17 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use crate::use_git::{
-    clone_repo, commit_file, initial_commit, put_something_in_stash, set_up_remote,
+use common::mock_fart_player::MockFartPlayer;
+use common::test_app::TestApp;
+use common::use_git::{
+    clone_repo, commit_file, initial_commit, put_something_in_stash, set_up_basic_repo,
+    set_up_remote,
 };
 use g_cli::cli::AppService;
 use g_cli::{cmd_log, Cli, Commands};
 use tempfile::TempDir;
-use mock_fart_player::MockFartPlayer;
 
-mod use_git;
-mod mock_fart_player;
+mod common;
 
 fn write_file(dir: &Path, name: &str, content: &str) {
     fs::write(dir.join(name), content).expect("write file");
@@ -586,12 +587,13 @@ fn test_fart_plays_when_stash_is_non_empty() {
 
 #[test]
 fn test_fart_does_not_play_when_stash_is_empty() {
-    let f = Fixture::new();
+    let app = TestApp::new();
+    let repo_dir = set_up_basic_repo(app.base_dir.path());
 
-    f.pull(&f.clone_a).expect("g p should succeed");
+    app.pull(repo_dir.as_path()).expect("g p should succeed");
 
     assert!(
-        !f.was_fart_played(),
+        !app.was_fart_played(),
         "no fart should play when the stash is empty"
     );
 }

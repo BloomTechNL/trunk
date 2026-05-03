@@ -62,3 +62,10 @@ pub fn commit_file(repo_dir: &Path) {
     git(repo_dir, &["add", "."]);
     git(repo_dir, &["commit", "-m", "local unpushed"]);
 }
+
+pub fn set_up_basic_repo(base_dir: &Path) -> PathBuf {
+    let origin = set_up_remote(base_dir);
+    let repo_dir = clone_repo(base_dir, "my_repo", origin);
+    initial_commit(repo_dir.as_path());
+    repo_dir
+}
