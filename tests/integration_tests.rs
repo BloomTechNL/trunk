@@ -98,12 +98,10 @@ impl Fixture {
         let origin = set_up_remote(tmp.path());
         let clone_a = clone_repo(tmp.path(), "clone_a", origin);
         let clone_b = clone_repo(tmp.path(), "clone_b", origin);
-        git_config_identity(&clone_a);
         write_file(&clone_a, "README.md", "# project\n");
         git(&clone_a, &["add", "."]);
         git(&clone_a, &["commit", "-m", "init"]);
         git(&clone_a, &["push"]);
-        git_config_identity(&clone_b);
 
         let player = MockFartPlayer::new();
 
