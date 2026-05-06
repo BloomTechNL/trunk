@@ -1,57 +1,78 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ---------- check system ----------
-if [[ "$(uname -s)" != "Darwin" ]]; then
-    echo "This installer is only for macOS (Darwin)."
-    exit 1
-fi
-
-ARCH=$(uname -m)
-if [[ "$ARCH" != "arm64" ]]; then
-    echo "Only Apple Silicon (arm64) is currently supported. Got: $ARCH"
-    exit 1
-fi
-
-# ---------- download binary ----------
-RELEASE_URL="https://github.com/BloomTechNL/trunk/releases/latest/download/g"
+INSTALL_DIR="$HOME/.local/bin"
 TMP_BIN="/tmp/trunk-g-$(date +%s)"
+DOWNLOAD_URL="https://github.com/BloomTechNL/trunk/releases/latest/download/g"
 
-echo "Downloading latest g binary …"
-curl -L --fail --progress-bar -o "$TMP_BIN" "$RELEASE_URL"
+# ---------- functions ----------
 
-# ---------- prepare binary ----------
-chmod +x "$TMP_BIN"
+check_architecture() {
+    if [[ "$(uname -s)" != "Darwin" ]]; then
+        echo "Only macOS is supported." >&2
+        exit 1
+    fi
+    if [[ "$(uname -m)" != "arm64" ]]; then
+        echo "Only Apple Silicon (arm64) is supported." >&2
+        exit 1
+    fi
+}
 
-# Remove quarantine flag (macOS may add it to downloaded files)
-xattr -d com.apple.quarantine "$TMP_BIN" 2>/dev/null || true
+download_binary() {
+    local url="$1"
+    local dest="$2"
+    echo "Downloading latest g …"
+    curl -L --fail --progress-bar -o "$dest" "$url"
+    chmod +x "$dest"
+    xattr -d com.apple.quarantine "$dest" 2>/dev/null || true
+}
 
-# ---------- choose install directory ----------
-TARGET_DIR=""
-if [[ -d "$HOME/.local/bin" ]] && [[ ":$PATH:" == *":$HOME/.local/bin:"* ]]; then
-    TARGET_DIR="$HOME/.local/bin"
-elif [[ -d "/usr/local/bin" ]] && [[ -w "/usr/local/bin" ]]; then
-    TARGET_DIR="/usr/local/bin"
-else
-    TARGET_DIR="$HOME/bin"
-    mkdir -p "$TARGET_DIR"
-    echo "Note: adding $TARGET_DIR to your PATH is recommended."
-fi
+move_to_final_dest() {
+    local tmp="$1"
+    local install_dir="$2"
+    mkdir -p "$install_dir"
+    local final_path="$install_dir/g"
+    mv -f "$tmp" "$final_path"
+    echo "Installed to $final_path"
+}
 
-DEST="$TARGET_DIR/g"
-mv -f "$TMP_BIN" "$DEST"
-echo "Installed to $DEST"
+append_to_path() {
+    local dir="$1"
+    local export_line="export PATH=\"$dir:\$PATH\""
+    local files=("$HOME/.zshrc" "$HOME/.bashrc" "$HOME/.profile")
 
-# ---------- verify ----------
-if "$DEST" --version &>/dev/null; then
-    echo "Success! $( "$DEST" --version )"
-else
-    echo "Installation succeeded, but 'g --version' failed. Check your binary."
-    exit 1
-fi
+    for file in "${files[@]}"; do
+        if ! grep -qF "$dir" "$file" 2>/dev/null; then
+            echo "$export_line" >> "$file"
+        fi
+    done
+}
 
-# ---------- friendly reminder ----------
-if alias g &>/dev/null; then
-    echo "NOTE: You have an existing shell alias for 'g' (e.g. from OhMyZsh git plugin)."
-    echo "Run 'unalias g' if you want to use the trunk binary by default."
-fi
+verify_binary() {
+    local bin_path="$1"
+    if "$bin_path" --version &>/dev/null; then
+        echo "Success! $( "$bin_path" --version )"
+    else
+        echo "Installation succeeded, but 'g --version' failed." >&2
+        exit 1
+    fi
+}
+
+warn_for_alias() {
+    if alias g &>/dev/null; then
+        echo "NOTE: You have an alias for 'g' (OhMyZsh git plugin). Run 'unalias g' to use trunk."
+    fi
+}
+
+# ---------- main ----------
+
+check_architecture
+download_binary "$DOWNLOAD_URL" "$TMP_BIN"
+move_to_final_dest "$TMP_BIN" "$INSTALL_DIR"
+append_to_path "$INSTALL_DIR"
+verify_binary "$INSTALL_DIR/g"
+warn_for_alias
+
+echo ""
+echo "Installation complete. To start using 'g', please restart your terminal"
+echo "or run: exec $SHELL -l"
