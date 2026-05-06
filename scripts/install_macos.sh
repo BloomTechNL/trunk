@@ -53,7 +53,7 @@ verify_binary() {
     if "$bin_path" --version &>/dev/null; then
         echo "Success! $( "$bin_path" --version )"
     else
-        echo "Installation succeeded, but 'g --version' failed." >&2
+        echo "Installation failed: but 'g --version' failed." >&2
         exit 1
     fi
 }
