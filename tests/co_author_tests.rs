@@ -43,24 +43,16 @@ fn test_commit_with_alias() -> Result<()> {
     let config_dir = temp_home.path().join(".config/trunk");
     fs::create_dir_all(&config_dir)?;
     let alias_file = config_dir.join("aliases");
-    fs::write(alias_file, "jdoe:John Doe <jdoe@example.com>\n")?;
+    fs::write(&alias_file, "jdoe:John Doe <jdoe@example.com>\n")?;
 
-    // Use a subprocess or set env var if we were testing the binary, 
-    // but here we are calling the function directly.
-    // Since load_aliases reads from HOME, we set it.
-    
-    let old_home = std::env::var("HOME").ok();
-    std::env::set_var("HOME", temp_home.path());
+    // Use TRUNK_ALIASES_PATH for robust testing in pipelines
+    std::env::set_var("TRUNK_ALIASES_PATH", &alias_file);
 
     crate::common::write_file::write_file(repo_path, "alias.txt", "alias");
     let result = app.commit(repo_path, "alias commit", Some("@jdoe"));
     
-    // Restore HOME before assertions to be safe
-    if let Some(val) = old_home {
-        std::env::set_var("HOME", val);
-    } else {
-        std::env::remove_var("HOME");
-    }
+    // Clean up
+    std::env::remove_var("TRUNK_ALIASES_PATH");
 
     result.expect("Commit with alias should succeed");
 
@@ -78,17 +70,15 @@ fn test_commit_with_unknown_alias_fails() -> Result<()> {
     let repo_path = repo.as_path();
 
     let temp_home = TempDir::new()?;
-    let old_home = std::env::var("HOME").ok();
-    std::env::set_var("HOME", temp_home.path());
+    let alias_file = temp_home.path().join("aliases");
+    fs::write(&alias_file, "known:Name <email@example.com>")?;
+
+    std::env::set_var("TRUNK_ALIASES_PATH", &alias_file);
 
     crate::common::write_file::write_file(repo_path, "unknown.txt", "unknown");
     let result = app.commit(repo_path, "unknown alias", Some("@unknown"));
 
-    if let Some(val) = old_home {
-        std::env::set_var("HOME", val);
-    } else {
-        std::env::remove_var("HOME");
-    }
+    std::env::remove_var("TRUNK_ALIASES_PATH");
 
     let err = result.expect_err("should fail with unknown alias");
     assert!(err.to_string().contains("Unknown co-author alias: @unknown"));

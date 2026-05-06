@@ -107,18 +107,26 @@ pub struct CommitInput {
 
 fn load_aliases() -> Result<std::collections::HashMap<String, String>> {
     let mut aliases = std::collections::HashMap::new();
-    let home = std::env::var("HOME").map(PathBuf::from).or_else(|_| {
-        std::env::var("USERPROFILE").map(PathBuf::from) // Windows support just in case
-    });
 
-    if let Ok(home_path) = home {
-        let alias_file = home_path.join(".config/trunk/aliases");
-        if alias_file.exists() {
-            let content = std::fs::read_to_string(alias_file)?;
-            for line in content.lines() {
-                if let Some((alias, full)) = line.split_once(':') {
-                    aliases.insert(alias.trim().to_string(), full.trim().to_string());
-                }
+    let alias_file = if let Ok(path) = std::env::var("TRUNK_ALIASES_PATH") {
+        PathBuf::from(path)
+    } else {
+        let home = std::env::var("HOME").map(PathBuf::from).or_else(|_| {
+            std::env::var("USERPROFILE").map(PathBuf::from) // Windows support just in case
+        });
+
+        if let Ok(home_path) = home {
+            home_path.join(".config/trunk/aliases")
+        } else {
+            return Ok(aliases);
+        }
+    };
+
+    if alias_file.exists() {
+        let content = std::fs::read_to_string(alias_file)?;
+        for line in content.lines() {
+            if let Some((alias, full)) = line.split_once(':') {
+                aliases.insert(alias.trim().to_string(), full.trim().to_string());
             }
         }
     }
