@@ -29,11 +29,12 @@ impl TestApp {
         self.fart_player.was_played()
     }
 
-    pub fn commit(&self, dir: &Path, message: &str) -> anyhow::Result<()> {
+    pub fn commit(&self, dir: &Path, message: &str, co_author: Option<&str>) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {
                 command: Commands::Commit {
                     message: Some(message.to_string()),
+                    co_author: co_author.map(|s| s.to_string()),
                     resolve: false,
                     abort: false,
                 },
@@ -47,6 +48,7 @@ impl TestApp {
             Cli {
                 command: Commands::Commit {
                     message: None,
+                    co_author: None,
                     resolve: true,
                     abort: false,
                 },
@@ -60,6 +62,7 @@ impl TestApp {
             Cli {
                 command: Commands::Commit {
                     message: None,
+                    co_author: None,
                     resolve: false,
                     abort: true,
                 },

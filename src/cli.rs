@@ -29,8 +29,10 @@ pub enum Commands {
     /// Commit, pull --rebase, and push.
     #[command(name = "c")]
     Commit {
-        /// Commit message. Omit when using --resolve or --abort.
+        /// Commit message.
         message: Option<String>,
+        /// Co-author alias (@alias) or SOLO.
+        co_author: Option<String>,
         /// Continue after resolving a rebase conflict.
         #[arg(long)]
         resolve: bool,
@@ -90,11 +92,13 @@ pub fn run_cli(cli: Cli, dir: &Path, fart_player: &dyn FartPlayer) -> Result<()>
     match cli.command {
         Commands::Commit {
             message,
+            co_author,
             resolve,
             abort,
         } => commit(&CommitInput::from_cli(
             PathBuf::from(dir),
             message,
+            co_author,
             resolve,
             abort,
         )),
