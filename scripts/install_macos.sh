@@ -68,6 +68,7 @@ warn_for_alias() {
 
 check_architecture
 download_binary "$DOWNLOAD_URL" "$TMP_BIN"
+verify_binary "$TMP_BIN"
 move_to_final_dest "$TMP_BIN" "$INSTALL_DIR"
 append_to_path "$INSTALL_DIR"
 verify_binary "$INSTALL_DIR/g"
