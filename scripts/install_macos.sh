@@ -5,8 +5,6 @@ INSTALL_DIR="$HOME/.local/bin"
 TMP_BIN="/tmp/trunk-g-$(date +%s)"
 DOWNLOAD_URL="https://github.com/BloomTechNL/trunk/releases/latest/download/g"
 
-# ---------- functions ----------
-
 check_architecture() {
     if [[ "$(uname -s)" != "Darwin" ]]; then
         echo "Only macOS is supported." >&2
@@ -21,6 +19,7 @@ check_architecture() {
 download_binary() {
     local url="$1"
     local dest="$2"
+
     echo "Downloading latest g …"
     curl -L --fail --progress-bar -o "$dest" "$url"
     chmod +x "$dest"
@@ -30,6 +29,7 @@ download_binary() {
 move_to_final_dest() {
     local tmp="$1"
     local install_dir="$2"
+
     mkdir -p "$install_dir"
     local final_path="$install_dir/g"
     mv -f "$tmp" "$final_path"
@@ -51,10 +51,11 @@ append_to_path() {
 
 verify_binary() {
     local bin_path="$1"
+
     if "$bin_path" --version &>/dev/null; then
         echo "Success! $( "$bin_path" --version )"
     else
-        echo "Installation failed: but 'g --version' failed." >&2
+        echo "Installation failed: 'g --version' failed." >&2
         exit 1
     fi
 }
@@ -64,8 +65,6 @@ warn_for_alias() {
         echo "NOTE: You have an alias for 'g' (OhMyZsh git plugin). Run 'unalias g' to use trunk."
     fi
 }
-
-# ---------- main ----------
 
 check_architecture
 download_binary "$DOWNLOAD_URL" "$TMP_BIN"
