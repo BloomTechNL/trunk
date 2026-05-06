@@ -5,16 +5,9 @@ set of subcommands which should suffice in a trunk-based development style workf
 ## Installation
 
 ### MacOS
-To install `trunk`, go to [this page](https://github.com/BloomTechNL/trunk/releases/tag/latest) and download the latest
-binary, called `g`. Then, run
+Run
 ```bash
-chmod +x /path/to/the/binary
-xattr -d com.apple.quarantine /path/to/the/binary
-```
-and put `g` in your `$PATH`. It is recommended to place `g` somewhere you own, rather than a root-owned directory. Then,
-check your installation by running
-```bash
-g --version
+curl -fsSL https://raw.githubusercontent.com/BloomTechNL/trunk/main/scripts/install_macos.sh | bash
 ```
 If you have the OhMyZsh git plugin installed, you may need to run
 ```bash
