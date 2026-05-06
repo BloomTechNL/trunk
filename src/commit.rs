@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Result};
-
 use crate::git::{git_capture, git_capture_silent, git_passthrough, is_detached_head, is_rebasing};
+use crate::CoAuthorAliases;
+use anyhow::{bail, Result};
 
 // ---------------------------------------------------------------------------
 // Remote helpers (shared with revert)
@@ -29,7 +29,12 @@ pub fn has_remote_tracking(dir: &Path) -> bool {
 // g c  — commit + sync
 // ---------------------------------------------------------------------------
 
-fn cmd_commit(dir: &Path, message: &str, co_author: Option<String>) -> Result<()> {
+fn cmd_commit(
+    dir: &Path,
+    message: &str,
+    co_author: Option<String>,
+    aliases: &dyn CoAuthorAliases,
+) -> Result<()> {
     if is_rebasing(dir) {
         bail!(
             "You are in the middle of resolving a conflict. Resolve the conflict and then run\n  g c --resolve"
@@ -45,8 +50,7 @@ fn cmd_commit(dir: &Path, message: &str, co_author: Option<String>) -> Result<()
             format!("{}\n\n{}", message.to_string(), "(Solo-work)")
         } else if author_input.starts_with('@') {
             let alias = &author_input[1..];
-            let aliases = load_aliases()?;
-            if let Some(full_author) = aliases.get(alias) {
+            if let Some(full_author) = aliases.format_alias(alias) {
                 format!("{}\n\nCo-authored-by: {}", message, full_author)
             } else {
                 let path_used = if let Ok(path) = std::env::var("TRUNK_ALIASES_PATH") {
@@ -111,34 +115,6 @@ pub struct CommitInput {
     pub opt: CommitOpt,
 }
 
-fn load_aliases() -> Result<std::collections::HashMap<String, String>> {
-    let mut aliases = std::collections::HashMap::new();
-
-    let alias_file = if let Ok(path) = std::env::var("TRUNK_ALIASES_PATH") {
-        PathBuf::from(path)
-    } else {
-        let home = std::env::var("HOME").map(PathBuf::from).or_else(|_| {
-            std::env::var("USERPROFILE").map(PathBuf::from) // Windows support just in case
-        });
-
-        if let Ok(home_path) = home {
-            home_path.join(".config/trunk/aliases")
-        } else {
-            return Ok(aliases);
-        }
-    };
-
-    if alias_file.exists() {
-        let content = std::fs::read_to_string(alias_file)?;
-        for line in content.lines() {
-            if let Some((alias, full)) = line.split_once(':') {
-                aliases.insert(alias.trim().to_string(), full.trim().to_string());
-            }
-        }
-    }
-    Ok(aliases)
-}
-
 impl CommitInput {
     pub fn from_cli(
         repo: PathBuf,
@@ -159,10 +135,10 @@ impl CommitInput {
     }
 }
 
-pub fn commit(input: &CommitInput) -> Result<()> {
+pub fn commit(input: &CommitInput, aliases: &dyn CoAuthorAliases) -> Result<()> {
     match input.opt {
         CommitOpt::Message(ref message, ref co_author) => {
-            cmd_commit(input.repo.as_path(), message, co_author.clone())
+            cmd_commit(input.repo.as_path(), message, co_author.clone(), aliases)
         }
         CommitOpt::Resolve => cmd_commit_resolve(input.repo.as_path()),
         CommitOpt::Abort => cmd_commit_abort(input.repo.as_path()),

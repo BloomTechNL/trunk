@@ -54,12 +54,14 @@ fn test_commit_conflict_and_abort() {
 
     let shared_file = "conflict.txt";
     write_file(repo1, shared_file, "original\n");
-    app.commit(repo1, "seed conflict file", Some("SOLO")).expect("seed");
+    app.commit(repo1, "seed conflict file", Some("SOLO"))
+        .expect("seed");
 
     app.pull(repo2).expect("Pull should succeed");
 
     write_file(repo1, shared_file, "clone_a update\n");
-    app.commit(repo1, "clone_a update", Some("SOLO")).expect("clone_a update");
+    app.commit(repo1, "clone_a update", Some("SOLO"))
+        .expect("clone_a update");
 
     write_file(repo2, shared_file, "clone_b update\n");
     let err = app.commit(repo2, "clone_b conflicting", Some("SOLO"));
@@ -86,7 +88,8 @@ fn test_revert_flow() {
     let dir = &repo1.as_path();
 
     write_file(dir, "to_revert.txt", "this will be reverted\n");
-    app.commit(dir, "add file to revert", Some("SOLO")).expect("g c");
+    app.commit(dir, "add file to revert", Some("SOLO"))
+        .expect("g c");
 
     let hash_output = Command::new("git")
         .args(["rev-parse", "HEAD"])
@@ -128,10 +131,12 @@ fn test_commit_while_in_conflict_state_is_blocked() {
     app.pull(repo2).expect("Pull should succeed");
 
     write_file(repo1, shared, "A updated\n");
-    app.commit(repo1, "A update", Some("SOLO")).expect("A update");
+    app.commit(repo1, "A update", Some("SOLO"))
+        .expect("A update");
 
     write_file(repo2, shared, "B update\n");
-    app.commit(repo2, "B conflicting", Some("SOLO")).expect_err("fails because of conflicts");
+    app.commit(repo2, "B conflicting", Some("SOLO"))
+        .expect_err("fails because of conflicts");
 
     let err = app
         .commit(repo2, "should be blocked", Some("SOLO"))

@@ -7,7 +7,7 @@ use crate::commit::{commit, CommitInput};
 use crate::revert::{revert, RevertInput};
 use crate::{
     cmd_diff, cmd_log, cmd_pull, cmd_reset, cmd_status, cmd_time_travel, has_stash,
-    play_fart_sound::FartPlayer,
+    play_fart_sound::FartPlayer, CoAuthorAliases,
 };
 
 fn version_string() -> &'static str {
@@ -84,7 +84,12 @@ pub enum Commands {
     FartDaemon,
 }
 
-pub fn run_cli(cli: Cli, dir: &Path, fart_player: &dyn FartPlayer) -> Result<()> {
+pub fn run_cli(
+    cli: Cli,
+    dir: &Path,
+    fart_player: &dyn FartPlayer,
+    aliases: &dyn CoAuthorAliases,
+) -> Result<()> {
     if cli.command != Commands::Fart && has_stash(dir) {
         let _ = fart_player.play_asynchronously();
     }
@@ -95,13 +100,10 @@ pub fn run_cli(cli: Cli, dir: &Path, fart_player: &dyn FartPlayer) -> Result<()>
             co_author,
             resolve,
             abort,
-        } => commit(&CommitInput::from_cli(
-            PathBuf::from(dir),
-            message,
-            co_author,
-            resolve,
-            abort,
-        )),
+        } => commit(
+            &CommitInput::from_cli(PathBuf::from(dir), message, co_author, resolve, abort),
+            aliases,
+        ),
         Commands::Pull => cmd_pull(dir),
         Commands::Log => cmd_log(dir, false).map(|_| ()),
         Commands::Status => cmd_status(dir, false).map(|_| ()),
@@ -125,12 +127,18 @@ pub fn run_cli(cli: Cli, dir: &Path, fart_player: &dyn FartPlayer) -> Result<()>
     }
 }
 
-pub struct AppService<'a, FP: FartPlayer> {
+pub struct AppService<'a, FP: FartPlayer, CAA: CoAuthorAliases> {
     pub fart_player: &'a FP,
+    pub co_author_aliases: &'a CAA,
 }
 
-impl<'a, FP: FartPlayer> AppService<'a, FP> {
+impl<'a, FP: FartPlayer, CA: CoAuthorAliases> AppService<'a, FP, CA> {
     pub fn dispatch_command(&self, cli: Cli, repo: PathBuf) -> Result<()> {
-        run_cli(cli, repo.as_path(), self.fart_player)
+        run_cli(
+            cli,
+            repo.as_path(),
+            self.fart_player,
+            self.co_author_aliases,
+        )
     }
 }

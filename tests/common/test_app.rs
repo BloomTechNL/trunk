@@ -1,6 +1,6 @@
 use crate::common::mock_fart_player::MockFartPlayer;
 use g_cli::cli::AppService;
-use g_cli::{Cli, Commands};
+use g_cli::{Cli, Commands, RealCoAuthorAliases};
 use std::path::Path;
 use tempfile::TempDir;
 
@@ -19,9 +19,10 @@ impl TestApp {
         }
     }
 
-    fn app(&self) -> AppService<'_, MockFartPlayer> {
+    fn app(&self) -> AppService<'_, MockFartPlayer, RealCoAuthorAliases> {
         AppService {
             fart_player: &self.fart_player,
+            co_author_aliases: &RealCoAuthorAliases,
         }
     }
 

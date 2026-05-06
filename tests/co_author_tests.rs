@@ -1,10 +1,10 @@
+use anyhow::Result;
 use std::fs;
 use std::sync::Mutex;
 use tempfile::TempDir;
-use anyhow::Result;
 
 use crate::common::test_app::TestApp;
-use crate::common::use_git::{set_up_basic_repo};
+use crate::common::use_git::set_up_basic_repo;
 use crate::common::write_file::write_file;
 
 mod common;
@@ -18,7 +18,8 @@ fn test_commit_solo() {
     let repo_path = repo.as_path();
 
     write_file(repo_path, "solo.txt", "solo");
-    app.commit(repo_path, "solo commit", Some("SOLO")).expect("SOLO commit should succeed");
+    app.commit(repo_path, "solo commit", Some("SOLO"))
+        .expect("SOLO commit should succeed");
 
     let log = g_cli::cmd_log(repo_path, true).expect("g l");
     assert!(log.contains("solo commit"));
@@ -33,8 +34,12 @@ fn test_commit_missing_co_author_fails() {
     let repo_path = repo.as_path();
 
     write_file(repo_path, "fail.txt", "fail");
-    let err = app.commit(repo_path, "missing co-author", None).expect_err("should fail");
-    assert!(err.to_string().contains("co-author alias (@alias) or SOLO is required"));
+    let err = app
+        .commit(repo_path, "missing co-author", None)
+        .expect_err("should fail");
+    assert!(err
+        .to_string()
+        .contains("co-author alias (@alias) or SOLO is required"));
 }
 
 #[test]
@@ -56,7 +61,7 @@ fn test_commit_with_alias() -> Result<()> {
 
     write_file(repo_path, "alias.txt", "alias");
     let result = app.commit(repo_path, "alias commit", Some("@jdoe"));
-    
+
     // Clean up
     std::env::remove_var("TRUNK_ALIASES_PATH");
 
@@ -88,7 +93,9 @@ fn test_commit_with_unknown_alias_fails() -> Result<()> {
     std::env::remove_var("TRUNK_ALIASES_PATH");
 
     let err = result.expect_err("should fail with unknown alias");
-    assert!(err.to_string().contains("Unknown co-author alias: @unknown"));
+    assert!(err
+        .to_string()
+        .contains("Unknown co-author alias: @unknown"));
     assert!(err.to_string().contains("Please add it to"));
     assert!(err.to_string().contains("alias:Name <email@example.com>"));
 
