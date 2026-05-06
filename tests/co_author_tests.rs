@@ -1,4 +1,6 @@
 use std::fs;
+use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 use tempfile::TempDir;
 use anyhow::Result;
 
@@ -6,6 +8,8 @@ use crate::common::test_app::TestApp;
 use crate::common::use_git::{set_up_basic_repo};
 
 mod common;
+
+static ENV_MUTEX: Mutex<()> = Mutex::new(());
 
 #[test]
 fn test_commit_solo() {
@@ -34,6 +38,7 @@ fn test_commit_missing_co_author_fails() {
 
 #[test]
 fn test_commit_with_alias() -> Result<()> {
+    let _lock = ENV_MUTEX.lock().unwrap();
     let app = TestApp::new();
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
@@ -65,6 +70,7 @@ fn test_commit_with_alias() -> Result<()> {
 
 #[test]
 fn test_commit_with_unknown_alias_fails() -> Result<()> {
+    let _lock = ENV_MUTEX.lock().unwrap();
     let app = TestApp::new();
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
@@ -82,7 +88,7 @@ fn test_commit_with_unknown_alias_fails() -> Result<()> {
 
     let err = result.expect_err("should fail with unknown alias");
     assert!(err.to_string().contains("Unknown co-author alias: @unknown"));
-    assert!(err.to_string().contains("Please add it to ~/.config/trunk/aliases"));
+    assert!(err.to_string().contains("Please add it to"));
     assert!(err.to_string().contains("alias:Name <email@example.com>"));
 
     Ok(())
