@@ -31,7 +31,7 @@ jobs:
           workspaces: tools/g_cli
 
       - name: Setup Zig
-        uses: goto-bus-stop/setup-zig@v2
+        uses: mlugg/setup-zig@v2
 
       - name: Install cargo-zigbuild
         run: pip install cargo-zigbuild
