@@ -39,11 +39,12 @@ move_to_final_dest() {
 append_to_path() {
     local dir="$1"
     local export_line="export PATH=\"$dir:\$PATH\""
-    local files=("$HOME/.zshrc" "$HOME/.bashrc" "$HOME/.profile")
 
-    for file in "${files[@]}"; do
-        if ! grep -qF "$dir" "$file" 2>/dev/null; then
-            echo "$export_line" >> "$file"
+    for f in "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.bashrc"; do
+        if [ -f "$f" ]; then
+            if ! grep -qF "$dir" "$f" 2>/dev/null; then
+                echo "$export_line" >> "$f"
+            fi
         fi
     done
 }
