@@ -9,7 +9,7 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
-git2 = { version = "0.19", default-features = false }
+git2 = { version = "0.19", default-features = false, features = ["vendored-libgit2"] }
 inquire = "0.7"
 anyhow = "1"
 rust-embed = "8.11.0"
