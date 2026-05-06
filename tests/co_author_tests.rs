@@ -22,6 +22,7 @@ fn test_commit_solo() {
 
     let log = g_cli::cmd_log(repo_path, true).expect("g l");
     assert!(log.contains("solo commit"));
+    assert!(log.contains("(Solo-work)"));
     assert!(!log.contains("Co-authored-by:"));
 }
 

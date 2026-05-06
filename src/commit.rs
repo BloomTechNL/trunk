@@ -42,7 +42,7 @@ fn cmd_commit(dir: &Path, message: &str, co_author: Option<String>) -> Result<()
 
     let final_message = if let Some(author_input) = co_author {
         if author_input.to_uppercase() == "SOLO" {
-            message.to_string()
+            format!("{}\n\n{}", message.to_string(), "(Solo-work)")
         } else if author_input.starts_with('@') {
             let alias = &author_input[1..];
             let aliases = load_aliases()?;
