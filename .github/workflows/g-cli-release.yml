@@ -18,7 +18,7 @@ jobs:
 
   build-and-release:
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -30,22 +30,8 @@ jobs:
         with:
           workspaces: tools/g_cli
 
-      - name: Setup Zig
-        uses: mlugg/setup-zig@v2
-
-      - name: Install cargo-zigbuild
-        run: pip install cargo-zigbuild
-
-      - name: Download macOS SDK
-        run: |
-          wget https://github.com/joseluisq/macosx-sdks/releases/download/13.3/MacOSX13.3.sdk.tar.xz
-          mkdir -p /opt/apple-sdk
-          tar -xf MacOSX13.3.sdk.tar.xz -C /opt/apple-sdk/
-
       - name: Build binary
-        env:
-          SDKROOT: /opt/apple-sdk/MacOSX13.3.sdk
-        run: cargo zigbuild --release --target aarch64-apple-darwin
+        run: cargo build --release --target aarch64-apple-darwin
 
       - name: Stage binary
         run: mv target/aarch64-apple-darwin/release/g g
@@ -63,4 +49,3 @@ jobs:
         run: |
           gh release create latest --title "Latest Build" --notes "Automated rolling release." || true
           gh release upload latest g --clobber
-
