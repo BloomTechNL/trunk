@@ -41,10 +41,12 @@ fn test_commit_with_alias() {
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
 
-    app.set_aliases("jdoe:John Doe <jdoe@example.com>\n").expect("should succeed");
+    app.add_alias("jdoe", "John Doe", "jdoe@example.com")
+        .expect("should succeed");
 
     write_file(repo_path, "alias.txt", "alias");
-    app.commit(repo_path, "alias commit", Some("@jdoe")).expect("should succeed");
+    app.commit(repo_path, "alias commit", Some("@jdoe"))
+        .expect("should succeed");
 
     let log = g_cli::cmd_log(repo_path, true).expect("g l");
     assert!(log.contains("alias commit"));
@@ -57,7 +59,8 @@ fn test_commit_with_unknown_alias_fails() {
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
 
-    app.set_aliases("known:Name <email@example.com>").expect("should succeed");
+    app.add_alias("known", "Name", "email@example.com")
+        .expect("should succeed");
 
     write_file(repo_path, "unknown.txt", "unknown");
     let result = app.commit(repo_path, "unknown alias", Some("@unknown"));
@@ -66,6 +69,7 @@ fn test_commit_with_unknown_alias_fails() {
     assert!(err
         .to_string()
         .contains("Unknown co-author alias: @unknown"));
+
     assert!(err.to_string().contains("Please add it to"));
     assert!(err.to_string().contains("known:Name <email@example.com>"));
 }

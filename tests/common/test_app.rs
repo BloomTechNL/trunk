@@ -1,6 +1,6 @@
 use crate::common::mock_fart_player::MockFartPlayer;
 use g_cli::cli::AppService;
-use g_cli::{Cli, Commands, RealCoAuthorAliases, CoAuthorAliases};
+use g_cli::{Cli, CoAuthorAliases, Commands, RealCoAuthorAliases};
 use std::path::Path;
 use tempfile::TempDir;
 
@@ -33,8 +33,15 @@ impl TestApp {
         self.fart_player.was_played()
     }
 
-    pub fn set_aliases(&self, content: &str) -> anyhow::Result<()> {
-        std::fs::write(self.co_author_aliases.path(), content)?;
+    pub fn add_alias(&self, alias: &str, name: &str, email: &str) -> anyhow::Result<()> {
+        let content = format!("{}:{} <{}>", alias, name, email);
+        use std::fs::OpenOptions;
+        use std::io::Write;
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(self.co_author_aliases.path())?;
+        file.write_all(content.as_bytes())?;
         Ok(())
     }
 
