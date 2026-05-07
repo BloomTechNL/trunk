@@ -53,15 +53,13 @@ fn cmd_commit(
             if let Some(full_author) = aliases.format_alias(alias) {
                 format!("{}\n\nCo-authored-by: {}", message, full_author)
             } else {
-                let path_used = if let Ok(path) = std::env::var("TRUNK_ALIASES_PATH") {
-                    path
-                } else {
-                    "~/.config/trunk/aliases".to_string()
-                };
+                let path = aliases.path();
+                let content = std::fs::read_to_string(path).unwrap_or_default();
                 bail!(
-                    "Unknown co-author alias: @{}. Please add it to {} in the format alias:Name <email@example.com>",
+                    "Unknown co-author alias: @{}. Please add it to {} in the format alias:Name <email@example.com>\n\nExisting aliases:\n{}",
                     alias,
-                    path_used
+                    path.display(),
+                    content
                 );
             }
         } else {
