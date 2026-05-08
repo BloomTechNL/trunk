@@ -20,17 +20,17 @@ fn test_commit_conflict_and_resolve() {
 
     let shared_file = "shared.txt";
     write_file(repo1, shared_file, "version A\n");
-    app.commit(repo1, "clone_a: add shared", Some("SOLO"))
+    app.commit(repo1, "clone_a: add shared", vec!["SOLO"])
         .expect("initial commit from A");
 
     app.pull(repo2).expect("Pull should succeed");
     write_file(repo2, shared_file, "version B\n");
 
     write_file(repo1, shared_file, "version A2\n");
-    app.commit(repo1, "clone_a: update shared", Some("SOLO"))
+    app.commit(repo1, "clone_a: update shared", vec!["SOLO"])
         .expect("second commit from A");
 
-    let err = app.commit(repo2, "clone_b: conflicting change", Some("SOLO"));
+    let err = app.commit(repo2, "clone_b: conflicting change", vec!["SOLO"]);
     assert!(err.is_err(), "expected conflict error");
 
     write_file(repo2, shared_file, "resolved content\n");
@@ -54,17 +54,17 @@ fn test_commit_conflict_and_abort() {
 
     let shared_file = "conflict.txt";
     write_file(repo1, shared_file, "original\n");
-    app.commit(repo1, "seed conflict file", Some("SOLO"))
+    app.commit(repo1, "seed conflict file", vec!["SOLO"])
         .expect("seed");
 
     app.pull(repo2).expect("Pull should succeed");
 
     write_file(repo1, shared_file, "clone_a update\n");
-    app.commit(repo1, "clone_a update", Some("SOLO"))
+    app.commit(repo1, "clone_a update", vec!["SOLO"])
         .expect("clone_a update");
 
     write_file(repo2, shared_file, "clone_b update\n");
-    let err = app.commit(repo2, "clone_b conflicting", Some("SOLO"));
+    let err = app.commit(repo2, "clone_b conflicting", vec!["SOLO"]);
     assert!(err.is_err(), "expected conflict");
 
     app.commit_abort(repo2).expect("g c --abort should succeed");
@@ -88,7 +88,7 @@ fn test_revert_flow() {
     let dir = &repo1.as_path();
 
     write_file(dir, "to_revert.txt", "this will be reverted\n");
-    app.commit(dir, "add file to revert", Some("SOLO"))
+    app.commit(dir, "add file to revert", vec!["SOLO"])
         .expect("g c");
 
     let hash_output = Command::new("git")
@@ -126,20 +126,20 @@ fn test_commit_while_in_conflict_state_is_blocked() {
 
     let shared = "clash.txt";
     write_file(repo1, shared, "A\n");
-    app.commit(repo1, "A init", Some("SOLO")).expect("A init");
+    app.commit(repo1, "A init", vec!["SOLO"]).expect("A init");
 
     app.pull(repo2).expect("Pull should succeed");
 
     write_file(repo1, shared, "A updated\n");
-    app.commit(repo1, "A update", Some("SOLO"))
+    app.commit(repo1, "A update", vec!["SOLO"])
         .expect("A update");
 
     write_file(repo2, shared, "B update\n");
-    app.commit(repo2, "B conflicting", Some("SOLO"))
+    app.commit(repo2, "B conflicting", vec!["SOLO"])
         .expect_err("fails because of conflicts");
 
     let err = app
-        .commit(repo2, "should be blocked", Some("SOLO"))
+        .commit(repo2, "should be blocked", vec!["SOLO"])
         .expect_err("should be blocked while in conflict state");
     assert!(
         err.to_string().contains("middle of resolving a conflict"),
@@ -155,12 +155,12 @@ fn test_revert_without_remote_tracking_branch() {
     let clone = clone_repo(tmp.path(), "clone", origin);
 
     write_file(&clone, "a.txt", "a\n");
-    app.commit(&clone.clone().as_path(), "add a", Some("SOLO"))
+    app.commit(&clone.clone().as_path(), "add a", vec!["SOLO"])
         .expect("first commit");
 
     let clone2 = clone_repo(tmp.path(), "clone2", origin);
     write_file(&clone2, "b.txt", "b\n");
-    app.commit(&clone2.clone().as_path(), "add b", Some("SOLO"))
+    app.commit(&clone2.clone().as_path(), "add b", vec!["SOLO"])
         .expect("clone2 first commit");
 
     let hash = Command::new("git")
@@ -189,11 +189,11 @@ fn test_commit_stages_deleted_files() {
     let repo2 = &repo2.as_path();
 
     write_file(dir, "to_delete.txt", "goodbye\n");
-    app.commit(dir, "add file that will be deleted", Some("SOLO"))
+    app.commit(dir, "add file that will be deleted", vec!["SOLO"])
         .expect("g c seed");
 
     fs::remove_file(dir.join("to_delete.txt")).expect("remove file");
-    app.commit(dir, "delete the file", Some("SOLO"))
+    app.commit(dir, "delete the file", vec!["SOLO"])
         .expect("g c with deletion");
 
     let log = cmd_log(dir, true).expect("g l");
@@ -220,9 +220,9 @@ fn test_time_travel_blocks_write_commands_and_now_restores() {
     let dir = &repo1.as_path();
 
     write_file(dir, "v1.txt", "v1\n");
-    app.commit(dir, "v1", Some("SOLO")).expect("v1");
+    app.commit(dir, "v1", vec!["SOLO"]).expect("v1");
     write_file(dir, "v2.txt", "v2\n");
-    app.commit(dir, "v2", Some("SOLO")).expect("v2");
+    app.commit(dir, "v2", vec!["SOLO"]).expect("v2");
 
     let parent_hash = {
         let out = Command::new("git")
@@ -238,7 +238,7 @@ fn test_time_travel_blocks_write_commands_and_now_restores() {
 
     write_file(dir, "should_fail.txt", "nope\n");
     let err = app
-        .commit(dir, "this should be blocked", Some("SOLO"))
+        .commit(dir, "this should be blocked", vec!["SOLO"])
         .expect_err("g c should be blocked while time travelling");
     assert!(
         err.to_string().contains("time travelling"),
@@ -257,7 +257,7 @@ fn test_time_travel_blocks_write_commands_and_now_restores() {
         .expect("g tt now should succeed");
 
     write_file(dir, "after_return.txt", "back\n");
-    app.commit(dir, "commit after returning from time travel", Some("SOLO"))
+    app.commit(dir, "commit after returning from time travel", vec!["SOLO"])
         .expect("g c should succeed after g tt now");
 
     let log = cmd_log(dir, true).expect("g l");
@@ -304,7 +304,7 @@ fn test_clean_commit_flow() {
     let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
 
     write_file(repo1.as_path(), "hello.txt", "hello world\n");
-    app.commit(repo1.as_path(), "add hello.txt", Some("SOLO"))
+    app.commit(repo1.as_path(), "add hello.txt", vec!["SOLO"])
         .expect("g c should succeed");
 
     let log = cmd_log(repo1.as_path(), true).expect("g l");
@@ -357,7 +357,7 @@ fn test_pull_succeeds_when_clean() {
     let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
 
     write_file(repo1.as_path(), "new_feature.txt", "feature\n");
-    app.commit(repo1.as_path(), "add feature", Some("SOLO"))
+    app.commit(repo1.as_path(), "add feature", vec!["SOLO"])
         .expect("g c succeeds");
     app.pull(repo2.as_path()).expect("g p succeeds");
 

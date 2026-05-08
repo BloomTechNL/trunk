@@ -31,8 +31,8 @@ pub enum Commands {
     Commit {
         /// Commit message.
         message: Option<String>,
-        /// Co-author alias (@alias) or SOLO.
-        co_author: Option<String>,
+        /// Co-author aliases (@alias) or SOLO.
+        co_authors: Vec<String>,
         /// Continue after resolving a rebase conflict.
         #[arg(long)]
         resolve: bool,
@@ -97,11 +97,11 @@ pub fn run_cli(
     match cli.command {
         Commands::Commit {
             message,
-            co_author,
+            co_authors,
             resolve,
             abort,
         } => commit(
-            &CommitInput::from_cli(PathBuf::from(dir), message, co_author, resolve, abort),
+            &CommitInput::from_cli(PathBuf::from(dir), message, co_authors, resolve, abort),
             aliases,
         ),
         Commands::Pull => cmd_pull(dir),

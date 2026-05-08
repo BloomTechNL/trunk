@@ -32,7 +32,7 @@ pub fn has_remote_tracking(dir: &Path) -> bool {
 fn cmd_commit(
     dir: &Path,
     message: &str,
-    co_author: Option<String>,
+    co_authors: Vec<String>,
     aliases: &dyn CoAuthorAliases,
 ) -> Result<()> {
     if is_rebasing(dir) {
@@ -45,28 +45,37 @@ fn cmd_commit(
         bail!("You are currently time travelling. Run `g tt now` to return to the present before making changes.");
     }
 
-    let final_message = if let Some(author_input) = co_author {
-        if author_input.to_uppercase() == "SOLO" {
-            format!("{}\n\n{}", message.to_string(), "(Solo-work)")
-        } else if author_input.starts_with('@') {
-            let alias = &author_input[1..];
-            if let Some(full_author) = aliases.format_alias(alias) {
-                format!("{}\n\nCo-authored-by: {}", message, full_author)
-            } else {
-                let path = aliases.path();
-                let content = std::fs::read_to_string(path).unwrap_or_default();
-                bail!(
-                    "Unknown co-author alias: @{}. Please add it to {} in the format alias:Name <email@example.com>\n\nExisting aliases:\n{}",
-                    alias,
-                    path.display(),
-                    content
-                );
-            }
-        } else {
-            bail!("Invalid co-author format. Use @alias or SOLO.");
-        }
+    let is_solo =
+        co_authors.is_empty() || (co_authors.len() == 1 && co_authors[0].to_uppercase() == "SOLO");
+
+    let final_message = if is_solo {
+        format!("{}\n\n{}", message, "(Solo-work)")
     } else {
-        bail!("A co-author alias (@alias) or SOLO is required.");
+        let mut co_author_lines = Vec::new();
+        for author_input in co_authors {
+            if author_input.to_uppercase() == "SOLO" {
+                bail!("SOLO cannot be combined with other co-authors.");
+            }
+
+            if author_input.starts_with('@') {
+                let alias = &author_input[1..];
+                if let Some(full_author) = aliases.format_alias(alias) {
+                    co_author_lines.push(format!("Co-authored-by: {}", full_author));
+                } else {
+                    let path = aliases.path();
+                    let content = std::fs::read_to_string(path).unwrap_or_default();
+                    bail!(
+                        "Unknown co-author alias: @{}. Please add it to {} in the format alias:Name <email@example.com>\n\nExisting aliases:\n{}",
+                        alias,
+                        path.display(),
+                        content
+                    );
+                }
+            } else {
+                bail!("Invalid co-author format. Use @alias or SOLO.");
+            }
+        }
+        format!("{}\n\n{}", message, co_author_lines.join("\n"))
     };
 
     git_passthrough(dir, &["add", "-A"])?;
@@ -103,7 +112,7 @@ fn cmd_commit_abort(dir: &Path) -> Result<()> {
 }
 
 pub enum CommitOpt {
-    Message(String, Option<String>),
+    Message(String, Vec<String>),
     Resolve,
     Abort,
 }
@@ -117,7 +126,7 @@ impl CommitInput {
     pub fn from_cli(
         repo: PathBuf,
         message: Option<String>,
-        co_author: Option<String>,
+        co_authors: Vec<String>,
         resolve: bool,
         abort: bool,
     ) -> Self {
@@ -127,7 +136,7 @@ impl CommitInput {
         } else if resolve {
             opt = CommitOpt::Resolve
         } else {
-            opt = CommitOpt::Message(message.unwrap(), co_author)
+            opt = CommitOpt::Message(message.unwrap(), co_authors)
         }
         CommitInput { repo, opt }
     }
@@ -135,8 +144,8 @@ impl CommitInput {
 
 pub fn commit(input: &CommitInput, aliases: &dyn CoAuthorAliases) -> Result<()> {
     match input.opt {
-        CommitOpt::Message(ref message, ref co_author) => {
-            cmd_commit(input.repo.as_path(), message, co_author.clone(), aliases)
+        CommitOpt::Message(ref message, ref co_authors) => {
+            cmd_commit(input.repo.as_path(), message, co_authors.clone(), aliases)
         }
         CommitOpt::Resolve => cmd_commit_resolve(input.repo.as_path()),
         CommitOpt::Abort => cmd_commit_abort(input.repo.as_path()),

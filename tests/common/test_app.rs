@@ -34,7 +34,7 @@ impl TestApp {
     }
 
     pub fn add_alias(&self, alias: &str, name: &str, email: &str) -> anyhow::Result<()> {
-        let content = format!("{}:{} <{}>", alias, name, email);
+        let content = format!("{}:{} <{}>\n", alias, name, email);
         use std::fs::OpenOptions;
         use std::io::Write;
         let mut file = OpenOptions::new()
@@ -45,12 +45,12 @@ impl TestApp {
         Ok(())
     }
 
-    pub fn commit(&self, dir: &Path, message: &str, co_author: Option<&str>) -> anyhow::Result<()> {
+    pub fn commit(&self, dir: &Path, message: &str, co_authors: Vec<&str>) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {
                 command: Commands::Commit {
                     message: Some(message.to_string()),
-                    co_author: co_author.map(|s| s.to_string()),
+                    co_authors: co_authors.iter().map(|s| s.to_string()).collect(),
                     resolve: false,
                     abort: false,
                 },
@@ -64,7 +64,7 @@ impl TestApp {
             Cli {
                 command: Commands::Commit {
                     message: None,
-                    co_author: None,
+                    co_authors: vec![],
                     resolve: true,
                     abort: false,
                 },
@@ -78,7 +78,7 @@ impl TestApp {
             Cli {
                 command: Commands::Commit {
                     message: None,
-                    co_author: None,
+                    co_authors: vec![],
                     resolve: false,
                     abort: true,
                 },
