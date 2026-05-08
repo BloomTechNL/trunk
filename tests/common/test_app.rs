@@ -45,10 +45,6 @@ impl TestApp {
         Ok(())
     }
 
-    pub fn aliases_path(&self) -> &Path {
-        self.co_author_aliases.path()
-    }
-
     pub fn commit(&self, dir: &Path, message: &str, co_author: Option<&str>) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {
