@@ -71,7 +71,6 @@ fn test_commit_with_unknown_alias_fails() {
         .contains("Unknown co-author alias: @unknown"));
 
     assert!(err.to_string().contains("Please add it to"));
-    assert!(err.to_string().contains("known:Name <email@example.com>"));
 }
 
 #[test]

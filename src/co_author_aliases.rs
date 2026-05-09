@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub struct RealCoAuthorAliases {
     path: PathBuf,
@@ -12,7 +12,6 @@ impl RealCoAuthorAliases {
 
 pub trait CoAuthorAliases {
     fn format_alias(&self, alias: &str) -> Option<String>;
-    fn path(&self) -> &Path;
 }
 
 impl CoAuthorAliases for RealCoAuthorAliases {
@@ -28,9 +27,5 @@ impl CoAuthorAliases for RealCoAuthorAliases {
             }
         }
         aliases.get(alias).map(String::from)
-    }
-
-    fn path(&self) -> &Path {
-        &self.path
     }
 }
