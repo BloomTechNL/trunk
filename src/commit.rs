@@ -45,8 +45,7 @@ fn cmd_commit(
         bail!("You are currently time travelling. Run `g tt now` to return to the present before making changes.");
     }
 
-    let is_solo =
-        co_authors.is_empty() || (co_authors.len() == 1 && co_authors[0].to_uppercase() == "SOLO");
+    let is_solo = co_authors.is_empty();
 
     let final_message = if is_solo {
         format!("{}\n\n{}", message, "(Solo-work)")
@@ -125,16 +124,25 @@ impl CommitInput {
         co_authors: Vec<String>,
         resolve: bool,
         abort: bool,
-    ) -> Self {
+    ) -> Result<Self> {
         let opt: CommitOpt;
         if abort {
             opt = CommitOpt::Abort;
         } else if resolve {
             opt = CommitOpt::Resolve
         } else {
-            opt = CommitOpt::Message(message.unwrap(), co_authors)
+            let parsed_co_authors: Vec<String>;
+            let has_solo = co_authors.contains(&"SOLO".to_string());
+            if has_solo && co_authors.len() == 1 {
+                parsed_co_authors = vec![];
+            } else if !has_solo && co_authors.len() > 0 {
+                parsed_co_authors = co_authors;
+            } else {
+                bail!("You must either specify co-authors as @jane @john or specify that this is solo work with SOLO");
+            }
+            opt = CommitOpt::Message(message.unwrap(), parsed_co_authors)
         }
-        CommitInput { repo, opt }
+        Ok(CommitInput { repo, opt })
     }
 }
 

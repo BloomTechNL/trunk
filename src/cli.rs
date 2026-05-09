@@ -101,7 +101,7 @@ pub fn run_cli(
             resolve,
             abort,
         } => commit(
-            &CommitInput::from_cli(PathBuf::from(dir), message, co_authors, resolve, abort),
+            &CommitInput::from_cli(PathBuf::from(dir), message, co_authors, resolve, abort)?,
             aliases,
         ),
         Commands::Pull => cmd_pull(dir),

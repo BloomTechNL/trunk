@@ -27,12 +27,14 @@ fn test_commit_missing_co_author_fails() {
     let repo_path = repo.as_path();
 
     write_file(repo_path, "fail.txt", "fail");
-    app.commit(repo_path, "no authors", vec![])
-        .expect("Empty authors should be interpreted as SOLO");
+    let err = app
+        .commit(repo_path, "no authors", vec![])
+        .expect_err("No empty co-author list allowed");
 
-    let log = g_cli::cmd_log(repo_path, true).expect("g l");
-    assert!(log.contains("no authors"));
-    assert!(log.contains("(Solo-work)"));
+    assert!(err
+        .to_string()
+        .contains( "You must either specify co-authors as @jane @john or specify that this is solo work with SOLO"
+        ));
 }
 
 #[test]
@@ -105,10 +107,11 @@ fn test_commit_solo_with_others_fails() {
 
     write_file(repo_path, "invalid.txt", "invalid");
     let err = app
-        .commit(repo_path, "invalid commit", vec!["SOLO", "@jdoe"])
+        .commit(repo_path, "invalid commit", vec!["@jdoe", "SOLO"])
         .expect_err("should fail");
 
     assert!(err
         .to_string()
-        .contains("SOLO cannot be combined with other co-authors."));
+        .contains( "You must either specify co-authors as @jane @john or specify that this is solo work with SOLO"
+    ));
 }
