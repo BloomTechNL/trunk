@@ -8,15 +8,10 @@ use g_cli::{Cli, RealCoAuthorAliases, RealFartPlayer};
 fn main() {
     let cli = Cli::parse();
 
-    let home = std::env::var("HOME").map(PathBuf::from).or_else(|_| {
-        std::env::var("USERPROFILE").map(PathBuf::from) // Windows support just in case
-    });
-
-    let alias_path = if let Ok(home_path) = home {
-        home_path.join(".config/trunk/aliases")
-    } else {
-        PathBuf::from(".config/trunk/aliases")
-    };
+    let alias_path = std::env::var("HOME")
+        .map(PathBuf::from)
+        .expect("HOME environment variable not set")
+        .join(".config/trunk/aliases");
 
     let co_author_aliases = RealCoAuthorAliases::new(alias_path);
 
