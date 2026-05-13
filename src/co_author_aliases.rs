@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::path::PathBuf;
 
 pub struct RealCoAuthorAliases {
@@ -12,6 +13,8 @@ impl RealCoAuthorAliases {
 
 pub trait CoAuthorAliases {
     fn format_alias(&self, alias: &str) -> Option<String>;
+
+    fn add_alias(&mut self, alias: &str, name: &str, email: &str) -> Result<()>;
 }
 
 impl CoAuthorAliases for RealCoAuthorAliases {
@@ -27,5 +30,9 @@ impl CoAuthorAliases for RealCoAuthorAliases {
             }
         }
         aliases.get(alias).map(String::from)
+    }
+
+    fn add_alias(&mut self, alias: &str, name: &str, email: &str) -> Result<()> {
+        todo!()
     }
 }

@@ -1,7 +1,7 @@
 use crate::common::in_memory_co_author_aliases::InMemoryCoAuthorAliases;
 use crate::common::mock_fart_player::MockFartPlayer;
 use g_cli::cli::AppService;
-use g_cli::{Cli, Commands};
+use g_cli::{Cli, CoAuthorAliases, Commands};
 use std::path::Path;
 use tempfile::TempDir;
 
@@ -35,11 +35,7 @@ impl TestApp {
     }
 
     pub fn add_alias(&mut self, alias: &str, name: &str, email: &str) -> anyhow::Result<()> {
-        let content = format!("{}:{} <{}>\n", alias, name, email);
-        self.co_author_aliases
-            .aliases
-            .insert(alias.to_string(), content);
-        Ok(())
+        self.co_author_aliases.add_alias(alias, name, email)
     }
 
     pub fn commit(&self, dir: &Path, message: &str, co_authors: Vec<&str>) -> anyhow::Result<()> {

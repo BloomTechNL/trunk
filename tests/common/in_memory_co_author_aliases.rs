@@ -1,6 +1,5 @@
 use g_cli::CoAuthorAliases;
 use std::collections::HashMap;
-use std::path::PathBuf;
 
 pub struct InMemoryCoAuthorAliases {
     pub aliases: HashMap<String, String>,
@@ -19,5 +18,11 @@ impl CoAuthorAliases for InMemoryCoAuthorAliases {
         self.aliases
             .get(alias)
             .and_then(|x| x.split_once(':').map(|(_, after)| after.to_string()))
+    }
+
+    fn add_alias(&mut self, alias: &str, name: &str, email: &str) -> anyhow::Result<()> {
+        let content = format!("{}:{} <{}>\n", alias, name, email);
+        self.aliases.insert(alias.to_string(), content.to_string());
+        Ok(())
     }
 }

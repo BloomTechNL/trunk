@@ -91,7 +91,7 @@ fn test_commit_multiple_authors() {
         .expect("should succeed");
 
     let log = g_cli::cmd_log(repo_path, true).expect("g l");
-    println!("{}", log);
+
     assert!(log.contains("multi commit"));
     assert!(log.contains("Co-authored-by: John Doe <jdoe@example.com>"));
     assert!(log.contains("Co-authored-by: Alice Smith <asmith@example.com>"));
