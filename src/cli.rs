@@ -94,6 +94,9 @@ pub enum Commands {
         #[arg(short = 'e', long)]
         email: String,
     },
+    /// Update g to the latest version
+    #[command(name = "update")]
+    Update,
 }
 
 pub fn run_cli(
@@ -139,6 +142,14 @@ pub fn run_cli(
         Commands::AddAlias { alias, name, email } => {
             let alias = alias.trim_start_matches('@');
             aliases.add_alias(alias, &name, &email)
+        }
+        Commands::Update => {
+            std::process::Command::new("bash")
+                .arg("-c")
+                .arg("curl -fsSL https://raw.githubusercontent.com/BloomTechNL/trunk/main/scripts/install_macos.sh | bash")
+                .status()
+                .map(|_| ())
+                .map_err(anyhow::Error::from)
         }
     }
 }
