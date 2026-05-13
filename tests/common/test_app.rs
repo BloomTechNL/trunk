@@ -1,3 +1,4 @@
+use crate::common::in_memory_co_author_aliases::InMemoryCoAuthorAliases;
 use crate::common::mock_fart_player::MockFartPlayer;
 use g_cli::cli::AppService;
 use g_cli::{Cli, Commands, RealCoAuthorAliases};
@@ -7,7 +8,7 @@ use tempfile::TempDir;
 pub struct TestApp {
     pub base_dir: TempDir,
     fart_player: MockFartPlayer,
-    co_author_aliases: RealCoAuthorAliases,
+    co_author_aliases: InMemoryCoAuthorAliases,
     co_author_aliases_path: PathBuf,
 }
 
@@ -16,7 +17,7 @@ impl TestApp {
         let base_dir = TempDir::new().unwrap();
         let fart_player = MockFartPlayer::new();
         let co_author_aliases_path = base_dir.path().join("aliases");
-        let co_author_aliases = RealCoAuthorAliases::new(co_author_aliases_path.clone());
+        let co_author_aliases = InMemoryCoAuthorAliases::new(co_author_aliases_path.clone());
         TestApp {
             base_dir,
             fart_player,
@@ -25,7 +26,7 @@ impl TestApp {
         }
     }
 
-    fn app(&self) -> AppService<'_, MockFartPlayer, RealCoAuthorAliases> {
+    fn app(&self) -> AppService<'_, MockFartPlayer, InMemoryCoAuthorAliases> {
         AppService {
             fart_player: &self.fart_player,
             co_author_aliases: &self.co_author_aliases,
@@ -36,15 +37,11 @@ impl TestApp {
         self.fart_player.was_played()
     }
 
-    pub fn add_alias(&self, alias: &str, name: &str, email: &str) -> anyhow::Result<()> {
+    pub fn add_alias(&mut self, alias: &str, name: &str, email: &str) -> anyhow::Result<()> {
         let content = format!("{}:{} <{}>\n", alias, name, email);
-        use std::fs::OpenOptions;
-        use std::io::Write;
-        let mut file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&self.co_author_aliases_path)?;
-        file.write_all(content.as_bytes())?;
+        self.co_author_aliases
+            .aliases
+            .insert(alias.to_string(), content);
         Ok(())
     }
 

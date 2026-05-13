@@ -39,7 +39,7 @@ fn test_commit_missing_co_author_fails() {
 
 #[test]
 fn test_commit_with_alias() {
-    let app = TestApp::new();
+    let mut app = TestApp::new();
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
 
@@ -57,7 +57,7 @@ fn test_commit_with_alias() {
 
 #[test]
 fn test_commit_with_unknown_alias_fails() {
-    let app = TestApp::new();
+    let mut app = TestApp::new();
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
 
@@ -77,7 +77,7 @@ fn test_commit_with_unknown_alias_fails() {
 
 #[test]
 fn test_commit_multiple_authors() {
-    let app = TestApp::new();
+    let mut app = TestApp::new();
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
 
@@ -91,6 +91,7 @@ fn test_commit_multiple_authors() {
         .expect("should succeed");
 
     let log = g_cli::cmd_log(repo_path, true).expect("g l");
+    println!("{}", log);
     assert!(log.contains("multi commit"));
     assert!(log.contains("Co-authored-by: John Doe <jdoe@example.com>"));
     assert!(log.contains("Co-authored-by: Alice Smith <asmith@example.com>"));
@@ -98,7 +99,7 @@ fn test_commit_multiple_authors() {
 
 #[test]
 fn test_commit_solo_with_others_fails() {
-    let app = TestApp::new();
+    let mut app = TestApp::new();
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
 
