@@ -1,66 +1,56 @@
-use g_cli::{CoAuthorAliases, RealCoAuthorAliases};
-use tempfile::TempDir;
+use g_cli::{CoAuthorAliases};
 
 mod common;
 
-#[test]
-fn test_existing_alias() {
-    let base_dir = TempDir::new().unwrap();
-    let co_author_aliases_path = base_dir.path().join("aliases");
-    let mut co_author_aliases = RealCoAuthorAliases::new(co_author_aliases_path.clone());
-
-    co_author_aliases
-        .add_alias("@harry", "Harry Bronchitis", "harry.bronchitis@example.com")
-        .expect("Should succeed");
-
-    let formatted_alias = co_author_aliases
-        .format_alias("@harry")
-        .expect("Should succeed");
-
-    assert_eq!(
-        formatted_alias,
-        "Harry Bronchitis <harry.bronchitis@example.com>"
-    );
+macro_rules! create_real_co_author_aliases {
+    ($aliases:ident) => {
+        use g_cli::{CoAuthorAliases, RealCoAuthorAliases};
+        let _macro_temp = tempfile::TempDir::new().unwrap();
+        let _macro_path = _macro_temp.path().join("aliases");
+        let mut $aliases = RealCoAuthorAliases::new(_macro_path);
+    };
 }
 
-#[test]
-fn test_unknown_alias() {
-    let base_dir = TempDir::new().unwrap();
-    let co_author_aliases_path = base_dir.path().join("aliases");
-    let co_author_aliases = RealCoAuthorAliases::new(co_author_aliases_path.clone());
+macro_rules! aliases_test_suite {
+    ($init_macro:ident) => {
+        mod $init_macro {
+            #[test]
+            fn test_existing_alias() {
+                $init_macro!(aliases);
+                aliases
+                    .add_alias("@harry", "Harry Bronchitis", "harry.bronchitis@example.com")
+                    .expect("Should succeed");
+                let formatted = aliases.format_alias("@harry").expect("Should succeed");
+                assert_eq!(formatted, "Harry Bronchitis <harry.bronchitis@example.com>");
+            }
 
-    let formatted_alias = co_author_aliases.format_alias("@harry");
+            #[test]
+            fn test_unknown_alias() {
+                $init_macro!(aliases);
+                let formatted = aliases.format_alias("@harry");
+                assert_eq!(formatted, None);
+            }
 
-    assert_eq!(formatted_alias, None,);
+            #[test]
+            fn test_multiple_aliases() {
+                $init_macro!(aliases);
+                aliases
+                    .add_alias("@harry", "Harry Bronchitis", "harry.bronchitis@example.com")
+                    .expect("Should succeed");
+                aliases
+                    .add_alias("@sally", "Sally Cholera", "sally.cholera@example.com")
+                    .expect("Should succeed");
+                assert_eq!(
+                    aliases.format_alias("@harry").expect("Should succeed"),
+                    "Harry Bronchitis <harry.bronchitis@example.com>"
+                );
+                assert_eq!(
+                    aliases.format_alias("@sally").expect("Should succeed"),
+                    "Sally Cholera <sally.cholera@example.com>"
+                );
+            }
+        }
+    };
 }
 
-#[test]
-fn test_multiple_aliases() {
-    let base_dir = TempDir::new().unwrap();
-    let co_author_aliases_path = base_dir.path().join("aliases");
-    let mut co_author_aliases = RealCoAuthorAliases::new(co_author_aliases_path.clone());
-
-    co_author_aliases
-        .add_alias("@harry", "Harry Bronchitis", "harry.bronchitis@example.com")
-        .expect("Should succeed");
-    co_author_aliases
-        .add_alias("@sally", "Sally Cholera", "sally.cholera@example.com")
-        .expect("Should succeed");
-
-    let formatted_alias_1 = co_author_aliases
-        .format_alias("@harry")
-        .expect("Should succeed");
-    let formatted_alias_2 = co_author_aliases
-        .format_alias("@sally")
-        .expect("Should succeed");
-
-    assert_eq!(
-        formatted_alias_1,
-        "Harry Bronchitis <harry.bronchitis@example.com>"
-    );
-
-    assert_eq!(
-        formatted_alias_2,
-        "Sally Cholera <sally.cholera@example.com>"
-    );
-}
+aliases_test_suite!(create_real_co_author_aliases);
