@@ -7,7 +7,7 @@ pub struct InMemoryCoAuthorAliases {
 }
 
 impl InMemoryCoAuthorAliases {
-    pub fn new(path: PathBuf) -> Self {
+    pub fn new() -> Self {
         InMemoryCoAuthorAliases {
             aliases: HashMap::new(),
         }

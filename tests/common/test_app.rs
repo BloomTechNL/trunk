@@ -1,28 +1,25 @@
 use crate::common::in_memory_co_author_aliases::InMemoryCoAuthorAliases;
 use crate::common::mock_fart_player::MockFartPlayer;
 use g_cli::cli::AppService;
-use g_cli::{Cli, Commands, RealCoAuthorAliases};
-use std::path::{Path, PathBuf};
+use g_cli::{Cli, Commands};
+use std::path::Path;
 use tempfile::TempDir;
 
 pub struct TestApp {
     pub base_dir: TempDir,
     fart_player: MockFartPlayer,
     co_author_aliases: InMemoryCoAuthorAliases,
-    co_author_aliases_path: PathBuf,
 }
 
 impl TestApp {
     pub fn new() -> Self {
         let base_dir = TempDir::new().unwrap();
         let fart_player = MockFartPlayer::new();
-        let co_author_aliases_path = base_dir.path().join("aliases");
-        let co_author_aliases = InMemoryCoAuthorAliases::new(co_author_aliases_path.clone());
+        let co_author_aliases = InMemoryCoAuthorAliases::new();
         TestApp {
             base_dir,
             fart_player,
             co_author_aliases,
-            co_author_aliases_path,
         }
     }
 
