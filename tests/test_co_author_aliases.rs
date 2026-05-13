@@ -28,6 +28,22 @@ macro_rules! aliases_test_suite {
                     .add_alias("@harry", "Harry Bronchitis", "harry.bronchitis@example.com")
                     .expect("Should succeed");
                 let formatted = aliases.format_alias("@harry").expect("Should succeed");
+
+                assert_eq!(formatted, "Harry Bronchitis <harry.bronchitis@example.com>");
+            }
+
+            #[test]
+            fn test_redefining_alias() {
+                $init_macro!(aliases);
+
+                aliases
+                    .add_alias("@harry", "Harry typo", "typo.bronchitis@example.com")
+                    .expect("Should succeed");
+                aliases
+                    .add_alias("@harry", "Harry Bronchitis", "harry.bronchitis@example.com")
+                    .expect("Should succeed");
+                let formatted = aliases.format_alias("@harry").expect("Should succeed");
+
                 assert_eq!(formatted, "Harry Bronchitis <harry.bronchitis@example.com>");
             }
 
@@ -36,6 +52,7 @@ macro_rules! aliases_test_suite {
                 $init_macro!(aliases);
 
                 let formatted = aliases.format_alias("@harry");
+
                 assert_eq!(formatted, None);
             }
 
@@ -49,6 +66,7 @@ macro_rules! aliases_test_suite {
                 aliases
                     .add_alias("@sally", "Sally Cholera", "sally.cholera@example.com")
                     .expect("Should succeed");
+
                 assert_eq!(
                     aliases.format_alias("@harry").expect("Should succeed"),
                     "Harry Bronchitis <harry.bronchitis@example.com>"
