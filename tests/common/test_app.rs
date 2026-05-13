@@ -1,6 +1,6 @@
 use crate::common::mock_fart_player::MockFartPlayer;
 use g_cli::cli::AppService;
-use g_cli::{Cli, CoAuthorAliases, Commands, RealCoAuthorAliases};
+use g_cli::{Cli, Commands, RealCoAuthorAliases};
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 
