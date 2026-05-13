@@ -33,6 +33,14 @@ impl CoAuthorAliases for RealCoAuthorAliases {
     }
 
     fn add_alias(&mut self, alias: &str, name: &str, email: &str) -> Result<()> {
-        todo!()
+        let content = format!("{}:{} <{}>\n", alias, name, email);
+        use std::fs::OpenOptions;
+        use std::io::Write;
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&self.path)?;
+        file.write_all(content.as_bytes())?;
+        Ok(())
     }
 }
