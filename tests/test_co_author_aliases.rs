@@ -20,6 +20,7 @@ pub fn add_alias(
     file.write_all(content.as_bytes())?;
     Ok(())
 }
+
 #[test]
 fn test_existing_alias() {
     let base_dir = TempDir::new().unwrap();
@@ -41,5 +42,20 @@ fn test_existing_alias() {
     assert_eq!(
         formatted_alias,
         "Harry Bronchitis <harry.bronchitis@example.com>"
+    );
+}
+
+#[test]
+fn test_unknown_alias() {
+    let base_dir = TempDir::new().unwrap();
+    let co_author_aliases_path = base_dir.path().join("aliases");
+    let co_author_aliases = RealCoAuthorAliases::new(co_author_aliases_path.clone());
+
+    let formatted_alias = co_author_aliases
+        .format_alias("@harry");
+
+    assert_eq!(
+        formatted_alias,
+        None,
     );
 }
