@@ -6,7 +6,7 @@ mod common;
 
 #[test]
 fn test_commit_solo() {
-    let app = TestApp::new();
+    let mut app = TestApp::new();
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
 
@@ -22,7 +22,7 @@ fn test_commit_solo() {
 
 #[test]
 fn test_commit_missing_co_author_fails() {
-    let app = TestApp::new();
+    let mut app = TestApp::new();
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
 

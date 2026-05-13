@@ -13,11 +13,11 @@ fn main() {
         .expect("HOME environment variable not set")
         .join(".config/trunk/aliases");
 
-    let co_author_aliases = RealCoAuthorAliases::new(alias_path);
+    let mut co_author_aliases = RealCoAuthorAliases::new(alias_path);
 
-    let app_service = AppService {
+    let mut app_service = AppService {
         fart_player: &RealFartPlayer,
-        co_author_aliases: &co_author_aliases,
+        co_author_aliases: &mut co_author_aliases,
     };
 
     if let Err(e) = app_service.dispatch_command(cli, PathBuf::from(".")) {

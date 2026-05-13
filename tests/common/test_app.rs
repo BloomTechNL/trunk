@@ -1,7 +1,7 @@
 use crate::common::in_memory_co_author_aliases::InMemoryCoAuthorAliases;
 use crate::common::mock_fart_player::MockFartPlayer;
 use g_cli::cli::AppService;
-use g_cli::{Cli, CoAuthorAliases, Commands};
+use g_cli::{Cli, Commands};
 use std::path::Path;
 use tempfile::TempDir;
 
@@ -23,10 +23,10 @@ impl TestApp {
         }
     }
 
-    fn app(&self) -> AppService<'_, MockFartPlayer, InMemoryCoAuthorAliases> {
+    fn app(&mut self) -> AppService<'_, MockFartPlayer, InMemoryCoAuthorAliases> {
         AppService {
             fart_player: &self.fart_player,
-            co_author_aliases: &self.co_author_aliases,
+            co_author_aliases: &mut self.co_author_aliases,
         }
     }
 
@@ -35,6 +35,7 @@ impl TestApp {
     }
 
     pub fn add_alias(&mut self, alias: &str, name: &str, email: &str) -> anyhow::Result<()> {
+        let path = self.base_dir.path().to_path_buf();
         self.app().dispatch_command(
             Cli {
                 command: Commands::AddAlias {
@@ -43,11 +44,16 @@ impl TestApp {
                     email: email.to_string(),
                 },
             },
-            self.base_dir.path().to_path_buf(),
+            path,
         )
     }
 
-    pub fn commit(&self, dir: &Path, message: &str, co_authors: Vec<&str>) -> anyhow::Result<()> {
+    pub fn commit(
+        &mut self,
+        dir: &Path,
+        message: &str,
+        co_authors: Vec<&str>,
+    ) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {
                 command: Commands::Commit {
@@ -61,7 +67,7 @@ impl TestApp {
         )
     }
 
-    pub fn commit_resolve(&self, dir: &Path) -> anyhow::Result<()> {
+    pub fn commit_resolve(&mut self, dir: &Path) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {
                 command: Commands::Commit {
@@ -75,7 +81,7 @@ impl TestApp {
         )
     }
 
-    pub fn commit_abort(&self, dir: &Path) -> anyhow::Result<()> {
+    pub fn commit_abort(&mut self, dir: &Path) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {
                 command: Commands::Commit {
@@ -89,7 +95,7 @@ impl TestApp {
         )
     }
 
-    pub fn reset(&self, dir: &Path) -> anyhow::Result<()> {
+    pub fn reset(&mut self, dir: &Path) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {
                 command: Commands::Reset,
@@ -98,7 +104,7 @@ impl TestApp {
         )
     }
 
-    pub fn fart(&self, dir: &Path) -> anyhow::Result<()> {
+    pub fn fart(&mut self, dir: &Path) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {
                 command: Commands::Fart,
@@ -107,7 +113,7 @@ impl TestApp {
         )
     }
 
-    pub fn revert(&self, dir: &Path, hash: &str) -> anyhow::Result<()> {
+    pub fn revert(&mut self, dir: &Path, hash: &str) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {
                 command: Commands::Revert {
@@ -121,7 +127,7 @@ impl TestApp {
         )
     }
 
-    pub fn time_travel(&self, dir: &Path, target: &str) -> anyhow::Result<()> {
+    pub fn time_travel(&mut self, dir: &Path, target: &str) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {
                 command: Commands::TimeTravel {
@@ -132,7 +138,7 @@ impl TestApp {
         )
     }
 
-    pub fn pull(&self, dir: &Path) -> anyhow::Result<()> {
+    pub fn pull(&mut self, dir: &Path) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {
                 command: Commands::Pull,
