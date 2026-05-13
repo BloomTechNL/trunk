@@ -35,7 +35,16 @@ impl TestApp {
     }
 
     pub fn add_alias(&mut self, alias: &str, name: &str, email: &str) -> anyhow::Result<()> {
-        self.co_author_aliases.add_alias(alias, name, email)
+        self.app().dispatch_command(
+            Cli {
+                command: Commands::AddAlias {
+                    alias: alias.to_string(),
+                    name: name.to_string(),
+                    email: email.to_string(),
+                },
+            },
+            self.base_dir.path().to_path_buf(),
+        )
     }
 
     pub fn commit(&self, dir: &Path, message: &str, co_authors: Vec<&str>) -> anyhow::Result<()> {

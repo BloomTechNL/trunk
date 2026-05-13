@@ -82,6 +82,18 @@ pub enum Commands {
     /// Run the fart daemon (internal use)
     #[command(name = "_fart_daemon", hide = true)]
     FartDaemon,
+    /// Add a co-author alias
+    #[command(name = "add-alias")]
+    AddAlias {
+        /// Alias (e.g. @piet)
+        alias: String,
+        /// Full name of the co-author
+        #[arg(short = 'n', long)]
+        name: String,
+        /// Email of the co-author
+        #[arg(short = 'e', long)]
+        email: String,
+    },
 }
 
 pub fn run_cli(
@@ -124,6 +136,10 @@ pub fn run_cli(
         )),
         Commands::Fart => fart_player.play(),
         Commands::FartDaemon => fart_player.run_daemon(dir),
+        Commands::AddAlias { alias, name, email } => {
+            let alias = alias.trim_start_matches('@');
+            aliases.add_alias(alias, &name, &email)
+        }
     }
 }
 
