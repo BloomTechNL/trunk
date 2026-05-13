@@ -21,7 +21,7 @@ impl CoAuthorAliases for InMemoryCoAuthorAliases {
     }
 
     fn add_alias(&mut self, alias: &str, name: &str, email: &str) -> anyhow::Result<()> {
-        let content = format!("{}:{} <{}>\n", alias, name, email);
+        let content = format!("{}:{} <{}>", alias, name, email);
         self.aliases.insert(alias.to_string(), content.to_string());
         Ok(())
     }

@@ -1,5 +1,3 @@
-use g_cli::{CoAuthorAliases};
-
 mod common;
 
 macro_rules! create_real_co_author_aliases {
@@ -11,12 +9,21 @@ macro_rules! create_real_co_author_aliases {
     };
 }
 
+macro_rules! create_in_memory_co_author_aliases {
+    ($aliases:ident) => {
+        use crate::common::in_memory_co_author_aliases::InMemoryCoAuthorAliases;
+        use g_cli::CoAuthorAliases;
+        let mut $aliases = InMemoryCoAuthorAliases::new();
+    };
+}
+
 macro_rules! aliases_test_suite {
     ($init_macro:ident) => {
         mod $init_macro {
             #[test]
             fn test_existing_alias() {
                 $init_macro!(aliases);
+
                 aliases
                     .add_alias("@harry", "Harry Bronchitis", "harry.bronchitis@example.com")
                     .expect("Should succeed");
@@ -27,6 +34,7 @@ macro_rules! aliases_test_suite {
             #[test]
             fn test_unknown_alias() {
                 $init_macro!(aliases);
+
                 let formatted = aliases.format_alias("@harry");
                 assert_eq!(formatted, None);
             }
@@ -34,6 +42,7 @@ macro_rules! aliases_test_suite {
             #[test]
             fn test_multiple_aliases() {
                 $init_macro!(aliases);
+
                 aliases
                     .add_alias("@harry", "Harry Bronchitis", "harry.bronchitis@example.com")
                     .expect("Should succeed");
@@ -54,3 +63,4 @@ macro_rules! aliases_test_suite {
 }
 
 aliases_test_suite!(create_real_co_author_aliases);
+aliases_test_suite!(create_in_memory_co_author_aliases);
