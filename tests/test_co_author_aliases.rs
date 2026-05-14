@@ -5,7 +5,7 @@ macro_rules! create_real_co_author_aliases {
         use g_cli::{CoAuthorAliases, RealCoAuthorAliases};
         let _macro_temp = tempfile::TempDir::new().unwrap();
         let _macro_path = _macro_temp.path().join("aliases");
-        let mut $aliases = RealCoAuthorAliases::new(_macro_path);
+        let $aliases = RealCoAuthorAliases::new(_macro_path);
     };
 }
 
@@ -13,7 +13,7 @@ macro_rules! create_in_memory_co_author_aliases {
     ($aliases:ident) => {
         use crate::common::in_memory_co_author_aliases::InMemoryCoAuthorAliases;
         use g_cli::CoAuthorAliases;
-        let mut $aliases = InMemoryCoAuthorAliases::new();
+        let $aliases = InMemoryCoAuthorAliases::new();
     };
 }
 
