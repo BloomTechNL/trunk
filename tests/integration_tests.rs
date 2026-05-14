@@ -12,7 +12,7 @@ mod common;
 
 #[test]
 fn test_commit_conflict_and_resolve() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo1 = set_up_basic_repo(app.base_dir.path());
     let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
     let repo1 = &repo1.as_path();
@@ -46,7 +46,7 @@ fn test_commit_conflict_and_resolve() {
 
 #[test]
 fn test_commit_conflict_and_abort() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo1 = set_up_basic_repo(app.base_dir.path());
     let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
     let repo1 = &repo1.as_path();
@@ -83,7 +83,7 @@ fn test_commit_conflict_and_abort() {
 
 #[test]
 fn test_revert_flow() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo1 = set_up_basic_repo(app.base_dir.path());
     let dir = &repo1.as_path();
 
@@ -118,7 +118,7 @@ fn test_revert_flow() {
 
 #[test]
 fn test_commit_while_in_conflict_state_is_blocked() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo1 = set_up_basic_repo(app.base_dir.path());
     let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
     let repo1 = &repo1.as_path();
@@ -149,7 +149,7 @@ fn test_commit_while_in_conflict_state_is_blocked() {
 
 #[test]
 fn test_revert_without_remote_tracking_branch() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let tmp_path = app.base_dir.path().to_path_buf();
     let origin = set_up_remote(&tmp_path);
     let clone = clone_repo(&tmp_path, "clone", origin);
@@ -182,7 +182,7 @@ fn test_revert_without_remote_tracking_branch() {
 
 #[test]
 fn test_commit_stages_deleted_files() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo1 = set_up_basic_repo(app.base_dir.path());
     let dir = &repo1.as_path();
     let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
@@ -215,7 +215,7 @@ fn test_commit_stages_deleted_files() {
 
 #[test]
 fn test_time_travel_blocks_write_commands_and_now_restores() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo1 = set_up_basic_repo(app.base_dir.path());
     let dir = &repo1.as_path();
 
@@ -269,7 +269,7 @@ fn test_time_travel_blocks_write_commands_and_now_restores() {
 
 #[test]
 fn test_reset_clears_tracked_and_untracked_changes() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo1 = set_up_basic_repo(app.base_dir.path());
     let dir = &repo1.as_path();
 
@@ -299,7 +299,7 @@ fn test_reset_clears_tracked_and_untracked_changes() {
 
 #[test]
 fn test_clean_commit_flow() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo1 = set_up_basic_repo(app.base_dir.path());
     let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
 
@@ -323,7 +323,7 @@ fn test_clean_commit_flow() {
 
 #[test]
 fn test_pull_blocked_by_unpushed_commits() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo_dir = set_up_basic_repo(app.base_dir.path());
     commit_file(repo_dir.as_path());
 
@@ -337,7 +337,7 @@ fn test_pull_blocked_by_unpushed_commits() {
 
 #[test]
 fn test_pull_blocked_by_dirty_working_dir() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo_dir = set_up_basic_repo(app.base_dir.path());
 
     write_file(repo_dir.as_path(), "dirty.txt", "not yet committed\n");
@@ -352,7 +352,7 @@ fn test_pull_blocked_by_dirty_working_dir() {
 
 #[test]
 fn test_pull_succeeds_when_clean() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo1 = set_up_basic_repo(app.base_dir.path());
     let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
 
@@ -370,7 +370,7 @@ fn test_pull_succeeds_when_clean() {
 
 #[test]
 fn test_fart_plays_fart_sound() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let path = app.base_dir.path().to_path_buf();
     app.fart(&path).expect("Fart should succeed");
 
@@ -379,7 +379,7 @@ fn test_fart_plays_fart_sound() {
 
 #[test]
 fn test_fart_plays_when_stash_is_non_empty() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo_dir = set_up_basic_repo(app.base_dir.path());
 
     put_something_in_stash(repo_dir.as_path());
@@ -394,7 +394,7 @@ fn test_fart_plays_when_stash_is_non_empty() {
 
 #[test]
 fn test_fart_does_not_play_when_stash_is_empty() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo_dir = set_up_basic_repo(app.base_dir.path());
 
     app.pull(repo_dir.as_path()).expect("g p should succeed");
