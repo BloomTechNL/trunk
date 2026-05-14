@@ -33,7 +33,7 @@ fn cmd_commit(
     dir: &Path,
     message: &str,
     co_authors: Vec<String>,
-    aliases: &dyn CoAuthorAliases,
+    aliases: &impl CoAuthorAliases,
 ) -> Result<()> {
     if is_rebasing(dir) {
         bail!(
@@ -146,7 +146,7 @@ impl CommitInput {
     }
 }
 
-pub fn commit(input: &CommitInput, aliases: &dyn CoAuthorAliases) -> Result<()> {
+pub fn commit(input: &CommitInput, aliases: &impl CoAuthorAliases) -> Result<()> {
     match input.opt {
         CommitOpt::Message(ref message, ref co_authors) => {
             cmd_commit(input.repo.as_path(), message, co_authors.clone(), aliases)

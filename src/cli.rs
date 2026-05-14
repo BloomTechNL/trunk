@@ -102,8 +102,8 @@ pub enum Commands {
 pub fn run_cli(
     cli: Cli,
     dir: &Path,
-    fart_player: &dyn FartPlayer,
-    aliases: &dyn CoAuthorAliases,
+    fart_player: &impl FartPlayer,
+    aliases: &impl CoAuthorAliases,
 ) -> Result<()> {
     if cli.command != Commands::Fart && has_stash(dir) {
         let _ = fart_player.play_asynchronously();

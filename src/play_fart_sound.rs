@@ -72,7 +72,7 @@ impl FartPlayer for RealFartPlayer {
     }
 }
 
-pub fn run_fart_daemon(player: &dyn FartPlayer, dir: &Path) -> Result<()> {
+pub fn run_fart_daemon(player: &impl FartPlayer, dir: &Path) -> Result<()> {
     let pid = std::process::id();
     register_daemon(dir, pid)?;
 
