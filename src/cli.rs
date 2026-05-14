@@ -103,7 +103,7 @@ pub fn run_cli(
     cli: Cli,
     dir: &Path,
     fart_player: &dyn FartPlayer,
-    aliases: &mut dyn CoAuthorAliases,
+    aliases: &dyn CoAuthorAliases,
 ) -> Result<()> {
     if cli.command != Commands::Fart && has_stash(dir) {
         let _ = fart_player.play_asynchronously();
@@ -156,11 +156,11 @@ pub fn run_cli(
 
 pub struct AppService<'a, FP: FartPlayer, CAA: CoAuthorAliases> {
     pub fart_player: &'a FP,
-    pub co_author_aliases: &'a mut CAA,
+    pub co_author_aliases: &'a CAA,
 }
 
 impl<'a, FP: FartPlayer, CA: CoAuthorAliases> AppService<'a, FP, CA> {
-    pub fn dispatch_command(&mut self, cli: Cli, repo: PathBuf) -> Result<()> {
+    pub fn dispatch_command(&self, cli: Cli, repo: PathBuf) -> Result<()> {
         run_cli(
             cli,
             repo.as_path(),

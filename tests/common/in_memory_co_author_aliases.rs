@@ -1,5 +1,5 @@
-use std::cell::RefCell;
 use g_cli::CoAuthorAliases;
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 pub struct InMemoryCoAuthorAliases {
@@ -16,7 +16,8 @@ impl InMemoryCoAuthorAliases {
 
 impl CoAuthorAliases for InMemoryCoAuthorAliases {
     fn format_alias(&self, alias: &str) -> Option<String> {
-        self.aliases.borrow()
+        self.aliases
+            .borrow()
             .get(alias)
             .and_then(|x| x.split_once(':').map(|(_, after)| after.to_string()))
     }
