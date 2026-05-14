@@ -6,7 +6,7 @@ mod common;
 
 #[test]
 fn test_commit_solo() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
 
@@ -22,7 +22,7 @@ fn test_commit_solo() {
 
 #[test]
 fn test_commit_missing_co_author_fails() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
 
@@ -39,7 +39,7 @@ fn test_commit_missing_co_author_fails() {
 
 #[test]
 fn test_commit_with_alias() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
 
@@ -57,7 +57,7 @@ fn test_commit_with_alias() {
 
 #[test]
 fn test_commit_with_unknown_alias_fails() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
 
@@ -77,7 +77,7 @@ fn test_commit_with_unknown_alias_fails() {
 
 #[test]
 fn test_commit_multiple_authors() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
 
@@ -99,7 +99,7 @@ fn test_commit_multiple_authors() {
 
 #[test]
 fn test_commit_solo_with_others_fails() {
-    let mut app = TestApp::new();
+    let app = TestApp::new();
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
 
