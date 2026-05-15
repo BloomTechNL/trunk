@@ -36,6 +36,9 @@ impl CoAuthorAliases for RealCoAuthorAliases {
         let content = format!("{}:{} <{}>\n", alias, name, email);
         use std::fs::OpenOptions;
         use std::io::Write;
+        if let Some(parent) = self.path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
         let mut file = OpenOptions::new()
             .create(true)
             .append(true)

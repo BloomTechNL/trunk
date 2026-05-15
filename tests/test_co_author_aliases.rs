@@ -4,7 +4,7 @@ macro_rules! create_real_co_author_aliases {
     ($aliases:ident) => {
         use g_cli::{CoAuthorAliases, RealCoAuthorAliases};
         let _macro_temp = tempfile::TempDir::new().unwrap();
-        let _macro_path = _macro_temp.path().join("aliases");
+        let _macro_path = _macro_temp.path().join(".config/trunk/aliases");
         let $aliases = RealCoAuthorAliases::new(_macro_path);
     };
 }
