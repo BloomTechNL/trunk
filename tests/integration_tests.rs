@@ -6,7 +6,6 @@ use common::test_app::TestApp;
 use common::use_git::{
     clone_repo, commit_file, put_something_in_stash, set_up_basic_repo, set_up_remote,
 };
-use g_cli::cmd_log;
 
 mod common;
 
@@ -37,7 +36,7 @@ fn test_commit_conflict_and_resolve() {
     app.commit_resolve(repo2)
         .expect("g c --resolve should succeed");
 
-    let log = cmd_log(repo2, true).expect("g l");
+    let log = app.log(repo2);
     assert!(
         log.contains("clone_b: conflicting change"),
         "resolved commit should be in the log\n{log}"
@@ -102,7 +101,7 @@ fn test_revert_flow() {
 
     app.revert(dir, &commit_hash).expect("g rv should succeed");
 
-    let log_after = cmd_log(dir, true).expect("g l after revert");
+    let log_after = app.log(dir);
     assert!(
         log_after.contains("Revert") || log_after.contains("revert"),
         "a revert commit should appear in the log\n{log_after}"
@@ -173,7 +172,7 @@ fn test_revert_without_remote_tracking_branch() {
     app.revert(&clone2.clone().as_path(), &head)
         .expect("g rv should succeed");
 
-    let log = cmd_log(&clone2, true).expect("g l");
+    let log = app.log(&clone2);
     assert!(
         log.contains("Revert") || log.contains("revert"),
         "revert commit should be in log\n{log}"
@@ -196,7 +195,7 @@ fn test_commit_stages_deleted_files() {
     app.commit(dir, "delete the file", vec!["SOLO"])
         .expect("g c with deletion");
 
-    let log = cmd_log(dir, true).expect("g l");
+    let log = app.log(dir);
     assert!(
         log.contains("delete the file"),
         "deletion commit should be in log\n{log}"
@@ -260,7 +259,7 @@ fn test_time_travel_blocks_write_commands_and_now_restores() {
     app.commit(dir, "commit after returning from time travel", vec!["SOLO"])
         .expect("g c should succeed after g tt now");
 
-    let log = cmd_log(dir, true).expect("g l");
+    let log = app.log(dir);
     assert!(
         log.contains("commit after returning from time travel"),
         "commit made after time travel should be in the log\n{log}"
@@ -307,14 +306,14 @@ fn test_clean_commit_flow() {
     app.commit(repo1.as_path(), "add hello.txt", vec!["SOLO"])
         .expect("g c should succeed");
 
-    let log = cmd_log(repo1.as_path(), true).expect("g l");
+    let log = app.log(repo1.as_path());
     assert!(
         log.contains("add hello.txt"),
         "log should contain the commit message\n{log}"
     );
 
     app.pull(repo2.as_path()).expect("Pull should succeed");
-    let log_b = cmd_log(repo2.as_path(), true).expect("g l on clone_b");
+    let log_b = app.log(repo2.as_path());
     assert!(
         log_b.contains("add hello.txt"),
         "commit should be visible from clone_b\n{log_b}"
@@ -361,7 +360,7 @@ fn test_pull_succeeds_when_clean() {
         .expect("g c succeeds");
     app.pull(repo2.as_path()).expect("g p succeeds");
 
-    let log = cmd_log(repo2.as_path(), true).expect("g l");
+    let log = app.log(repo2.as_path());
     assert!(
         log.contains("add feature"),
         "clone2 should have the new commit\n{log}"

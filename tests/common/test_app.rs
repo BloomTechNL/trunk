@@ -1,7 +1,7 @@
 use crate::common::in_memory_co_author_aliases::InMemoryCoAuthorAliases;
 use crate::common::mock_fart_player::MockFartPlayer;
 use g_cli::cli::AppService;
-use g_cli::{Cli, Commands};
+use g_cli::{cmd_log, Cli, Commands};
 use std::path::Path;
 use tempfile::TempDir;
 
@@ -131,6 +131,10 @@ impl TestApp {
             },
             dir.to_path_buf(),
         )
+    }
+
+    pub fn log(&self, dir: &Path) -> String {
+        cmd_log(dir, true).expect("should succeed")
     }
 
     pub fn pull(&self, dir: &Path) -> anyhow::Result<()> {

@@ -14,7 +14,7 @@ fn test_commit_solo() {
     app.commit(repo_path, "solo commit", vec!["SOLO"])
         .expect("SOLO commit should succeed");
 
-    let log = g_cli::cmd_log(repo_path, true).expect("g l");
+    let log = app.log(repo_path);
     assert!(log.contains("solo commit"));
     assert!(log.contains("(Solo-work)"));
     assert!(!log.contains("Co-authored-by:"));
@@ -50,7 +50,7 @@ fn test_commit_with_alias() {
     app.commit(repo_path, "alias commit", vec!["@jdoe"])
         .expect("should succeed");
 
-    let log = g_cli::cmd_log(repo_path, true).expect("g l");
+    let log = app.log(repo_path);
     assert!(log.contains("alias commit"));
     assert!(log.contains("Co-authored-by: John Doe <jdoe@example.com>"));
 }
@@ -90,7 +90,7 @@ fn test_commit_multiple_authors() {
     app.commit(repo_path, "multi commit", vec!["@jdoe", "@asmith"])
         .expect("should succeed");
 
-    let log = g_cli::cmd_log(repo_path, true).expect("g l");
+    let log = app.log(repo_path);
 
     assert!(log.contains("multi commit"));
     assert!(log.contains("Co-authored-by: John Doe <jdoe@example.com>"));
