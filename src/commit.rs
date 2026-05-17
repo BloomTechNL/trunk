@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use crate::git::{git_capture, git_capture_silent, git_passthrough, is_detached_head, is_rebasing};
+use crate::output::OutputSink;
 use crate::CoAuthorAliases;
 use anyhow::{bail, Result};
 
@@ -34,6 +35,7 @@ fn cmd_commit(
     message: &str,
     co_authors: Vec<String>,
     aliases: &impl CoAuthorAliases,
+    sink: &impl OutputSink,
 ) -> Result<()> {
     if is_rebasing(dir) {
         bail!(
@@ -73,18 +75,18 @@ fn cmd_commit(
         format!("{}\n\n{}", message, co_author_lines.join("\n"))
     };
 
-    git_passthrough(dir, &["add", "-A"])?;
-    git_passthrough(dir, &["commit", "-m", &final_message])?;
+    git_passthrough(dir, &["add", "-A"], sink)?;
+    git_passthrough(dir, &["commit", "-m", &final_message], sink)?;
 
     if !has_remote(dir) {
         return Ok(());
     }
 
     if !has_remote_tracking(dir) {
-        return git_passthrough(dir, &["push", "--set-upstream", "origin", "HEAD"]);
+        return git_passthrough(dir, &["push", "--set-upstream", "origin", "HEAD"], sink);
     }
 
-    let pull_result = git_passthrough(dir, &["pull", "--rebase"]);
+    let pull_result = git_passthrough(dir, &["pull", "--rebase"], sink);
     if pull_result.is_err() {
         eprintln!(
             "\nAfter resolving the conflict, run\n  g c --resolve\nOr run\n  g c --abort\nTo give up (will softly reset your commit)"
@@ -92,18 +94,18 @@ fn cmd_commit(
         bail!("Conflict during rebase — see instructions above");
     }
 
-    git_passthrough(dir, &["push"])
+    git_passthrough(dir, &["push"], sink)
 }
 
-fn cmd_commit_resolve(dir: &Path) -> Result<()> {
-    git_passthrough(dir, &["add", "-A"])?;
-    git_passthrough(dir, &["rebase", "--continue"])?;
-    git_passthrough(dir, &["push"])
+fn cmd_commit_resolve(dir: &Path, sink: &impl OutputSink) -> Result<()> {
+    git_passthrough(dir, &["add", "-A"], sink)?;
+    git_passthrough(dir, &["rebase", "--continue"], sink)?;
+    git_passthrough(dir, &["push"], sink)
 }
 
-fn cmd_commit_abort(dir: &Path) -> Result<()> {
-    git_passthrough(dir, &["rebase", "--abort"])?;
-    git_passthrough(dir, &["reset", "--soft", "HEAD~1"])
+fn cmd_commit_abort(dir: &Path, sink: &impl OutputSink) -> Result<()> {
+    git_passthrough(dir, &["rebase", "--abort"], sink)?;
+    git_passthrough(dir, &["reset", "--soft", "HEAD~1"], sink)
 }
 
 pub enum CommitOpt {
@@ -146,12 +148,20 @@ impl CommitInput {
     }
 }
 
-pub fn commit(input: &CommitInput, aliases: &impl CoAuthorAliases) -> Result<()> {
+pub fn commit(
+    input: &CommitInput,
+    aliases: &impl CoAuthorAliases,
+    sink: &impl OutputSink,
+) -> Result<()> {
     match input.opt {
-        CommitOpt::Message(ref message, ref co_authors) => {
-            cmd_commit(input.repo.as_path(), message, co_authors.clone(), aliases)
-        }
-        CommitOpt::Resolve => cmd_commit_resolve(input.repo.as_path()),
-        CommitOpt::Abort => cmd_commit_abort(input.repo.as_path()),
+        CommitOpt::Message(ref message, ref co_authors) => cmd_commit(
+            input.repo.as_path(),
+            message,
+            co_authors.clone(),
+            aliases,
+            sink,
+        ),
+        CommitOpt::Resolve => cmd_commit_resolve(input.repo.as_path(), sink),
+        CommitOpt::Abort => cmd_commit_abort(input.repo.as_path(), sink),
     }
 }

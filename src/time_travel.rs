@@ -3,6 +3,7 @@ use std::path::Path;
 use anyhow::{anyhow, bail, Result};
 
 use crate::git::{git_capture, git_capture_silent, git_passthrough_silent};
+use crate::output::OutputSink;
 
 // ---------------------------------------------------------------------------
 // g tt  — time travel (detached HEAD)
@@ -22,17 +23,17 @@ fn default_branch(dir: &Path) -> String {
     "main".to_string()
 }
 
-fn cmd_time_travel_now(dir: &Path) -> Result<()> {
+fn cmd_time_travel_now(dir: &Path, sink: &impl OutputSink) -> Result<()> {
     let branch = default_branch(dir);
-    git_passthrough_silent(dir, &["checkout", &branch])
+    git_passthrough_silent(dir, &["checkout", &branch], sink)
 }
 
-pub fn cmd_time_travel(dir: &Path, target: &str) -> Result<()> {
+pub fn cmd_time_travel(dir: &Path, target: &str, sink: &impl OutputSink) -> Result<()> {
     if target == "now" {
-        return cmd_time_travel_now(dir);
+        return cmd_time_travel_now(dir, sink);
     }
     let hash = resolve_to_commit_hash(dir, target)?;
-    git_passthrough_silent(dir, &["checkout", &hash])
+    git_passthrough_silent(dir, &["checkout", &hash], sink)
 }
 
 fn resolve_to_commit_hash(dir: &Path, spec: &str) -> Result<String> {

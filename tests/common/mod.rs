@@ -1,3 +1,4 @@
+pub mod capturing_sink;
 pub mod in_memory_co_author_aliases;
 pub mod mock_fart_player;
 pub mod test_app;

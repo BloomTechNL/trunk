@@ -3,12 +3,13 @@ use std::path::Path;
 use anyhow::{bail, Result};
 
 use crate::git::{git_capture, git_passthrough};
+use crate::output::OutputSink;
 
 // ---------------------------------------------------------------------------
 // g p  — pull (fast-forward only, guarded)
 // ---------------------------------------------------------------------------
 
-pub fn cmd_pull(dir: &Path) -> Result<()> {
+pub fn cmd_pull(dir: &Path, sink: &impl OutputSink) -> Result<()> {
     let porcelain = git_capture(dir, &["status", "--porcelain"])?;
     if !porcelain.trim().is_empty() {
         bail!("You have uncommitted changes. Please commit them with `g c` before pulling.");
@@ -19,5 +20,5 @@ pub fn cmd_pull(dir: &Path) -> Result<()> {
         bail!("You have unpushed commits. Please push them with `g c` before pulling.");
     }
 
-    git_passthrough(dir, &["pull", "--rebase"])
+    git_passthrough(dir, &["pull", "--rebase"], sink)
 }

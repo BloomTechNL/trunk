@@ -1,7 +1,8 @@
+use crate::common::capturing_sink::CapturingSink;
 use crate::common::in_memory_co_author_aliases::InMemoryCoAuthorAliases;
 use crate::common::mock_fart_player::MockFartPlayer;
 use g_cli::cli::AppService;
-use g_cli::{cmd_log, Cli, Commands};
+use g_cli::{Cli, Commands};
 use std::path::Path;
 use tempfile::TempDir;
 
@@ -9,6 +10,7 @@ pub struct TestApp {
     pub base_dir: TempDir,
     fart_player: MockFartPlayer,
     co_author_aliases: InMemoryCoAuthorAliases,
+    output: CapturingSink,
 }
 
 impl TestApp {
@@ -16,17 +18,20 @@ impl TestApp {
         let base_dir = TempDir::new().unwrap();
         let fart_player = MockFartPlayer::new();
         let co_author_aliases = InMemoryCoAuthorAliases::new();
+        let output = CapturingSink::new();
         TestApp {
             base_dir,
             fart_player,
             co_author_aliases,
+            output,
         }
     }
 
-    fn app(&self) -> AppService<'_, MockFartPlayer, InMemoryCoAuthorAliases> {
+    fn app(&self) -> AppService<'_, MockFartPlayer, InMemoryCoAuthorAliases, CapturingSink> {
         AppService {
             fart_player: &self.fart_player,
             co_author_aliases: &self.co_author_aliases,
+            output: &self.output,
         }
     }
 
@@ -134,7 +139,15 @@ impl TestApp {
     }
 
     pub fn log(&self, dir: &Path) -> String {
-        cmd_log(dir, true).expect("should succeed")
+        self.app()
+            .dispatch_command(
+                Cli {
+                    command: Commands::Log,
+                },
+                dir.to_path_buf(),
+            )
+            .expect("g l should succeed");
+        self.output.take()
     }
 
     pub fn pull(&self, dir: &Path) -> anyhow::Result<()> {

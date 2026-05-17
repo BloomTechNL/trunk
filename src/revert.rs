@@ -4,6 +4,7 @@ use anyhow::{anyhow, bail, Result};
 
 use crate::commit::{has_remote, has_remote_tracking};
 use crate::git::{git_capture, git_passthrough, is_detached_head};
+use crate::output::OutputSink;
 
 // ---------------------------------------------------------------------------
 // g rv  — revert (interactive)
@@ -36,7 +37,7 @@ pub fn get_revert_info(dir: &Path, hash: &str) -> Result<RevertInfo> {
     })
 }
 
-fn cmd_revert(dir: &Path, hash: &str, bypass_prompt: bool) -> Result<()> {
+fn cmd_revert(dir: &Path, hash: &str, bypass_prompt: bool, sink: &impl OutputSink) -> Result<()> {
     if is_detached_head(dir) {
         bail!("You are currently time travelling. Run `g tt now` to return to the present before making changes.");
     }
@@ -58,17 +59,17 @@ fn cmd_revert(dir: &Path, hash: &str, bypass_prompt: bool) -> Result<()> {
     }
 
     let full_hash = git_capture(dir, &["rev-parse", hash])?.trim().to_string();
-    git_passthrough(dir, &["revert", "--no-edit", &full_hash])?;
+    git_passthrough(dir, &["revert", "--no-edit", &full_hash], sink)?;
 
     if !has_remote(dir) {
         return Ok(());
     }
 
     if !has_remote_tracking(dir) {
-        return git_passthrough(dir, &["push", "--set-upstream", "origin", "HEAD"]);
+        return git_passthrough(dir, &["push", "--set-upstream", "origin", "HEAD"], sink);
     }
 
-    let pull_result = git_passthrough(dir, &["pull", "--rebase"]);
+    let pull_result = git_passthrough(dir, &["pull", "--rebase"], sink);
     if pull_result.is_err() {
         eprintln!(
             "\nAfter resolving the conflict, run\n  g rv --resolve\nOr run\n  g rv --abort\nTo give up (will permanently delete the revert commit)"
@@ -76,18 +77,18 @@ fn cmd_revert(dir: &Path, hash: &str, bypass_prompt: bool) -> Result<()> {
         bail!("Conflict during rebase — see instructions above");
     }
 
-    git_passthrough(dir, &["push"])
+    git_passthrough(dir, &["push"], sink)
 }
 
-fn cmd_revert_resolve(dir: &Path) -> Result<()> {
-    git_passthrough(dir, &["add", "-A"])?;
-    git_passthrough(dir, &["rebase", "--continue"])?;
-    git_passthrough(dir, &["push"])
+fn cmd_revert_resolve(dir: &Path, sink: &impl OutputSink) -> Result<()> {
+    git_passthrough(dir, &["add", "-A"], sink)?;
+    git_passthrough(dir, &["rebase", "--continue"], sink)?;
+    git_passthrough(dir, &["push"], sink)
 }
 
-fn cmd_revert_abort(dir: &Path) -> Result<()> {
-    git_passthrough(dir, &["rebase", "--abort"])?;
-    git_passthrough(dir, &["reset", "--hard", "HEAD~1"])
+fn cmd_revert_abort(dir: &Path, sink: &impl OutputSink) -> Result<()> {
+    git_passthrough(dir, &["rebase", "--abort"], sink)?;
+    git_passthrough(dir, &["reset", "--hard", "HEAD~1"], sink)
 }
 
 pub enum RevertOpt {
@@ -126,10 +127,12 @@ impl RevertInput {
     }
 }
 
-pub fn revert(input: &RevertInput) -> Result<()> {
+pub fn revert(input: &RevertInput, sink: &impl OutputSink) -> Result<()> {
     match input.opt {
-        RevertOpt::Ref(ref reference) => cmd_revert(&input.repo, &reference, !input.interactive),
-        RevertOpt::Resolve => cmd_revert_resolve(&input.repo),
-        RevertOpt::Abort => cmd_revert_abort(&input.repo),
+        RevertOpt::Ref(ref reference) => {
+            cmd_revert(&input.repo, &reference, !input.interactive, sink)
+        }
+        RevertOpt::Resolve => cmd_revert_resolve(&input.repo, sink),
+        RevertOpt::Abort => cmd_revert_abort(&input.repo, sink),
     }
 }

@@ -4,6 +4,7 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 use crate::commit::{commit, CommitInput};
+use crate::output::OutputSink;
 use crate::revert::{revert, RevertInput};
 use crate::{
     cmd_diff, cmd_log, cmd_pull, cmd_reset, cmd_status, cmd_time_travel, has_stash,
@@ -104,6 +105,7 @@ pub fn run_cli(
     dir: &Path,
     fart_player: &impl FartPlayer,
     aliases: &impl CoAuthorAliases,
+    output: &impl OutputSink,
 ) -> Result<()> {
     if cli.command != Commands::Fart && has_stash(dir) {
         let _ = fart_player.play_asynchronously();
@@ -118,25 +120,29 @@ pub fn run_cli(
         } => commit(
             &CommitInput::from_cli(PathBuf::from(dir), message, co_authors, resolve, abort)?,
             aliases,
+            output,
         ),
-        Commands::Pull => cmd_pull(dir),
-        Commands::Log => cmd_log(dir, false).map(|_| ()),
-        Commands::Status => cmd_status(dir, false).map(|_| ()),
-        Commands::Diff => cmd_diff(dir, false).map(|_| ()),
-        Commands::TimeTravel { target } => cmd_time_travel(dir, &target),
+        Commands::Pull => cmd_pull(dir, output),
+        Commands::Log => cmd_log(dir, output),
+        Commands::Status => cmd_status(dir, output),
+        Commands::Diff => cmd_diff(dir, output),
+        Commands::TimeTravel { target } => cmd_time_travel(dir, &target, output),
         Commands::Reset => cmd_reset(dir),
         Commands::Revert {
             hash,
             resolve,
             abort,
             noninteractive,
-        } => revert(&RevertInput::from_cli(
-            PathBuf::from(dir),
-            hash,
-            resolve,
-            abort,
-            !noninteractive,
-        )),
+        } => revert(
+            &RevertInput::from_cli(
+                PathBuf::from(dir),
+                hash,
+                resolve,
+                abort,
+                !noninteractive,
+            ),
+            output,
+        ),
         Commands::Fart => fart_player.play(),
         Commands::FartDaemon => fart_player.run_daemon(dir),
         Commands::AddAlias { alias, name, email } => {
@@ -154,18 +160,20 @@ pub fn run_cli(
     }
 }
 
-pub struct AppService<'a, FP: FartPlayer, CAA: CoAuthorAliases> {
+pub struct AppService<'a, FP: FartPlayer, CAA: CoAuthorAliases, O: OutputSink> {
     pub fart_player: &'a FP,
     pub co_author_aliases: &'a CAA,
+    pub output: &'a O,
 }
 
-impl<'a, FP: FartPlayer, CA: CoAuthorAliases> AppService<'a, FP, CA> {
+impl<'a, FP: FartPlayer, CA: CoAuthorAliases, O: OutputSink> AppService<'a, FP, CA, O> {
     pub fn dispatch_command(&self, cli: Cli, repo: PathBuf) -> Result<()> {
         run_cli(
             cli,
             repo.as_path(),
             self.fart_player,
             self.co_author_aliases,
+            self.output,
         )
     }
 }

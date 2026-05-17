@@ -3,6 +3,7 @@ pub mod co_author_aliases;
 pub mod commit;
 pub mod git;
 pub mod has_stash;
+pub mod output;
 pub mod play_fart_sound;
 pub mod pull;
 pub mod query;
