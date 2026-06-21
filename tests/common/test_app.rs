@@ -1,5 +1,6 @@
 use crate::common::capturing_sink::CapturingSink;
 use crate::common::in_memory_co_author_aliases::InMemoryCoAuthorAliases;
+use crate::common::in_memory_trunk_config::InMemoryTrunkConfig;
 use crate::common::mock_fart_player::MockFartPlayer;
 use g_cli::cli::AppService;
 use g_cli::{Cli, Commands};
@@ -10,6 +11,7 @@ pub struct TestApp {
     pub base_dir: TempDir,
     fart_player: MockFartPlayer,
     co_author_aliases: InMemoryCoAuthorAliases,
+    trunk_config: InMemoryTrunkConfig,
     output: CapturingSink,
 }
 
@@ -18,19 +20,25 @@ impl TestApp {
         let base_dir = TempDir::new().unwrap();
         let fart_player = MockFartPlayer::new();
         let co_author_aliases = InMemoryCoAuthorAliases::new();
+        let trunk_config = InMemoryTrunkConfig::new();
         let output = CapturingSink::new();
         TestApp {
             base_dir,
             fart_player,
             co_author_aliases,
+            trunk_config,
             output,
         }
     }
 
-    fn app(&self) -> AppService<'_, MockFartPlayer, InMemoryCoAuthorAliases, CapturingSink> {
+    fn app(
+        &self,
+    ) -> AppService<'_, MockFartPlayer, InMemoryCoAuthorAliases, CapturingSink, InMemoryTrunkConfig>
+    {
         AppService {
             fart_player: &self.fart_player,
             co_author_aliases: &self.co_author_aliases,
+            trunk_config: &self.trunk_config,
             output: &self.output,
         }
     }
@@ -50,6 +58,18 @@ impl TestApp {
                 },
             },
             path,
+        )
+    }
+
+    pub fn config(&self, dir: &Path, key: &str, value: &str) -> anyhow::Result<()> {
+        self.app().dispatch_command(
+            Cli {
+                command: Commands::Config {
+                    key: key.to_string(),
+                    value: value.to_string(),
+                },
+            },
+            dir.to_path_buf(),
         )
     }
 

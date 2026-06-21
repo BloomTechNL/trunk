@@ -126,6 +126,7 @@ impl CommitInput {
         co_authors: Vec<String>,
         resolve: bool,
         abort: bool,
+        co_authors_required: bool,
     ) -> Result<Self> {
         let opt: CommitOpt;
         if abort {
@@ -139,6 +140,8 @@ impl CommitInput {
                 parsed_co_authors = vec![];
             } else if !has_solo && co_authors.len() > 0 {
                 parsed_co_authors = co_authors;
+            } else if !co_authors_required {
+                parsed_co_authors = vec![];
             } else {
                 bail!("You must either specify co-authors as @jane @john or specify that this is solo work with SOLO");
             }

@@ -4,6 +4,7 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 use crate::commit::{commit, CommitInput};
+use crate::config::TrunkConfig;
 use crate::output::OutputSink;
 use crate::revert::{revert, RevertInput};
 use crate::{
@@ -95,6 +96,14 @@ pub enum Commands {
         #[arg(short = 'e', long)]
         email: String,
     },
+    /// Set configuration values
+    #[command(name = "config")]
+    Config {
+        /// Configuration key (e.g. co-authors-required)
+        key: String,
+        /// Configuration value
+        value: String,
+    },
     /// Update g to the latest version
     #[command(name = "update")]
     Update,
@@ -105,6 +114,7 @@ pub fn run_cli(
     dir: &Path,
     fart_player: &impl FartPlayer,
     aliases: &impl CoAuthorAliases,
+    config: &impl TrunkConfig,
     output: &impl OutputSink,
 ) -> Result<()> {
     if cli.command != Commands::Fart && has_stash(dir) {
@@ -117,11 +127,16 @@ pub fn run_cli(
             co_authors,
             resolve,
             abort,
-        } => commit(
-            &CommitInput::from_cli(PathBuf::from(dir), message, co_authors, resolve, abort)?,
-            aliases,
-            output,
-        ),
+        } => {
+            let co_authors_required = config.load().co_authors_required;
+            commit(
+                &CommitInput::from_cli(
+                    PathBuf::from(dir), message, co_authors, resolve, abort, co_authors_required,
+                )?,
+                aliases,
+                output,
+            )
+        },
         Commands::Pull => cmd_pull(dir, output),
         Commands::Log => cmd_log(dir, output),
         Commands::Status => cmd_status(dir, output),
@@ -149,6 +164,15 @@ pub fn run_cli(
             let alias = alias.trim_start_matches('@');
             aliases.add_alias(alias, &name, &email)
         }
+        Commands::Config { key, value } => match key.as_str() {
+            "co-authors-required" => {
+                let required: bool = value
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid value for co-authors-required: {}. Expected true or false.", value))?;
+                config.set_co_authors_required(required)
+            }
+            _ => anyhow::bail!("Unknown configuration key: {}. Supported keys: co-authors-required", key),
+        },
         Commands::Update => {
             std::process::Command::new("bash")
                 .arg("-c")
@@ -160,19 +184,23 @@ pub fn run_cli(
     }
 }
 
-pub struct AppService<'a, FP: FartPlayer, CAA: CoAuthorAliases, O: OutputSink> {
+pub struct AppService<'a, FP: FartPlayer, CAA: CoAuthorAliases, O: OutputSink, TC: TrunkConfig> {
     pub fart_player: &'a FP,
     pub co_author_aliases: &'a CAA,
     pub output: &'a O,
+    pub trunk_config: &'a TC,
 }
 
-impl<'a, FP: FartPlayer, CA: CoAuthorAliases, O: OutputSink> AppService<'a, FP, CA, O> {
+impl<'a, FP: FartPlayer, CA: CoAuthorAliases, O: OutputSink, TC: TrunkConfig>
+    AppService<'a, FP, CA, O, TC>
+{
     pub fn dispatch_command(&self, cli: Cli, repo: PathBuf) -> Result<()> {
         run_cli(
             cli,
             repo.as_path(),
             self.fart_player,
             self.co_author_aliases,
+            self.trunk_config,
             self.output,
         )
     }

@@ -1,6 +1,7 @@
 pub mod cli;
 pub mod co_author_aliases;
 pub mod commit;
+pub mod config;
 pub mod git;
 pub mod has_stash;
 pub mod output;
@@ -13,6 +14,7 @@ pub mod time_travel;
 
 pub use cli::{run_cli, Cli, Commands};
 pub use co_author_aliases::{CoAuthorAliases, RealCoAuthorAliases};
+pub use config::{Config, RealTrunkConfig, TrunkConfig};
 pub use has_stash::has_stash;
 pub use play_fart_sound::{run_fart_daemon, FartPlayer, RealFartPlayer};
 pub use pull::cmd_pull;

@@ -116,3 +116,59 @@ fn test_commit_solo_with_others_fails() {
         .contains( "You must either specify co-authors as @jane @john or specify that this is solo work with SOLO"
     ));
 }
+
+#[test]
+fn test_commit_succeeds_without_co_authors_when_config_disabled() {
+    let app = TestApp::new();
+    let repo = set_up_basic_repo(app.base_dir.path());
+    let repo_path = repo.as_path();
+
+    app.config(repo_path, "co-authors-required", "false")
+        .expect("config should succeed");
+
+    write_file(repo_path, "noauthor.txt", "content");
+    app.commit(repo_path, "commit without co-authors", vec![])
+        .expect("should succeed when coAuthorsRequired is false");
+
+    let log = app.log(repo_path);
+    assert!(log.contains("commit without co-authors"));
+    assert!(log.contains("(Solo-work)"));
+}
+
+#[test]
+fn test_commit_with_co_authors_when_config_disabled() {
+    let app = TestApp::new();
+    let repo = set_up_basic_repo(app.base_dir.path());
+    let repo_path = repo.as_path();
+
+    app.add_alias("jdoe", "John Doe", "jdoe@example.com")
+        .expect("should succeed");
+
+    app.config(repo_path, "co-authors-required", "false")
+        .expect("config should succeed");
+
+    write_file(repo_path, "coauthor.txt", "content");
+    app.commit(repo_path, "commit with co-author", vec!["@jdoe"])
+        .expect("should succeed when coAuthorsRequired is false");
+
+    let log = app.log(repo_path);
+    assert!(log.contains("Co-authored-by: John Doe <jdoe@example.com>"));
+}
+
+#[test]
+fn test_commit_solo_when_config_disabled() {
+    let app = TestApp::new();
+    let repo = set_up_basic_repo(app.base_dir.path());
+    let repo_path = repo.as_path();
+
+    app.config(repo_path, "co-authors-required", "false")
+        .expect("config should succeed");
+
+    write_file(repo_path, "solo.txt", "solo");
+    app.commit(repo_path, "solo commit", vec!["SOLO"])
+        .expect("SOLO should still work when coAuthorsRequired is false");
+
+    let log = app.log(repo_path);
+    assert!(log.contains("solo commit"));
+    assert!(log.contains("(Solo-work)"));
+}
