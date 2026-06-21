@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+use crate::config::TrunkConfig;
 use crate::git::{git_capture, git_capture_silent, git_passthrough, is_detached_head, is_rebasing};
 use crate::output::OutputSink;
 use crate::CoAuthorAliases;
@@ -126,7 +127,7 @@ impl CommitInput {
         co_authors: Vec<String>,
         resolve: bool,
         abort: bool,
-        co_authors_required: bool,
+        config: &impl TrunkConfig,
     ) -> Result<Self> {
         let opt: CommitOpt;
         if abort {
@@ -134,6 +135,7 @@ impl CommitInput {
         } else if resolve {
             opt = CommitOpt::Resolve
         } else {
+            let co_authors_required = config.load().co_authors_required;
             let parsed_co_authors: Vec<String>;
             let has_solo = co_authors.contains(&"SOLO".to_string());
             if has_solo && co_authors.len() == 1 {

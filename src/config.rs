@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -73,5 +73,23 @@ impl TrunkConfig for RealTrunkConfig {
         let json = serde_json::to_string_pretty(&config)?;
         std::fs::write(&self.path, json)?;
         Ok(())
+    }
+}
+
+pub fn cmd_config(key: &str, value: &str, config: &impl TrunkConfig) -> Result<()> {
+    match key {
+        "co-authors-required" => {
+            let required: bool = value.parse().map_err(|_| {
+                anyhow::anyhow!(
+                    "Invalid value for co-authors-required: {}. Expected true or false.",
+                    value
+                )
+            })?;
+            config.set_co_authors_required(required)
+        }
+        _ => bail!(
+            "Unknown configuration key: {}. Supported keys: co-authors-required",
+            key
+        ),
     }
 }

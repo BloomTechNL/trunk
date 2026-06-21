@@ -4,7 +4,7 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 use crate::commit::{commit, CommitInput};
-use crate::config::TrunkConfig;
+use crate::config::{cmd_config, TrunkConfig};
 use crate::output::OutputSink;
 use crate::revert::{revert, RevertInput};
 use crate::{
@@ -127,16 +127,11 @@ pub fn run_cli(
             co_authors,
             resolve,
             abort,
-        } => {
-            let co_authors_required = config.load().co_authors_required;
-            commit(
-                &CommitInput::from_cli(
-                    PathBuf::from(dir), message, co_authors, resolve, abort, co_authors_required,
-                )?,
-                aliases,
-                output,
-            )
-        },
+        } => commit(
+            &CommitInput::from_cli(PathBuf::from(dir), message, co_authors, resolve, abort, config)?,
+            aliases,
+            output,
+        ),
         Commands::Pull => cmd_pull(dir, output),
         Commands::Log => cmd_log(dir, output),
         Commands::Status => cmd_status(dir, output),
@@ -164,15 +159,7 @@ pub fn run_cli(
             let alias = alias.trim_start_matches('@');
             aliases.add_alias(alias, &name, &email)
         }
-        Commands::Config { key, value } => match key.as_str() {
-            "co-authors-required" => {
-                let required: bool = value
-                    .parse()
-                    .map_err(|_| anyhow::anyhow!("Invalid value for co-authors-required: {}. Expected true or false.", value))?;
-                config.set_co_authors_required(required)
-            }
-            _ => anyhow::bail!("Unknown configuration key: {}. Supported keys: co-authors-required", key),
-        },
+        Commands::Config { key, value } => cmd_config(&key, &value, config),
         Commands::Update => {
             std::process::Command::new("bash")
                 .arg("-c")
