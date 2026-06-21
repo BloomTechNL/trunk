@@ -4,17 +4,7 @@ set of subcommands which should suffice in a trunk-based development style workf
 
 ## Installation
 
-### MacOS
-Run
-```bash
-curl -fsSL https://raw.githubusercontent.com/BloomTechNL/trunk/main/scripts/install_macos.sh | bash
-```
-If you have the OhMyZsh git plugin installed, you may need to run
-```bash
-unalias g
-```
-
-### Linux
+### Linux (x86\_64 only) / MacOS (apple silicon only)
 ```bash
 curl -fsSL https://raw.githubusercontent.com/BloomTechNL/trunk/main/scripts/install.sh | bash
 ```
