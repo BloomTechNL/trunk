@@ -34,7 +34,7 @@ pub fn has_remote_tracking(dir: &Path) -> bool {
 fn cmd_commit(
     dir: &Path,
     message: &str,
-    co_authors: &CoAuthors,
+    co_authors: &dyn MessagePostfix,
     aliases: &impl CoAuthorAliases,
     sink: &impl OutputSink,
 ) -> Result<()> {
@@ -48,32 +48,11 @@ fn cmd_commit(
         bail!("You are currently time travelling. Run `g tt now` to return to the present before making changes.");
     }
 
-    let final_message = match co_authors {
-        CoAuthors::ExplicitSolo => format!("{}\n\n{}", message, "(Solo-work)"),
-        CoAuthors::ImplicitSolo => message.to_string(),
-        CoAuthors::Aliases(aliases_vec) => {
-            let mut co_author_lines = Vec::new();
-            for author_input in aliases_vec {
-                if author_input.to_uppercase() == "SOLO" {
-                    bail!("SOLO cannot be combined with other co-authors.");
-                }
-
-                if author_input.starts_with('@') {
-                    let alias = &author_input[1..];
-                    if let Some(full_author) = aliases.format_alias(alias) {
-                        co_author_lines.push(format!("Co-authored-by: {}", full_author));
-                    } else {
-                        bail!(
-                            "Unknown co-author alias: @{}. Please add it to ~/.config/trunk/aliases in the format alias:Name <email@example.com>\n",
-                            alias,
-                        );
-                    }
-                } else {
-                    bail!("Invalid co-author format. Use @alias or SOLO.");
-                }
-            }
-            format!("{}\n\n{}", message, co_author_lines.join("\n"))
-        }
+    let postfix = co_authors.format_postfix(aliases)?;
+    let final_message = if postfix.is_empty() {
+        message.to_string()
+    } else {
+        format!("{}\n\n{}", message, postfix)
     };
 
     git_passthrough(dir, &["add", "-A"], sink)?;
@@ -109,16 +88,58 @@ fn cmd_commit_abort(dir: &Path, sink: &impl OutputSink) -> Result<()> {
     git_passthrough(dir, &["reset", "--soft", "HEAD~1"], sink)
 }
 
-pub enum CoAuthors {
-    ExplicitSolo,
-    ImplicitSolo,
-    Aliases(Vec<String>),
+pub trait MessagePostfix {
+    fn format_postfix(&self, aliases: &dyn CoAuthorAliases) -> Result<String>;
+}
+
+pub struct CoAuthors(Vec<String>);
+
+pub struct ExplicitSolo;
+
+pub struct ImplicitSolo;
+
+impl MessagePostfix for CoAuthors {
+    fn format_postfix(&self, aliases: &dyn CoAuthorAliases) -> Result<String> {
+        let mut lines = Vec::new();
+        for author_input in &self.0 {
+            if author_input.to_uppercase() == "SOLO" {
+                bail!("SOLO cannot be combined with other co-authors.");
+            }
+            if author_input.starts_with('@') {
+                let alias = &author_input[1..];
+                match aliases.format_alias(alias) {
+                    Some(full_author) => {
+                        lines.push(format!("Co-authored-by: {}", full_author));
+                    }
+                    None => bail!(
+                        "Unknown co-author alias: @{}. Please add it to ~/.config/trunk/aliases in the format alias:Name <email@example.com>\n",
+                        alias,
+                    ),
+                }
+            } else {
+                bail!("Invalid co-author format. Use @alias or SOLO.");
+            }
+        }
+        Ok(lines.join("\n"))
+    }
+}
+
+impl MessagePostfix for ExplicitSolo {
+    fn format_postfix(&self, _aliases: &dyn CoAuthorAliases) -> Result<String> {
+        Ok("(Solo-work)".to_string())
+    }
+}
+
+impl MessagePostfix for ImplicitSolo {
+    fn format_postfix(&self, _aliases: &dyn CoAuthorAliases) -> Result<String> {
+        Ok(String::new())
+    }
 }
 
 pub enum CommitAction {
     Commit {
         message: String,
-        co_authors: CoAuthors,
+        co_authors: Box<dyn MessagePostfix>,
     },
     Resolve,
     Abort,
@@ -145,12 +166,12 @@ impl CommitInput {
         } else {
             let co_authors_required = config.load().co_authors_required;
             let has_solo = co_authors.contains(&"SOLO".to_string());
-            let co_authors = if has_solo && co_authors.len() == 1 {
-                CoAuthors::ExplicitSolo
+            let co_authors: Box<dyn MessagePostfix> = if has_solo && co_authors.len() == 1 {
+                Box::new(ExplicitSolo)
             } else if !has_solo && co_authors.len() > 0 {
-                CoAuthors::Aliases(co_authors)
+                Box::new(CoAuthors(co_authors))
             } else if !co_authors_required {
-                CoAuthors::ImplicitSolo
+                Box::new(ImplicitSolo)
             } else {
                 bail!("You must either specify co-authors as @jane @john or specify that this is solo work with SOLO");
             };
@@ -172,7 +193,13 @@ pub fn commit(
         CommitAction::Commit {
             message,
             co_authors,
-        } => cmd_commit(input.repo.as_path(), message, co_authors, aliases, sink),
+        } => cmd_commit(
+            input.repo.as_path(),
+            message,
+            co_authors.as_ref(),
+            aliases,
+            sink,
+        ),
         CommitAction::Resolve => cmd_commit_resolve(input.repo.as_path(), sink),
         CommitAction::Abort => cmd_commit_abort(input.repo.as_path(), sink),
     }
