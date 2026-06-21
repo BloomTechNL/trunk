@@ -61,12 +61,11 @@ impl TestApp {
         )
     }
 
-    pub fn config(&self, dir: &Path, key: &str, value: &str) -> anyhow::Result<()> {
+    pub fn config(&self, dir: &Path, co_authors_required: Option<bool>) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {
                 command: Commands::Config {
-                    key: key.to_string(),
-                    value: value.to_string(),
+                    co_authors_required,
                 },
             },
             dir.to_path_buf(),

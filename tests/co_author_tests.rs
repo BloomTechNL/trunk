@@ -123,7 +123,7 @@ fn test_commit_succeeds_without_co_authors_when_config_disabled() {
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
 
-    app.config(repo_path, "co-authors-required", "false")
+    app.config(repo_path, Some(false))
         .expect("config should succeed");
 
     write_file(repo_path, "noauthor.txt", "content");
@@ -144,7 +144,7 @@ fn test_commit_with_co_authors_when_config_disabled() {
     app.add_alias("jdoe", "John Doe", "jdoe@example.com")
         .expect("should succeed");
 
-    app.config(repo_path, "co-authors-required", "false")
+    app.config(repo_path, Some(false))
         .expect("config should succeed");
 
     write_file(repo_path, "coauthor.txt", "content");
@@ -161,7 +161,7 @@ fn test_commit_solo_when_config_disabled() {
     let repo = set_up_basic_repo(app.base_dir.path());
     let repo_path = repo.as_path();
 
-    app.config(repo_path, "co-authors-required", "false")
+    app.config(repo_path, Some(false))
         .expect("config should succeed");
 
     write_file(repo_path, "solo.txt", "solo");

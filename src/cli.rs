@@ -96,13 +96,12 @@ pub enum Commands {
         #[arg(short = 'e', long)]
         email: String,
     },
-    /// Set configuration values
+    /// Set configuration values.
     #[command(name = "config")]
     Config {
-        /// Configuration key (e.g. co-authors-required)
-        key: String,
-        /// Configuration value
-        value: String,
+        /// Whether co-authors are required on commits. Defaults to true.
+        #[arg(long = "co-authors-required")]
+        co_authors_required: Option<bool>,
     },
     /// Update g to the latest version
     #[command(name = "update")]
@@ -159,7 +158,9 @@ pub fn run_cli(
             let alias = alias.trim_start_matches('@');
             aliases.add_alias(alias, &name, &email)
         }
-        Commands::Config { key, value } => cmd_config(&key, &value, config),
+        Commands::Config {
+            co_authors_required,
+        } => cmd_config(co_authors_required, config),
         Commands::Update => {
             std::process::Command::new("bash")
                 .arg("-c")
