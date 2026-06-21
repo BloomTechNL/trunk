@@ -15,13 +15,8 @@ unalias g
 ```
 
 ### Linux
-Ensure you have the Rust toolchain installed, in particular `cargo`. Then,
 ```bash
-git clone git@github.com:BloomTechNL/trunk.git
-cd trunk
-cargo build --release
-cargo install --path .
-g --version
+curl -fsSL https://raw.githubusercontent.com/BloomTechNL/trunk/main/scripts/install.sh | bash
 ```
 If you have the OhMyZsh git plugin installed, you may need to run
 ```bash

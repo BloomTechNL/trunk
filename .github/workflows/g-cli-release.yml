@@ -16,7 +16,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
       - run: bash scripts/run_tests.sh
 
-  build-and-release:
+  build-macos:
     needs: test
     runs-on: macos-26
     steps:
@@ -33,8 +33,10 @@ jobs:
       - name: Build binary
         run: cargo build --release --target aarch64-apple-darwin
 
-      - name: Stage binary
-        run: mv target/aarch64-apple-darwin/release/g g
+      - name: Stage binaries
+        run: |
+          cp target/aarch64-apple-darwin/release/g g-macos-arm64
+          cp target/aarch64-apple-darwin/release/g g
 
       - name: Update latest tag
         run: |
@@ -48,4 +50,41 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create latest --title "Latest Build" --notes "Automated rolling release." || true
-          gh release upload latest g --clobber
+          gh release upload latest g-macos-arm64 g --clobber
+
+  build-linux:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tools/g_cli
+
+      - name: Install ALSA dependencies
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
+
+      - name: Build binary
+        run: cargo build --release --target x86_64-unknown-linux-gnu
+
+      - name: Stage binary
+        run: cp target/x86_64-unknown-linux-gnu/release/g g-linux-x86_64
+
+      - name: Update latest tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -f latest
+          git push -f origin latest
+
+      - name: Publish rolling release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create latest --title "Latest Build" --notes "Automated rolling release." || true
+          gh release upload latest g-linux-x86_64 --clobber
