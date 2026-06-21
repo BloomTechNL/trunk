@@ -35,6 +35,7 @@ fn cmd_commit(
     dir: &Path,
     message: &str,
     co_authors: Vec<String>,
+    is_explicit_solo: bool,
     aliases: &impl CoAuthorAliases,
     sink: &impl OutputSink,
 ) -> Result<()> {
@@ -51,7 +52,11 @@ fn cmd_commit(
     let is_solo = co_authors.is_empty();
 
     let final_message = if is_solo {
-        format!("{}\n\n{}", message, "(Solo-work)")
+        if is_explicit_solo {
+            format!("{}\n\n{}", message, "(Solo-work)")
+        } else {
+            message.to_string()
+        }
     } else {
         let mut co_author_lines = Vec::new();
         for author_input in co_authors {
@@ -118,6 +123,7 @@ pub enum CommitOpt {
 pub struct CommitInput {
     pub repo: PathBuf,
     pub opt: CommitOpt,
+    pub is_explicit_solo: bool,
 }
 
 impl CommitInput {
@@ -130,26 +136,36 @@ impl CommitInput {
         config: &impl TrunkConfig,
     ) -> Result<Self> {
         let opt: CommitOpt;
+        let is_explicit_solo: bool;
         if abort {
             opt = CommitOpt::Abort;
+            is_explicit_solo = false;
         } else if resolve {
-            opt = CommitOpt::Resolve
+            opt = CommitOpt::Resolve;
+            is_explicit_solo = false;
         } else {
             let co_authors_required = config.load().co_authors_required;
             let parsed_co_authors: Vec<String>;
             let has_solo = co_authors.contains(&"SOLO".to_string());
             if has_solo && co_authors.len() == 1 {
                 parsed_co_authors = vec![];
+                is_explicit_solo = true;
             } else if !has_solo && co_authors.len() > 0 {
                 parsed_co_authors = co_authors;
+                is_explicit_solo = false;
             } else if !co_authors_required {
                 parsed_co_authors = vec![];
+                is_explicit_solo = false;
             } else {
                 bail!("You must either specify co-authors as @jane @john or specify that this is solo work with SOLO");
             }
             opt = CommitOpt::Message(message.unwrap(), parsed_co_authors)
         }
-        Ok(CommitInput { repo, opt })
+        Ok(CommitInput {
+            repo,
+            opt,
+            is_explicit_solo,
+        })
     }
 }
 
@@ -163,6 +179,7 @@ pub fn commit(
             input.repo.as_path(),
             message,
             co_authors.clone(),
+            input.is_explicit_solo,
             aliases,
             sink,
         ),

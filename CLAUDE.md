@@ -43,7 +43,7 @@ The app is assembled in `main.rs` with real implementations, then `AppService::d
 
 ### Co-author commit format
 
-`g c` requires explicit authorship — either `SOLO` or one or more `@alias` references. The commit message body has `(Solo-work)` for solo commits, or `Co-authored-by: Name <email>` lines. `@alias` is resolved from `~/.config/trunk/aliases` (format: `alias:Name <email>`, one per line). Use `g add-alias @foo -n "Name" -e "email"` to add entries.
+`g c` requires explicit authorship — either `SOLO` or one or more `@alias` references. Solo commits made with the `SOLO` keyword include `(Solo-work)` in the message body; co-author commits include `Co-authored-by: Name <email>` lines. `@alias` is resolved from `~/.config/trunk/aliases` (format: `alias:Name <email>`, one per line). Use `g add-alias @foo -n "Name" -e "email"` to add entries.
 
 ## Testing patterns
 

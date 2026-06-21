@@ -132,7 +132,7 @@ fn test_commit_succeeds_without_co_authors_when_config_disabled() {
 
     let log = app.log(repo_path);
     assert!(log.contains("commit without co-authors"));
-    assert!(log.contains("(Solo-work)"));
+    assert!(!log.contains("(Solo-work)"));
 }
 
 #[test]
