@@ -113,8 +113,7 @@ fn test_commit_solo_with_others_fails() {
 
     assert!(err
         .to_string()
-        .contains( "You must either specify co-authors as @jane @john or specify that this is solo work with SOLO"
-    ));
+        .contains("SOLO cannot be combined with other co-authors."));
 }
 
 #[test]

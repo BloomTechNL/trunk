@@ -36,6 +36,7 @@ fn cmd_commit(
     message: &str,
     co_authors: &dyn MessagePostfix,
     aliases: &impl CoAuthorAliases,
+    config: &impl TrunkConfig,
     sink: &impl OutputSink,
 ) -> Result<()> {
     if is_rebasing(dir) {
@@ -46,6 +47,10 @@ fn cmd_commit(
 
     if is_detached_head(dir) {
         bail!("You are currently time travelling. Run `g tt now` to return to the present before making changes.");
+    }
+
+    if !co_authors.is_explicit() && config.load().co_authors_required {
+        bail!("You must either specify co-authors as @jane @john or specify that this is solo work with SOLO");
     }
 
     let postfix = co_authors.format_postfix(aliases)?;
@@ -86,6 +91,8 @@ fn cmd_commit_abort(dir: &Path, sink: &impl OutputSink) -> Result<()> {
 
 pub trait MessagePostfix {
     fn format_postfix(&self, aliases: &dyn CoAuthorAliases) -> Result<String>;
+
+    fn is_explicit(&self) -> bool;
 }
 
 pub struct CoAuthors(Vec<String>);
@@ -111,17 +118,29 @@ impl MessagePostfix for CoAuthors {
         }
         Ok(format!("\n\n{}", lines.join("\n")))
     }
+
+    fn is_explicit(&self) -> bool {
+        true
+    }
 }
 
 impl MessagePostfix for ExplicitSolo {
     fn format_postfix(&self, _aliases: &dyn CoAuthorAliases) -> Result<String> {
         Ok("\n\n(Solo-work)".to_string())
     }
+
+    fn is_explicit(&self) -> bool {
+        true
+    }
 }
 
 impl MessagePostfix for ImplicitSolo {
     fn format_postfix(&self, _aliases: &dyn CoAuthorAliases) -> Result<String> {
         Ok(String::new())
+    }
+
+    fn is_explicit(&self) -> bool {
+        false
     }
 }
 
@@ -139,15 +158,15 @@ pub struct CommitInput {
     pub action: CommitAction,
 }
 
-fn parse_co_authors(
-    co_authors: Vec<String>,
-    co_authors_required: bool,
-) -> Result<Box<dyn MessagePostfix>> {
+fn parse_co_authors(co_authors: Vec<String>) -> Result<Box<dyn MessagePostfix>> {
     let has_solo = co_authors.contains(&"SOLO".to_string());
     if has_solo && co_authors.len() == 1 {
         return Ok(Box::new(ExplicitSolo));
     }
-    if !has_solo && co_authors.len() > 0 {
+    if has_solo {
+        bail!("SOLO cannot be combined with other co-authors.");
+    }
+    if co_authors.len() > 0 {
         for author in &co_authors {
             if !author.starts_with('@') {
                 bail!("Invalid co-author format. Use @alias or SOLO.");
@@ -155,10 +174,7 @@ fn parse_co_authors(
         }
         return Ok(Box::new(CoAuthors(co_authors)));
     }
-    if !co_authors_required {
-        return Ok(Box::new(ImplicitSolo));
-    }
-    bail!("You must either specify co-authors as @jane @john or specify that this is solo work with SOLO");
+    Ok(Box::new(ImplicitSolo))
 }
 
 impl CommitInput {
@@ -168,7 +184,6 @@ impl CommitInput {
         co_authors: Vec<String>,
         resolve: bool,
         abort: bool,
-        config: &impl TrunkConfig,
     ) -> Result<Self> {
         let action = if abort {
             CommitAction::Abort
@@ -177,7 +192,7 @@ impl CommitInput {
         } else {
             CommitAction::Commit {
                 message: message.unwrap(),
-                co_authors: parse_co_authors(co_authors, config.load().co_authors_required)?,
+                co_authors: parse_co_authors(co_authors)?,
             }
         };
         Ok(CommitInput { repo, action })
@@ -187,6 +202,7 @@ impl CommitInput {
 pub fn commit(
     input: &CommitInput,
     aliases: &impl CoAuthorAliases,
+    config: &impl TrunkConfig,
     sink: &impl OutputSink,
 ) -> Result<()> {
     match &input.action {
@@ -198,6 +214,7 @@ pub fn commit(
             message,
             co_authors.as_ref(),
             aliases,
+            config,
             sink,
         ),
         CommitAction::Resolve => cmd_commit_resolve(input.repo.as_path(), sink),
