@@ -49,11 +49,7 @@ fn cmd_commit(
     }
 
     let postfix = co_authors.format_postfix(aliases)?;
-    let final_message = if postfix.is_empty() {
-        message.to_string()
-    } else {
-        format!("{}\n\n{}", message, postfix)
-    };
+    let final_message = format!("{}{}", message, postfix);
 
     git_passthrough(dir, &["add", "-A"], sink)?;
     git_passthrough(dir, &["commit", "-m", &final_message], sink)?;
@@ -120,13 +116,13 @@ impl MessagePostfix for CoAuthors {
                 bail!("Invalid co-author format. Use @alias or SOLO.");
             }
         }
-        Ok(lines.join("\n"))
+        Ok(format!("\n\n{}", lines.join("\n")))
     }
 }
 
 impl MessagePostfix for ExplicitSolo {
     fn format_postfix(&self, _aliases: &dyn CoAuthorAliases) -> Result<String> {
-        Ok("(Solo-work)".to_string())
+        Ok("\n\n(Solo-work)".to_string())
     }
 }
 
