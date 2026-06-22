@@ -1,11 +1,13 @@
 use crate::common::write_file::write_file;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 fn git(dir: &Path, args: &[&str]) {
     let status = Command::new("git")
         .args(args)
         .current_dir(dir)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .env("GIT_EDITOR", "true")
         .env("GIT_TERMINAL_PROMPT", "0")
         .status()
@@ -23,6 +25,8 @@ fn git_config_identity(dir: &Path) {
         Command::new("git")
             .args(["config", k, v])
             .current_dir(dir)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .status()
             .expect("git config");
     }
