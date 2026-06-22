@@ -34,11 +34,20 @@ impl OutputSink for CapturingSink {
     }
 
     fn run(&self, cmd: &mut Command) -> io::Result<ExitStatus> {
-        let output = cmd.stdout(Stdio::piped()).output()?;
+        let output = cmd.stdout(Stdio::piped()).stderr(Stdio::null()).output()?;
         self.buf
             .lock()
             .unwrap()
             .push_str(&String::from_utf8_lossy(&output.stdout));
         Ok(output.status)
+    }
+
+    fn capture(&self, cmd: &mut Command) -> io::Result<(ExitStatus, Vec<u8>)> {
+        let output = cmd.stdout(Stdio::piped()).stderr(Stdio::null()).output()?;
+        self.buf
+            .lock()
+            .unwrap()
+            .push_str(&String::from_utf8_lossy(&output.stdout));
+        Ok((output.status, output.stdout))
     }
 }

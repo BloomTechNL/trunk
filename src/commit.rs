@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use crate::config::TrunkConfig;
-use crate::git::{git_capture, git_capture_silent, git_passthrough, is_detached_head, is_rebasing};
+use crate::git::{git_capture, git_passthrough, is_detached_head, is_rebasing};
 use crate::output::OutputSink;
 use crate::CoAuthorAliases;
 use anyhow::{bail, Result};
@@ -11,18 +11,19 @@ use anyhow::{bail, Result};
 // ---------------------------------------------------------------------------
 
 /// Returns `true` when at least one remote is configured for this repo.
-pub fn has_remote(dir: &Path) -> bool {
-    git_capture_silent(dir, &["remote"])
+pub fn has_remote(dir: &Path, sink: &impl OutputSink) -> bool {
+    git_capture(dir, &["remote"], sink)
         .map(|out| !out.trim().is_empty())
         .unwrap_or(false)
 }
 
 /// Returns `true` when the current branch has a remote tracking branch
 /// configured (i.e. it has been pushed at least once).
-pub fn has_remote_tracking(dir: &Path) -> bool {
+pub fn has_remote_tracking(dir: &Path, sink: &impl OutputSink) -> bool {
     git_capture(
         dir,
         &["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
+        sink,
     )
     .is_ok()
 }
@@ -39,13 +40,13 @@ fn cmd_commit(
     config: &impl TrunkConfig,
     sink: &impl OutputSink,
 ) -> Result<()> {
-    if is_rebasing(dir) {
+    if is_rebasing(dir, sink) {
         bail!(
             "You are in the middle of resolving a conflict. Resolve the conflict and then run\n  g c --resolve"
         );
     }
 
-    if is_detached_head(dir) {
+    if is_detached_head(dir, sink) {
         bail!("You are currently time travelling. Run `g tt now` to return to the present before making changes.");
     }
 
@@ -59,11 +60,11 @@ fn cmd_commit(
     git_passthrough(dir, &["add", "-A"], sink)?;
     git_passthrough(dir, &["commit", "-m", &final_message], sink)?;
 
-    if !has_remote(dir) {
+    if !has_remote(dir, sink) {
         return Ok(());
     }
 
-    if !has_remote_tracking(dir) {
+    if !has_remote_tracking(dir, sink) {
         return git_passthrough(dir, &["push", "--set-upstream", "origin", "HEAD"], sink);
     }
 

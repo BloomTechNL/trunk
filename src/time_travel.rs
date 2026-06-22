@@ -2,21 +2,21 @@ use std::path::Path;
 
 use anyhow::{anyhow, bail, Result};
 
-use crate::git::{git_capture, git_capture_silent, git_passthrough_silent};
+use crate::git::{git_capture, git_passthrough};
 use crate::output::OutputSink;
 
 // ---------------------------------------------------------------------------
 // g tt  — time travel (detached HEAD)
 // ---------------------------------------------------------------------------
 
-fn default_branch(dir: &Path) -> String {
-    if let Ok(out) = git_capture_silent(dir, &["symbolic-ref", "refs/remotes/origin/HEAD"]) {
+fn default_branch(dir: &Path, sink: &impl OutputSink) -> String {
+    if let Ok(out) = git_capture(dir, &["symbolic-ref", "refs/remotes/origin/HEAD"], sink) {
         if let Some(branch) = out.trim().strip_prefix("refs/remotes/origin/") {
             return branch.to_string();
         }
     }
     for candidate in &["main", "master"] {
-        if git_capture_silent(dir, &["rev-parse", "--verify", candidate]).is_ok() {
+        if git_capture(dir, &["rev-parse", "--verify", candidate], sink).is_ok() {
             return candidate.to_string();
         }
     }
@@ -24,19 +24,19 @@ fn default_branch(dir: &Path) -> String {
 }
 
 fn cmd_time_travel_now(dir: &Path, sink: &impl OutputSink) -> Result<()> {
-    let branch = default_branch(dir);
-    git_passthrough_silent(dir, &["checkout", &branch], sink)
+    let branch = default_branch(dir, sink);
+    git_passthrough(dir, &["checkout", &branch], sink)
 }
 
 pub fn cmd_time_travel(dir: &Path, target: &str, sink: &impl OutputSink) -> Result<()> {
     if target == "now" {
         return cmd_time_travel_now(dir, sink);
     }
-    let hash = resolve_to_commit_hash(dir, target)?;
-    git_passthrough_silent(dir, &["checkout", &hash], sink)
+    let hash = resolve_to_commit_hash(dir, target, sink)?;
+    git_passthrough(dir, &["checkout", &hash], sink)
 }
 
-fn resolve_to_commit_hash(dir: &Path, spec: &str) -> Result<String> {
+fn resolve_to_commit_hash(dir: &Path, spec: &str, sink: &impl OutputSink) -> Result<String> {
     use git2::Repository;
 
     let repo = Repository::open(dir)?;
@@ -51,7 +51,7 @@ fn resolve_to_commit_hash(dir: &Path, spec: &str) -> Result<String> {
         return Ok(hash);
     }
 
-    let output = git_capture(dir, &["rev-parse", "--verify", spec])?;
+    let output = git_capture(dir, &["rev-parse", "--verify", spec], sink)?;
     let hash = output.trim().to_string();
 
     let obj = repo.revparse_single(&hash)?;

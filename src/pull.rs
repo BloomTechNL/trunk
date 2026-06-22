@@ -10,12 +10,12 @@ use crate::output::OutputSink;
 // ---------------------------------------------------------------------------
 
 pub fn cmd_pull(dir: &Path, sink: &impl OutputSink) -> Result<()> {
-    let porcelain = git_capture(dir, &["status", "--porcelain"])?;
+    let porcelain = git_capture(dir, &["status", "--porcelain"], sink)?;
     if !porcelain.trim().is_empty() {
         bail!("You have uncommitted changes. Please commit them with `g c` before pulling.");
     }
 
-    let unpushed = git_capture(dir, &["log", "@{u}..HEAD", "--oneline"]).unwrap_or_default();
+    let unpushed = git_capture(dir, &["log", "@{u}..HEAD", "--oneline"], sink).unwrap_or_default();
     if !unpushed.trim().is_empty() {
         bail!("You have unpushed commits. Please push them with `g c` before pulling.");
     }

@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Command;
 
 use anyhow::{bail, Result};
 
@@ -14,16 +14,8 @@ pub fn base_cmd(dir: &Path) -> Command {
 }
 
 pub fn git_passthrough(dir: &Path, args: &[&str], sink: &impl OutputSink) -> Result<()> {
-    run_via_sink(dir, args, sink, Stdio::inherit())
-}
-
-pub fn git_passthrough_silent(dir: &Path, args: &[&str], sink: &impl OutputSink) -> Result<()> {
-    run_via_sink(dir, args, sink, Stdio::null())
-}
-
-fn run_via_sink(dir: &Path, args: &[&str], sink: &impl OutputSink, stderr: Stdio) -> Result<()> {
     let mut cmd = base_cmd(dir);
-    cmd.args(args).stderr(stderr);
+    cmd.args(args);
     let status = sink.run(&mut cmd)?;
     if status.success() {
         Ok(())
@@ -36,28 +28,17 @@ fn run_via_sink(dir: &Path, args: &[&str], sink: &impl OutputSink, stderr: Stdio
     }
 }
 
-pub fn git_capture(dir: &Path, args: &[&str]) -> Result<String> {
-    let output = base_cmd(dir).args(args).stderr(Stdio::inherit()).output()?;
-    if output.status.success() {
-        Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+pub fn git_capture(dir: &Path, args: &[&str], sink: &impl OutputSink) -> Result<String> {
+    let mut cmd = base_cmd(dir);
+    cmd.args(args);
+    let (status, stdout) = sink.capture(&mut cmd)?;
+    if status.success() {
+        Ok(String::from_utf8_lossy(&stdout).into_owned())
     } else {
         bail!(
             "git {} exited with status {}",
             args.join(" "),
-            output.status.code().unwrap_or(-1)
-        )
-    }
-}
-
-pub fn git_capture_silent(dir: &Path, args: &[&str]) -> Result<String> {
-    let output = base_cmd(dir).args(args).stderr(Stdio::null()).output()?;
-    if output.status.success() {
-        Ok(String::from_utf8_lossy(&output.stdout).into_owned())
-    } else {
-        bail!(
-            "git {} exited with status {}",
-            args.join(" "),
-            output.status.code().unwrap_or(-1)
+            status.code().unwrap_or(-1)
         )
     }
 }
@@ -66,8 +47,8 @@ pub fn git_capture_silent(dir: &Path, args: &[&str]) -> Result<String> {
 // Repository state helpers
 // ---------------------------------------------------------------------------
 
-pub fn git_dir(dir: &Path) -> PathBuf {
-    if let Ok(out) = git_capture(dir, &["rev-parse", "--git-dir"]) {
+pub fn git_dir(dir: &Path, sink: &impl OutputSink) -> PathBuf {
+    if let Ok(out) = git_capture(dir, &["rev-parse", "--git-dir"], sink) {
         let trimmed = out.trim();
         let p = Path::new(trimmed);
         if p.is_absolute() {
@@ -80,13 +61,13 @@ pub fn git_dir(dir: &Path) -> PathBuf {
     }
 }
 
-pub fn is_rebasing(dir: &Path) -> bool {
-    let gd = git_dir(dir);
+pub fn is_rebasing(dir: &Path, sink: &impl OutputSink) -> bool {
+    let gd = git_dir(dir, sink);
     gd.join("rebase-merge").exists() || gd.join("rebase-apply").exists()
 }
 
-pub fn is_detached_head(dir: &Path) -> bool {
-    let head_path = git_dir(dir).join("HEAD");
+pub fn is_detached_head(dir: &Path, sink: &impl OutputSink) -> bool {
+    let head_path = git_dir(dir, sink).join("HEAD");
     std::fs::read_to_string(head_path)
         .map(|content| !content.trim_start().starts_with("ref:"))
         .unwrap_or(false)

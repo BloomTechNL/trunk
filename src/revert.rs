@@ -16,7 +16,7 @@ pub struct RevertInfo {
     pub author: String,
 }
 
-pub fn get_revert_info(dir: &Path, hash: &str) -> Result<RevertInfo> {
+pub fn get_revert_info(dir: &Path, hash: &str, sink: &impl OutputSink) -> Result<RevertInfo> {
     use git2::Repository;
     let repo = Repository::open(dir)?;
     let obj = repo.revparse_single(hash)?;
@@ -24,7 +24,7 @@ pub fn get_revert_info(dir: &Path, hash: &str) -> Result<RevertInfo> {
         .peel_to_commit()
         .map_err(|_| anyhow!("'{}' does not point to a commit", hash))?;
 
-    let short_hash = git_capture(dir, &["rev-parse", "--short", hash])?
+    let short_hash = git_capture(dir, &["rev-parse", "--short", hash], sink)?
         .trim()
         .to_string();
     let subject = commit.summary().unwrap_or("<no message>").to_string();
@@ -38,11 +38,11 @@ pub fn get_revert_info(dir: &Path, hash: &str) -> Result<RevertInfo> {
 }
 
 fn cmd_revert(dir: &Path, hash: &str, bypass_prompt: bool, sink: &impl OutputSink) -> Result<()> {
-    if is_detached_head(dir) {
+    if is_detached_head(dir, sink) {
         bail!("You are currently time travelling. Run `g tt now` to return to the present before making changes.");
     }
 
-    let info = get_revert_info(dir, hash)?;
+    let info = get_revert_info(dir, hash, sink)?;
 
     if !bypass_prompt {
         let prompt_text = format!(
@@ -58,14 +58,16 @@ fn cmd_revert(dir: &Path, hash: &str, bypass_prompt: bool, sink: &impl OutputSin
         }
     }
 
-    let full_hash = git_capture(dir, &["rev-parse", hash])?.trim().to_string();
+    let full_hash = git_capture(dir, &["rev-parse", hash], sink)?
+        .trim()
+        .to_string();
     git_passthrough(dir, &["revert", "--no-edit", &full_hash], sink)?;
 
-    if !has_remote(dir) {
+    if !has_remote(dir, sink) {
         return Ok(());
     }
 
-    if !has_remote_tracking(dir) {
+    if !has_remote_tracking(dir, sink) {
         return git_passthrough(dir, &["push", "--set-upstream", "origin", "HEAD"], sink);
     }
 
