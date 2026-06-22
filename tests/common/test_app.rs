@@ -169,6 +169,18 @@ impl TestApp {
         self.output.take()
     }
 
+    pub fn status(&self, dir: &Path) -> String {
+        self.app()
+            .dispatch_command(
+                Cli {
+                    command: Commands::Status,
+                },
+                dir.to_path_buf(),
+            )
+            .expect("g s should succeed");
+        self.output.take()
+    }
+
     pub fn pull(&self, dir: &Path) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {
