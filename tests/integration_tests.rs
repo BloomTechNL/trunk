@@ -1,5 +1,4 @@
 use std::fs;
-use std::process::Command;
 
 use crate::common::write_file::write_file;
 use common::test_app::TestApp;
@@ -68,15 +67,10 @@ fn test_commit_conflict_and_abort() {
 
     app.commit_abort(repo2).expect("g c --abort should succeed");
 
-    let porcelain = Command::new("git")
-        .args(["status", "--porcelain"])
-        .current_dir(repo2)
-        .output()
-        .unwrap();
-    let status_out = String::from_utf8_lossy(&porcelain.stdout);
+    let status = app.status(repo2);
     assert!(
-        !status_out.trim().is_empty(),
-        "after abort, working dir should have uncommitted changes"
+        !status.trim().is_empty(),
+        "after abort, working dir should have uncommitted changes\n{status}"
     );
 }
 
@@ -90,13 +84,12 @@ fn test_revert_flow() {
     app.commit(dir, "add file to revert", vec!["SOLO"])
         .expect("g c");
 
-    let hash_output = Command::new("git")
-        .args(["rev-parse", "HEAD"])
-        .current_dir(dir)
-        .output()
-        .unwrap();
-    let commit_hash = String::from_utf8_lossy(&hash_output.stdout)
-        .trim()
+    let commit_hash = app
+        .log(dir)
+        .lines()
+        .find(|l| l.starts_with("commit "))
+        .and_then(|l| l.strip_prefix("commit "))
+        .unwrap()
         .to_string();
 
     app.revert(dir, &commit_hash).expect("g rv should succeed");
@@ -162,12 +155,13 @@ fn test_revert_without_remote_tracking_branch() {
     app.commit(&clone2.clone().as_path(), "add b", vec!["SOLO"])
         .expect("clone2 first commit");
 
-    let hash = Command::new("git")
-        .args(["rev-parse", "HEAD"])
-        .current_dir(&clone2)
-        .output()
-        .unwrap();
-    let head = String::from_utf8_lossy(&hash.stdout).trim().to_string();
+    let head = app
+        .log(&clone2)
+        .lines()
+        .find(|l| l.starts_with("commit "))
+        .and_then(|l| l.strip_prefix("commit "))
+        .unwrap()
+        .to_string();
 
     app.revert(&clone2.clone().as_path(), &head)
         .expect("g rv should succeed");
@@ -224,12 +218,13 @@ fn test_time_travel_blocks_write_commands_and_now_restores() {
     app.commit(dir, "v2", vec!["SOLO"]).expect("v2");
 
     let parent_hash = {
-        let out = Command::new("git")
-            .args(["rev-parse", "HEAD~1"])
-            .current_dir(dir)
-            .output()
-            .unwrap();
-        String::from_utf8_lossy(&out.stdout).trim().to_string()
+        let log = app.log(dir);
+        log.lines()
+            .filter(|l| l.starts_with("commit "))
+            .nth(1)
+            .and_then(|l| l.strip_prefix("commit "))
+            .unwrap()
+            .to_string()
     };
 
     app.time_travel(dir, &parent_hash)
