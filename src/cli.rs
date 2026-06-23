@@ -144,13 +144,7 @@ pub fn run_cli(
             abort,
             noninteractive,
         } => revert(
-            &RevertInput::from_cli(
-                PathBuf::from(dir),
-                hash,
-                resolve,
-                abort,
-                !noninteractive,
-            ),
+            &RevertInput::from_cli(PathBuf::from(dir), hash, resolve, abort, !noninteractive),
             output,
         ),
         Commands::Fart => fart_player.play(),

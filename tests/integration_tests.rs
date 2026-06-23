@@ -84,7 +84,7 @@ fn test_revert_flow() {
     app.commit(dir, "add file to revert", vec!["SOLO"])
         .expect("g c");
 
-    let commit_hash = app.head_hash(dir);
+    let commit_hash = app.commit_hashes(dir)[0].clone();
 
     app.revert(dir, &commit_hash).expect("g rv should succeed");
 
@@ -149,7 +149,7 @@ fn test_revert_without_remote_tracking_branch() {
     app.commit(&clone2.clone().as_path(), "add b", vec!["SOLO"])
         .expect("clone2 first commit");
 
-    let head = app.head_hash(&clone2);
+    let head = app.commit_hashes(&clone2)[0].clone();
 
     app.revert(&clone2.clone().as_path(), &head)
         .expect("g rv should succeed");
@@ -205,15 +205,7 @@ fn test_time_travel_blocks_write_commands_and_now_restores() {
     write_file(dir, "v2.txt", "v2\n");
     app.commit(dir, "v2", vec!["SOLO"]).expect("v2");
 
-    let parent_hash = {
-        let log = app.log(dir);
-        log.lines()
-            .filter(|l| l.starts_with("commit "))
-            .nth(1)
-            .and_then(|l| l.strip_prefix("commit "))
-            .unwrap()
-            .to_string()
-    };
+    let parent_hash = app.commit_hashes(dir)[1].clone();
 
     app.time_travel(dir, &parent_hash)
         .expect("g tt <hash> should succeed");

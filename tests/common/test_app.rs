@@ -169,13 +169,12 @@ impl TestApp {
         self.output.take()
     }
 
-    pub fn head_hash(&self, dir: &Path) -> String {
+    pub fn commit_hashes(&self, dir: &Path) -> Vec<String> {
         self.log(dir)
             .lines()
-            .find(|l| l.starts_with("commit "))
-            .and_then(|l| l.strip_prefix("commit "))
-            .expect("log output should contain a commit hash")
-            .to_string()
+            .filter(|l| l.starts_with("commit "))
+            .map(|l| l.strip_prefix("commit ").unwrap().to_string())
+            .collect()
     }
 
     pub fn status(&self, dir: &Path) -> String {
