@@ -439,3 +439,53 @@ fn test_status_clean_working_tree() {
         "status of clean working tree should indicate nothing to commit\n{status}"
     );
 }
+
+#[test]
+fn test_diff_shows_modified_file() {
+    let app = TestApp::new();
+    let repo_dir = set_up_basic_repo(app.base_dir.path());
+    let dir = repo_dir.as_path();
+
+    write_file(dir, "README.md", "# modified project\n");
+
+    let diff = app.diff(dir);
+
+    assert!(
+        diff.contains("README.md"),
+        "diff should mention the modified file\n{diff}"
+    );
+    assert!(
+        diff.contains("modified project"),
+        "diff should show the added content\n{diff}"
+    );
+}
+
+#[test]
+fn test_diff_empty_when_clean() {
+    let app = TestApp::new();
+    let repo_dir = set_up_basic_repo(app.base_dir.path());
+    let dir = repo_dir.as_path();
+
+    let diff = app.diff(dir);
+
+    assert!(
+        diff.trim().is_empty(),
+        "diff should be empty for a clean working tree\n{diff}"
+    );
+}
+
+#[test]
+fn test_diff_shows_deleted_content() {
+    let app = TestApp::new();
+    let repo_dir = set_up_basic_repo(app.base_dir.path());
+    let dir = repo_dir.as_path();
+
+    fs::remove_file(dir.join("README.md")).expect("remove README");
+
+    let diff = app.diff(dir);
+
+    assert!(
+        diff.contains("README.md"),
+        "diff should mention the deleted file\n{diff}"
+    );
+}

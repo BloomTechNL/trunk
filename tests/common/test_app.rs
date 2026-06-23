@@ -181,6 +181,18 @@ impl TestApp {
         self.output.take()
     }
 
+    pub fn diff(&self, dir: &Path) -> String {
+        self.app()
+            .dispatch_command(
+                Cli {
+                    command: Commands::Diff,
+                },
+                dir.to_path_buf(),
+            )
+            .expect("g d should succeed");
+        self.output.take()
+    }
+
     pub fn pull(&self, dir: &Path) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {
