@@ -1,15 +1,18 @@
 //! Screenplay-pattern integration tests for `g`.
 //!
-//! These tests use the [`screenplay`] framework to model `g`ʼs happy path
+//! These tests use the [`screenplay`] framework to model `g`'s happy path
 //! through three abilities — `UseTrunk`, `UseGit`, and `UseFileSystem` — each
 //! representing a capability an actor can draw on.
 //!
 //! Tests model multiple developers as separate [`Actor`]s, each with their
-//! own repo checkout.
+//! own repo checkout. All git operations (including repo setup) go through
+//! actor interactions rather than raw helper calls.
 
 mod common;
 
+use std::cell::RefCell;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use common::test_app::TestApp;
 use common::use_git::{clone_repo, initial_commit, set_up_remote};
@@ -36,20 +39,25 @@ impl UseTrunk {
     }
 }
 
-/// Ability to operate on a local git checkout.
+/// Ability to operate on git repos.
 ///
-/// Each actor gets their own `UseGit` pointed at their personal clone, so
-/// interactions like [`Commit`] or [`Pull`] automatically target the right
-/// repo without the caller having to specify a path.
+/// Holds a shared base directory (where `origin.git` lives) and the actor's
+/// own repo checkout. The repo path is set during the arrange phase via
+/// [`CloneRepo`] so that later interactions like [`Commit`] or [`Pull`]
+/// automatically target the right directory.
 struct UseGit {
-    repo: PathBuf,
+    base_dir: Arc<TempDir>,
+    repo: RefCell<PathBuf>,
 }
 
 impl Ability for UseGit {}
 
 impl UseGit {
-    fn new(repo: PathBuf) -> Self {
-        UseGit { repo }
+    fn new(base_dir: Arc<TempDir>) -> Self {
+        UseGit {
+            base_dir,
+            repo: RefCell::new(PathBuf::new()),
+        }
     }
 }
 
@@ -59,8 +67,52 @@ struct UseFileSystem;
 impl Ability for UseFileSystem {}
 
 // ---------------------------------------------------------------------------
-// Interactions
+// Interactions — arrange / act
 // ---------------------------------------------------------------------------
+
+/// Create a bare `origin.git` remote inside the shared base directory.
+struct SetUpRemote;
+
+impl Interaction for SetUpRemote {
+    fn perform_as(&self, actor: &Actor) {
+        let _fs = actor
+            .ability::<UseFileSystem>()
+            .expect("actor needs UseFileSystem");
+        let git = actor.ability::<UseGit>().expect("actor needs UseGit");
+        set_up_remote(git.base_dir.path());
+    }
+}
+
+/// Clone from `origin.git` into `base_dir/<name>` and record the path as
+/// this actor's repo.
+struct CloneRepo {
+    name: &'static str,
+}
+
+impl Interaction for CloneRepo {
+    fn perform_as(&self, actor: &Actor) {
+        let _fs = actor
+            .ability::<UseFileSystem>()
+            .expect("actor needs UseFileSystem");
+        let git = actor.ability::<UseGit>().expect("actor needs UseGit");
+        let path = clone_repo(git.base_dir.path(), self.name, "origin.git");
+        *git.repo.borrow_mut() = path;
+    }
+}
+
+/// Make an initial commit (README) and push to origin so other actors can
+/// see it when they clone.
+struct InitialCommit;
+
+impl Interaction for InitialCommit {
+    fn perform_as(&self, actor: &Actor) {
+        let _fs = actor
+            .ability::<UseFileSystem>()
+            .expect("actor needs UseFileSystem");
+        let git = actor.ability::<UseGit>().expect("actor needs UseGit");
+        initial_commit(&git.repo.borrow());
+    }
+}
 
 /// Write a file into the actor's repo.
 struct WriteFile {
@@ -74,7 +126,7 @@ impl Interaction for WriteFile {
             .ability::<UseFileSystem>()
             .expect("actor needs UseFileSystem");
         let git = actor.ability::<UseGit>().expect("actor needs UseGit");
-        write_file(&git.repo, self.name, self.content);
+        write_file(&git.repo.borrow(), self.name, self.content);
     }
 }
 
@@ -91,7 +143,7 @@ impl Interaction for Commit {
         trunk
             .app
             .commit(
-                &git.repo,
+                &git.repo.borrow(),
                 self.message,
                 self.co_authors.iter().map(|s| *s).collect(),
             )
@@ -106,12 +158,15 @@ impl Interaction for Pull {
     fn perform_as(&self, actor: &Actor) {
         let trunk = actor.ability::<UseTrunk>().expect("actor needs UseTrunk");
         let git = actor.ability::<UseGit>().expect("actor needs UseGit");
-        trunk.app.pull(&git.repo).expect("g p should succeed");
+        trunk
+            .app
+            .pull(&git.repo.borrow())
+            .expect("g p should succeed");
     }
 }
 
 // ---------------------------------------------------------------------------
-// Questions
+// Questions — ask about state
 // ---------------------------------------------------------------------------
 
 /// Ask for the output of `g l` in the actor's repo.
@@ -121,7 +176,7 @@ impl Question<String> for Log {
     fn answered_by(&self, actor: &Actor) -> String {
         let trunk = actor.ability::<UseTrunk>().expect("actor needs UseTrunk");
         let git = actor.ability::<UseGit>().expect("actor needs UseGit");
-        trunk.app.log(&git.repo)
+        trunk.app.log(&git.repo.borrow())
     }
 }
 
@@ -132,7 +187,7 @@ impl Question<String> for Status {
     fn answered_by(&self, actor: &Actor) -> String {
         let trunk = actor.ability::<UseTrunk>().expect("actor needs UseTrunk");
         let git = actor.ability::<UseGit>().expect("actor needs UseGit");
-        trunk.app.status(&git.repo)
+        trunk.app.status(&git.repo.borrow())
     }
 }
 
@@ -171,31 +226,33 @@ fn contains(expected: impl Into<String>) -> impl Expectation<String> {
 
 /// Two developers collaborate through trunk-based development.
 ///
-/// Bob creates a commit, Alice pulls and sees it. This is the screenplay
+/// Bob creates a commit, Alice pulls and sees it. Every git operation
+/// (including repo setup) is an actor interaction. This is the screenplay
 /// equivalent of `test_clean_commit_flow`.
 #[test]
 fn bob_commits_alice_pulls() {
-    // -- Arrange: shared remote infrastructure ------------------------------
-    let base = TempDir::new().expect("temp dir");
-    set_up_remote(base.path());
+    // -- Shared infrastructure -----------------------------------------------
+    let base_dir = Arc::new(TempDir::new().expect("temp dir"));
 
-    let bob_repo = clone_repo(base.path(), "bob", "origin.git");
-    initial_commit(&bob_repo);
-
-    let alice_repo = clone_repo(base.path(), "alice", "origin.git");
-
-    // -- Assemble the actors ------------------------------------------------
+    // -- Assemble the actors -------------------------------------------------
     let bob = Actor::new()
         .who_can(UseTrunk::new())
-        .who_can(UseGit::new(bob_repo))
+        .who_can(UseGit::new(base_dir.clone()))
         .who_can(UseFileSystem);
 
     let alice = Actor::new()
         .who_can(UseTrunk::new())
-        .who_can(UseGit::new(alice_repo))
+        .who_can(UseGit::new(base_dir.clone()))
         .who_can(UseFileSystem);
 
-    // -- Bob: write a file and commit ---------------------------------------
+    // -- Arrange: repos ------------------------------------------------------
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "bob" },));
+    bob.attempts_to((InitialCommit,));
+
+    alice.attempts_to((CloneRepo { name: "alice" },));
+
+    // -- Act & assert: Bob writes a file and commits -------------------------
     bob.attempts_to((
         WriteFile {
             name: "hello.txt",
@@ -208,9 +265,9 @@ fn bob_commits_alice_pulls() {
         Ensure::that(Log, contains("add hello.txt")),
     ));
 
-    // -- Alice: pull and see Bob's commit -----------------------------------
+    // -- Act & assert: Alice pulls and sees Bob's commit ---------------------
     alice.attempts_to((Pull, Ensure::that(Log, contains("add hello.txt"))));
 
-    // -- Bob: working tree is still clean -----------------------------------
+    // -- Assert: Bob's working tree is still clean ---------------------------
     bob.attempts_to((Ensure::that(Status, contains("nothing to commit")),));
 }
