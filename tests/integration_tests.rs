@@ -84,13 +84,7 @@ fn test_revert_flow() {
     app.commit(dir, "add file to revert", vec!["SOLO"])
         .expect("g c");
 
-    let commit_hash = app
-        .log(dir)
-        .lines()
-        .find(|l| l.starts_with("commit "))
-        .and_then(|l| l.strip_prefix("commit "))
-        .unwrap()
-        .to_string();
+    let commit_hash = app.head_hash(dir);
 
     app.revert(dir, &commit_hash).expect("g rv should succeed");
 
@@ -155,13 +149,7 @@ fn test_revert_without_remote_tracking_branch() {
     app.commit(&clone2.clone().as_path(), "add b", vec!["SOLO"])
         .expect("clone2 first commit");
 
-    let head = app
-        .log(&clone2)
-        .lines()
-        .find(|l| l.starts_with("commit "))
-        .and_then(|l| l.strip_prefix("commit "))
-        .unwrap()
-        .to_string();
+    let head = app.head_hash(&clone2);
 
     app.revert(&clone2.clone().as_path(), &head)
         .expect("g rv should succeed");

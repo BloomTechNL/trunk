@@ -169,6 +169,15 @@ impl TestApp {
         self.output.take()
     }
 
+    pub fn head_hash(&self, dir: &Path) -> String {
+        self.log(dir)
+            .lines()
+            .find(|l| l.starts_with("commit "))
+            .and_then(|l| l.strip_prefix("commit "))
+            .expect("log output should contain a commit hash")
+            .to_string()
+    }
+
     pub fn status(&self, dir: &Path) -> String {
         self.app()
             .dispatch_command(
