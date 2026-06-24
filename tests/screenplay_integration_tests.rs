@@ -1,24 +1,80 @@
 //! Screenplay-pattern integration tests for `g`.
 //!
 //! These tests use the [`screenplay`] framework to model `g`'s happy path
-//! through three abilities — `UseTrunk`, `UseGit`, and `UseFileSystem` — each
-//! representing a capability an actor can draw on.
+//! through three abilities — `UseTrunk`, `UseGit`, and `UseFileSystem` — plus
+//! a shared [`AccessScenarioContext`] that holds infrastructure both actors
+//! need (the bare `origin.git` remote).
 //!
 //! Tests model multiple developers as separate [`Actor`]s, each with their
-//! own repo checkout. All git operations (including repo setup) go through
-//! actor interactions rather than raw helper calls.
+//! own repo checkout. Every git operation (including repo setup) goes through
+//! actor interactions.
 
 mod common;
 
 use std::cell::RefCell;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::rc::Rc;
 
 use common::test_app::TestApp;
 use common::use_git::{clone_repo, initial_commit, set_up_remote};
 use common::write_file::write_file;
 use screenplay::*;
 use tempfile::TempDir;
+
+// ---------------------------------------------------------------------------
+// Scenario context — shared test infrastructure (client-side, not in framework)
+// ---------------------------------------------------------------------------
+
+/// Shared state that every actor in the scenario can access.
+///
+/// Owns the temp directory where `origin.git` lives so both developers can
+/// clone from the same remote.
+struct TestContext {
+    base_dir: TempDir,
+}
+
+impl TestContext {
+    fn new() -> Self {
+        TestContext {
+            base_dir: TempDir::new().expect("temp dir"),
+        }
+    }
+}
+
+/// A reference-counted, interior-mutable handle to the shared [`TestContext`].
+///
+/// Created once by the test function. Each actor that needs shared state
+/// receives an [`AccessScenarioContext`] ability cloned from this.
+struct ScenarioContext {
+    inner: Rc<RefCell<TestContext>>,
+}
+
+impl ScenarioContext {
+    fn new(ctx: TestContext) -> Self {
+        ScenarioContext {
+            inner: Rc::new(RefCell::new(ctx)),
+        }
+    }
+}
+
+/// Ability that gives an [`Actor`] access to the shared [`ScenarioContext`].
+///
+/// The inner `Rc<RefCell<TestContext>>` is deliberately exposed — borrow it
+/// with `.context.borrow()` or `.context.borrow_mut()` inside interactions
+/// and questions.
+struct AccessScenarioContext {
+    context: Rc<RefCell<TestContext>>,
+}
+
+impl Ability for AccessScenarioContext {}
+
+impl AccessScenarioContext {
+    fn new(ctx: &ScenarioContext) -> Self {
+        AccessScenarioContext {
+            context: ctx.inner.clone(),
+        }
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Abilities
@@ -39,23 +95,23 @@ impl UseTrunk {
     }
 }
 
-/// Ability to operate on git repos.
+/// Ability to operate on a local git checkout.
 ///
-/// Holds a shared base directory (where `origin.git` lives) and the actor's
-/// own repo checkout. The repo path is set during the arrange phase via
-/// [`CloneRepo`] so that later interactions like [`Commit`] or [`Pull`]
-/// automatically target the right directory.
+/// Each actor's `UseGit` holds the path to their own repo clone. The repo
+/// path is set during the arrange phase by [`CloneRepo`]; later interactions
+/// like [`Commit`] or [`Pull`] read it automatically.
+///
+/// The shared base directory (where `origin.git` lives) is stored in
+/// [`AccessScenarioContext`], not here.
 struct UseGit {
-    base_dir: Arc<TempDir>,
     repo: RefCell<PathBuf>,
 }
 
 impl Ability for UseGit {}
 
 impl UseGit {
-    fn new(base_dir: Arc<TempDir>) -> Self {
+    fn new() -> Self {
         UseGit {
-            base_dir,
             repo: RefCell::new(PathBuf::new()),
         }
     }
@@ -75,11 +131,13 @@ struct SetUpRemote;
 
 impl Interaction for SetUpRemote {
     fn perform_as(&self, actor: &Actor) {
+        let ctx = actor
+            .ability::<AccessScenarioContext>()
+            .expect("actor needs AccessScenarioContext");
         let _fs = actor
             .ability::<UseFileSystem>()
             .expect("actor needs UseFileSystem");
-        let git = actor.ability::<UseGit>().expect("actor needs UseGit");
-        set_up_remote(git.base_dir.path());
+        set_up_remote(ctx.context.borrow().base_dir.path());
     }
 }
 
@@ -91,11 +149,18 @@ struct CloneRepo {
 
 impl Interaction for CloneRepo {
     fn perform_as(&self, actor: &Actor) {
+        let ctx = actor
+            .ability::<AccessScenarioContext>()
+            .expect("actor needs AccessScenarioContext");
         let _fs = actor
             .ability::<UseFileSystem>()
             .expect("actor needs UseFileSystem");
         let git = actor.ability::<UseGit>().expect("actor needs UseGit");
-        let path = clone_repo(git.base_dir.path(), self.name, "origin.git");
+        let path = clone_repo(
+            ctx.context.borrow().base_dir.path(),
+            self.name,
+            "origin.git",
+        );
         *git.repo.borrow_mut() = path;
     }
 }
@@ -227,22 +292,25 @@ fn contains(expected: impl Into<String>) -> impl Expectation<String> {
 /// Two developers collaborate through trunk-based development.
 ///
 /// Bob creates a commit, Alice pulls and sees it. Every git operation
-/// (including repo setup) is an actor interaction. This is the screenplay
-/// equivalent of `test_clean_commit_flow`.
+/// (including repo setup) is an actor interaction. The shared temp directory
+/// is hidden inside [`TestContext`] — the test function only sees
+/// [`ScenarioContext`] and [`AccessScenarioContext`].
 #[test]
 fn bob_commits_alice_pulls() {
-    // -- Shared infrastructure -----------------------------------------------
-    let base_dir = Arc::new(TempDir::new().expect("temp dir"));
+    // -- Shared infrastructure (no Arc / TempDir visible) --------------------
+    let ctx = ScenarioContext::new(TestContext::new());
 
     // -- Assemble the actors -------------------------------------------------
     let bob = Actor::new()
+        .who_can(AccessScenarioContext::new(&ctx))
         .who_can(UseTrunk::new())
-        .who_can(UseGit::new(base_dir.clone()))
+        .who_can(UseGit::new())
         .who_can(UseFileSystem);
 
     let alice = Actor::new()
+        .who_can(AccessScenarioContext::new(&ctx))
         .who_can(UseTrunk::new())
-        .who_can(UseGit::new(base_dir.clone()))
+        .who_can(UseGit::new())
         .who_can(UseFileSystem);
 
     // -- Arrange: repos ------------------------------------------------------
