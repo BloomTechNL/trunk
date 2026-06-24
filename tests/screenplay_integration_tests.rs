@@ -257,35 +257,6 @@ impl Question<String> for Status {
 }
 
 // ---------------------------------------------------------------------------
-// Expectations
-// ---------------------------------------------------------------------------
-
-/// Expect that a `String` contains the given substring.
-struct Contains {
-    expected: String,
-}
-
-impl Expectation<String> for Contains {
-    fn test(&self, value: &String) -> bool {
-        value.contains(&self.expected)
-    }
-
-    fn message(&self, value: &String) -> String {
-        format!(
-            "Expected output to contain {:?}, but got:\n{}",
-            self.expected, value
-        )
-    }
-}
-
-/// Construct a [`Contains`] expectation.
-fn contains(expected: impl Into<String>) -> impl Expectation<String> {
-    Contains {
-        expected: expected.into(),
-    }
-}
-
-// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
