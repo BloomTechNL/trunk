@@ -3,9 +3,6 @@ set -euo pipefail
 
 STATE_FILE=".claude/tdd_state.env"
 
-# Always clear old state first
-rm -f "$STATE_FILE"
-
 # Read the JSON event from stdin and extract the prompt
 PROMPT=$(jq -r '.prompt // ""')
 

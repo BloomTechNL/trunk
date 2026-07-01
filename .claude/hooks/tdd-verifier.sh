@@ -9,10 +9,11 @@ if [ ! -f "$STATE_FILE" ]; then
     exit 0
 fi
 
-# Source the state and delete it immediately so it doesn't linger
+# Source the state — keep it on disk so the mode persists across turns.
+# If verification fails below, the state file remains so the LLM stays
+# in the correct TDD mode and can fix the issue.
 # shellcheck disable=SC1090
 source "$STATE_FILE"
-rm -f "$STATE_FILE"
 
 # Export variables so sub-scripts can read them
 export MODE
