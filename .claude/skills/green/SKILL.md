@@ -1,3 +1,8 @@
+---
+description: Enter TDD GREEN mode — write minimal implementation to make the failing test pass. Use after RED.
+disable-model-invocation: true
+---
+
 # TDD Green Mode
 
 You are in the **GREEN** phase of test-driven development.
@@ -29,4 +34,4 @@ When a test is well-written, the implementation is often trivial — sometimes a
 
 ## When you're done
 
-Stop. Do not proceed to REFACTOR mode. The user will invoke `refactor()` when they're ready.
+Stop. Do not proceed to REFACTOR mode. The user will invoke `/refactor` when they're ready.

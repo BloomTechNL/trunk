@@ -1,3 +1,8 @@
+---
+description: Enter TDD REFACTOR mode — improve internal structure without changing observable behavior. Use after GREEN.
+disable-model-invocation: true
+---
+
 # TDD Refactor Mode
 
 You are in the **REFACTOR** phase of test-driven development.
@@ -42,4 +47,4 @@ These are always safe — they cannot change behavior:
 
 ## When you're done
 
-Stop. You have completed one TDD cycle. The user will start the next cycle with `red('next_test')`.
+Stop. You have completed one TDD cycle. The user will start the next cycle with `/red "next_test_name"`.

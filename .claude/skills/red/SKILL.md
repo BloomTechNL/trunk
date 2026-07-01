@@ -1,6 +1,14 @@
+---
+description: Enter TDD RED mode — write a failing test, nothing more. Use when starting a new TDD cycle.
+disable-model-invocation: true
+argument-hint: "[test_name]"
+---
+
 # TDD Red Mode
 
 You are in the **RED** phase of test-driven development.
+
+Target test: **$ARGUMENTS**
 
 ## Your ONLY job
 
@@ -30,4 +38,4 @@ Write a **failing test** — nothing more.
 
 ## When you're done
 
-Stop. Do not proceed to GREEN mode. The user will invoke `green()` when they're ready.
+Stop. Do not proceed to GREEN mode. The user will invoke `/green` when they're ready.
