@@ -21,6 +21,18 @@
             "command": ".claude/hooks/tdd-verifier.sh",
             "statusMessage": "Verifying TDD gates...",
             "timeout": 120
+          },
+          {
+            "type": "command",
+            "statusMessage": "Running cargo fmt...",
+            "command": "cargo fmt"
+          },
+          {
+            "type": "command",
+            "command": "cargo test >&2 || exit 2",
+            "timeout": 30,
+            "statusMessage": "Running cargo test...",
+            "asyncRewake": false
           }
         ]
       }

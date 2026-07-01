@@ -1,5 +1,4 @@
 pub mod cli;
-pub mod clone;
 pub mod co_author_aliases;
 pub mod commit;
 pub mod config;
@@ -14,7 +13,6 @@ pub mod revert;
 pub mod time_travel;
 
 pub use cli::{run_cli, Cli, Commands};
-pub use clone::cmd_clone;
 pub use co_author_aliases::{CoAuthorAliases, RealCoAuthorAliases};
 pub use config::{cmd_config, Config, RealTrunkConfig, TrunkConfig};
 pub use has_stash::has_stash;
