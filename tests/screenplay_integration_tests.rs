@@ -12,38 +12,14 @@
 mod abilities;
 mod common;
 mod interactions;
+mod questions;
 
 use abilities::{
     AccessScenarioContext, ScenarioContext, TestContext, UseFileSystem, UseGit, UseTrunk,
 };
 use interactions::{CloneRepo, Commit, InitialCommit, Pull, SetUpRemote, WriteFile};
+use questions::{Log, Status};
 use screenplay::*;
-
-// ---------------------------------------------------------------------------
-// Questions — ask about state
-// ---------------------------------------------------------------------------
-
-/// Ask for the output of `g l` in the actor's repo.
-struct Log;
-
-impl Question<String> for Log {
-    fn answered_by(&self, actor: &Actor) -> String {
-        let trunk = actor.ability::<UseTrunk>().expect("actor needs UseTrunk");
-        let git = actor.ability::<UseGit>().expect("actor needs UseGit");
-        trunk.app.log(&git.repo.borrow())
-    }
-}
-
-/// Ask for the output of `g s` in the actor's repo.
-struct Status;
-
-impl Question<String> for Status {
-    fn answered_by(&self, actor: &Actor) -> String {
-        let trunk = actor.ability::<UseTrunk>().expect("actor needs UseTrunk");
-        let git = actor.ability::<UseGit>().expect("actor needs UseGit");
-        trunk.app.status(&git.repo.borrow())
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Tests
