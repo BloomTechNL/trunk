@@ -201,6 +201,18 @@ impl TestApp {
         self.output.take()
     }
 
+    pub fn clone(&self, dir: &Path, source: &str, destination: &str) -> anyhow::Result<()> {
+        self.app().dispatch_command(
+            Cli {
+                command: Commands::Clone {
+                    source: source.to_string(),
+                    destination: destination.to_string(),
+                },
+            },
+            dir.to_path_buf(),
+        )
+    }
+
     pub fn pull(&self, dir: &Path) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {

@@ -22,13 +22,7 @@ fn git_config_identity(dir: &Path) {
         ("commit.gpgsign", "false"),
         ("rebase.autostash", "false"),
     ] {
-        Command::new("git")
-            .args(["config", k, v])
-            .current_dir(dir)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .expect("git config");
+        git(dir, &["config", k, v]);
     }
 }
 

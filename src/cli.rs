@@ -8,7 +8,7 @@ use crate::config::{cmd_config, TrunkConfig};
 use crate::output::OutputSink;
 use crate::revert::{revert, RevertInput};
 use crate::{
-    cmd_diff, cmd_log, cmd_pull, cmd_reset, cmd_status, cmd_time_travel, has_stash,
+    cmd_clone, cmd_diff, cmd_log, cmd_pull, cmd_reset, cmd_status, cmd_time_travel, has_stash,
     play_fart_sound::FartPlayer, CoAuthorAliases,
 };
 
@@ -106,6 +106,14 @@ pub enum Commands {
     /// Update g to the latest version
     #[command(name = "update")]
     Update,
+    /// Clone a repository.
+    #[command(name = "clone")]
+    Clone {
+        /// Source repository to clone from.
+        source: String,
+        /// Directory to clone into.
+        destination: String,
+    },
 }
 
 pub fn run_cli(
@@ -164,6 +172,10 @@ pub fn run_cli(
                 .map(|_| ())
                 .map_err(anyhow::Error::from)
         }
+        Commands::Clone {
+            source,
+            destination,
+        } => cmd_clone(dir, &source, &destination, output),
     }
 }
 
