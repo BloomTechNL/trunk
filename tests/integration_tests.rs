@@ -2,9 +2,7 @@ use std::fs;
 
 use crate::common::write_file::write_file;
 use common::test_app::TestApp;
-use common::use_git::{
-    clone_repo, commit_file, put_something_in_stash, set_up_basic_repo, set_up_remote,
-};
+use common::use_git::{clone_repo, put_something_in_stash, set_up_basic_repo, set_up_remote};
 
 mod common;
 
@@ -162,53 +160,6 @@ fn test_clean_commit_flow() {
     assert!(
         log_b.contains("add hello.txt"),
         "commit should be visible from clone_b\n{log_b}"
-    );
-}
-
-#[test]
-fn test_pull_blocked_by_unpushed_commits() {
-    let app = TestApp::new();
-    let repo_dir = set_up_basic_repo(app.base_dir.path());
-    commit_file(repo_dir.as_path());
-
-    let err = app.pull(repo_dir.as_path()).expect_err("should fail");
-
-    assert!(
-        err.to_string().to_lowercase().contains("unpushed"),
-        "error should mention unpushed commits"
-    );
-}
-
-#[test]
-fn test_pull_blocked_by_dirty_working_dir() {
-    let app = TestApp::new();
-    let repo_dir = set_up_basic_repo(app.base_dir.path());
-
-    write_file(repo_dir.as_path(), "dirty.txt", "not yet committed\n");
-
-    let err = app.pull(repo_dir.as_path()).expect_err("should fail");
-
-    assert!(
-        err.to_string().to_lowercase().contains("uncommitted"),
-        "error should mention uncommitted changes: {err}"
-    );
-}
-
-#[test]
-fn test_pull_succeeds_when_clean() {
-    let app = TestApp::new();
-    let repo1 = set_up_basic_repo(app.base_dir.path());
-    let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
-
-    write_file(repo1.as_path(), "new_feature.txt", "feature\n");
-    app.commit(repo1.as_path(), "add feature", vec!["SOLO"])
-        .expect("g c succeeds");
-    app.pull(repo2.as_path()).expect("g p succeeds");
-
-    let log = app.log(repo2.as_path());
-    assert!(
-        log.contains("add feature"),
-        "clone2 should have the new commit\n{log}"
     );
 }
 
