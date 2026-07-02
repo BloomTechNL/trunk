@@ -15,13 +15,13 @@ use screenplay::*;
 #[test]
 fn pull_blocked_by_unpushed_commits() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = developer_bob(&ctx);
+    let bob = developer_bob(&ctx);
 
-    dev.attempts_to((SetUpRemote,));
-    dev.attempts_to((CloneRepo { name: "dev" },));
-    dev.attempts_to((InitialCommit,));
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
 
-    dev.attempts_to((
+    bob.attempts_to((
         CommitUnpushed,
         Ensure::that(doing(Pull), fails().with_error("unpushed")),
     ));
@@ -30,13 +30,13 @@ fn pull_blocked_by_unpushed_commits() {
 #[test]
 fn pull_blocked_by_dirty_working_dir() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = developer_bob(&ctx);
+    let bob = developer_bob(&ctx);
 
-    dev.attempts_to((SetUpRemote,));
-    dev.attempts_to((CloneRepo { name: "dev" },));
-    dev.attempts_to((InitialCommit,));
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
 
-    dev.attempts_to((
+    bob.attempts_to((
         WriteFile {
             name: "dirty.txt",
             content: "not yet committed\n",

@@ -13,13 +13,13 @@ use screenplay::*;
 #[test]
 fn committing_solo_work() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = developer_bob(&ctx);
+    let bob = developer_bob(&ctx);
 
-    dev.attempts_to((SetUpRemote,));
-    dev.attempts_to((CloneRepo { name: "dev" },));
-    dev.attempts_to((InitialCommit,));
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
 
-    dev.attempts_to((
+    bob.attempts_to((
         WriteFile {
             name: "solo.txt",
             content: "solo",
@@ -37,13 +37,13 @@ fn committing_solo_work() {
 #[test]
 fn committing_without_co_authors_is_rejected() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = developer_bob(&ctx);
+    let bob = developer_bob(&ctx);
 
-    dev.attempts_to((SetUpRemote,));
-    dev.attempts_to((CloneRepo { name: "dev" },));
-    dev.attempts_to((InitialCommit,));
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
 
-    dev.attempts_to((
+    bob.attempts_to((
         WriteFile {
             name: "fail.txt",
             content: "fail",
@@ -63,13 +63,13 @@ fn committing_without_co_authors_is_rejected() {
 #[test]
 fn committing_with_a_known_alias() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = developer_bob(&ctx);
+    let bob = developer_bob(&ctx);
 
-    dev.attempts_to((SetUpRemote,));
-    dev.attempts_to((CloneRepo { name: "dev" },));
-    dev.attempts_to((InitialCommit,));
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
 
-    dev.attempts_to((
+    bob.attempts_to((
         AddAlias {
             alias: "jdoe",
             name: "John Doe",
@@ -91,13 +91,13 @@ fn committing_with_a_known_alias() {
 #[test]
 fn committing_with_an_unknown_alias_is_rejected() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = developer_bob(&ctx);
+    let bob = developer_bob(&ctx);
 
-    dev.attempts_to((SetUpRemote,));
-    dev.attempts_to((CloneRepo { name: "dev" },));
-    dev.attempts_to((InitialCommit,));
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
 
-    dev.attempts_to((
+    bob.attempts_to((
         AddAlias {
             alias: "known",
             name: "Name",
@@ -120,13 +120,13 @@ fn committing_with_an_unknown_alias_is_rejected() {
 #[test]
 fn committing_with_multiple_co_authors() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = developer_bob(&ctx);
+    let bob = developer_bob(&ctx);
 
-    dev.attempts_to((SetUpRemote,));
-    dev.attempts_to((CloneRepo { name: "dev" },));
-    dev.attempts_to((InitialCommit,));
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
 
-    dev.attempts_to((
+    bob.attempts_to((
         AddAlias {
             alias: "jdoe",
             name: "John Doe",
@@ -157,13 +157,13 @@ fn committing_with_multiple_co_authors() {
 #[test]
 fn combining_solo_with_other_co_authors_is_rejected() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = developer_bob(&ctx);
+    let bob = developer_bob(&ctx);
 
-    dev.attempts_to((SetUpRemote,));
-    dev.attempts_to((CloneRepo { name: "dev" },));
-    dev.attempts_to((InitialCommit,));
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
 
-    dev.attempts_to((
+    bob.attempts_to((
         AddAlias {
             alias: "jdoe",
             name: "John Doe",
@@ -186,13 +186,13 @@ fn combining_solo_with_other_co_authors_is_rejected() {
 #[test]
 fn committing_without_co_authors_when_config_disabled() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = developer_bob(&ctx);
+    let bob = developer_bob(&ctx);
 
-    dev.attempts_to((SetUpRemote,));
-    dev.attempts_to((CloneRepo { name: "dev" },));
-    dev.attempts_to((InitialCommit,));
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
 
-    dev.attempts_to((
+    bob.attempts_to((
         Config {
             co_authors_required: Some(false),
         },
@@ -212,13 +212,13 @@ fn committing_without_co_authors_when_config_disabled() {
 #[test]
 fn committing_with_co_authors_when_config_disabled() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = developer_bob(&ctx);
+    let bob = developer_bob(&ctx);
 
-    dev.attempts_to((SetUpRemote,));
-    dev.attempts_to((CloneRepo { name: "dev" },));
-    dev.attempts_to((InitialCommit,));
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
 
-    dev.attempts_to((
+    bob.attempts_to((
         AddAlias {
             alias: "jdoe",
             name: "John Doe",
@@ -242,13 +242,13 @@ fn committing_with_co_authors_when_config_disabled() {
 #[test]
 fn committing_solo_when_config_disabled() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = developer_bob(&ctx);
+    let bob = developer_bob(&ctx);
 
-    dev.attempts_to((SetUpRemote,));
-    dev.attempts_to((CloneRepo { name: "dev" },));
-    dev.attempts_to((InitialCommit,));
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
 
-    dev.attempts_to((
+    bob.attempts_to((
         Config {
             co_authors_required: Some(false),
         },

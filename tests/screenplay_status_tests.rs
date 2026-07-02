@@ -13,13 +13,13 @@ use screenplay::*;
 #[test]
 fn status_shows_untracked_files() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = developer_bob(&ctx);
+    let bob = developer_bob(&ctx);
 
-    dev.attempts_to((SetUpRemote,));
-    dev.attempts_to((CloneRepo { name: "dev" },));
-    dev.attempts_to((InitialCommit,));
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
 
-    dev.attempts_to((
+    bob.attempts_to((
         WriteFile {
             name: "new_file.txt",
             content: "fresh content\n",
@@ -32,11 +32,11 @@ fn status_shows_untracked_files() {
 #[test]
 fn status_shows_clean_working_tree() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = developer_bob(&ctx);
+    let bob = developer_bob(&ctx);
 
-    dev.attempts_to((SetUpRemote,));
-    dev.attempts_to((CloneRepo { name: "dev" },));
-    dev.attempts_to((InitialCommit,));
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
 
-    dev.attempts_to((Ensure::that(Status, contains("nothing to commit")),));
+    bob.attempts_to((Ensure::that(Status, contains("nothing to commit")),));
 }

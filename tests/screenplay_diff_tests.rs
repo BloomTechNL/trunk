@@ -13,13 +13,13 @@ use screenplay::*;
 #[test]
 fn diff_shows_modified_file() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = developer_bob(&ctx);
+    let bob = developer_bob(&ctx);
 
-    dev.attempts_to((SetUpRemote,));
-    dev.attempts_to((CloneRepo { name: "dev" },));
-    dev.attempts_to((InitialCommit,));
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
 
-    dev.attempts_to((
+    bob.attempts_to((
         WriteFile {
             name: "README.md",
             content: "# modified project\n",
@@ -32,25 +32,25 @@ fn diff_shows_modified_file() {
 #[test]
 fn diff_is_empty_when_clean() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = developer_bob(&ctx);
+    let bob = developer_bob(&ctx);
 
-    dev.attempts_to((SetUpRemote,));
-    dev.attempts_to((CloneRepo { name: "dev" },));
-    dev.attempts_to((InitialCommit,));
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
 
-    dev.attempts_to((Ensure::that(Diff, does_not_contain("diff --git")),));
+    bob.attempts_to((Ensure::that(Diff, does_not_contain("diff --git")),));
 }
 
 #[test]
 fn diff_shows_deleted_content() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = developer_bob(&ctx);
+    let bob = developer_bob(&ctx);
 
-    dev.attempts_to((SetUpRemote,));
-    dev.attempts_to((CloneRepo { name: "dev" },));
-    dev.attempts_to((InitialCommit,));
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
 
-    dev.attempts_to((
+    bob.attempts_to((
         DeleteFile { name: "README.md" },
         Ensure::that(Diff, contains("README.md")),
     ));
