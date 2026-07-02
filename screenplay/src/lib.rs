@@ -69,7 +69,7 @@ pub use ensure::Ensure;
 pub use contains::contains;
 pub use does_not_contain::does_not_contain;
 pub use doing::doing;
-pub use expectation::{equals, is_greater_than, is_true, Expectation};
+pub use expectation::{equals, is_false, is_greater_than, is_true, Expectation};
 pub use fails::fails;
 pub use interaction::{Interaction, Interactions};
 pub use outcome::Outcome;

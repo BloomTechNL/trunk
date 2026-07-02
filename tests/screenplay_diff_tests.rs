@@ -38,7 +38,7 @@ fn diff_is_empty_when_clean() {
     bob.attempts_to((CloneRepo { name: "dev" },));
     bob.attempts_to((InitialCommit,));
 
-    bob.attempts_to((Ensure::that(Diff, does_not_contain("diff --git")),));
+    bob.attempts_to((Ensure::that(Diff, equals(String::new())),));
 }
 
 #[test]

@@ -62,6 +62,22 @@ impl Expectation<bool> for IsTrue {
     }
 }
 
+/// Expect a `bool` value to be `false`.
+pub fn is_false() -> impl Expectation<bool> {
+    IsFalse
+}
+
+struct IsFalse;
+
+impl Expectation<bool> for IsFalse {
+    fn test(&self, value: &bool) -> bool {
+        !*value
+    }
+    fn message(&self, _value: &bool) -> String {
+        "Expected false, but got true".to_string()
+    }
+}
+
 /// Expect a value to equal `expected` (uses [`PartialEq`]).
 ///
 /// ```rust

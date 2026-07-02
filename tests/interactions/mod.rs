@@ -8,6 +8,7 @@ mod delete_file;
 mod initial_commit;
 mod pull;
 mod resolve_commit;
+mod revert_head;
 mod set_up_remote;
 mod write_file;
 
@@ -21,5 +22,6 @@ pub use delete_file::DeleteFile;
 pub use initial_commit::InitialCommit;
 pub use pull::Pull;
 pub use resolve_commit::ResolveCommit;
+pub use revert_head::RevertHead;
 pub use set_up_remote::SetUpRemote;
 pub use write_file::WriteFile;

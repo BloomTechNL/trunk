@@ -2,65 +2,9 @@ use std::fs;
 
 use crate::common::write_file::write_file;
 use common::test_app::TestApp;
-use common::use_git::{clone_repo, put_something_in_stash, set_up_basic_repo, set_up_remote};
+use common::use_git::{clone_repo, put_something_in_stash, set_up_basic_repo};
 
 mod common;
-
-#[test]
-fn test_revert_flow() {
-    let app = TestApp::new();
-    let repo1 = set_up_basic_repo(app.base_dir.path());
-    let dir = &repo1.as_path();
-
-    write_file(dir, "to_revert.txt", "this will be reverted\n");
-    app.commit(dir, "add file to revert", vec!["SOLO"])
-        .expect("g c");
-
-    let commit_hash = &app.commit_hashes(dir)[0];
-
-    app.revert(dir, &commit_hash).expect("g rv should succeed");
-
-    let log_after = app.log(dir);
-    assert!(
-        log_after.contains("Revert") || log_after.contains("revert"),
-        "a revert commit should appear in the log\n{log_after}"
-    );
-    assert!(
-        !dir.join("to_revert.txt").exists()
-            || fs::read_to_string(dir.join("to_revert.txt"))
-                .unwrap_or_default()
-                .is_empty(),
-        "the reverted file should no longer have content"
-    );
-}
-
-#[test]
-fn test_revert_without_remote_tracking_branch() {
-    let app = TestApp::new();
-    let tmp_path = app.base_dir.path().to_path_buf();
-    let origin = set_up_remote(&tmp_path);
-    let clone = clone_repo(&tmp_path, "clone", origin);
-
-    write_file(&clone, "a.txt", "a\n");
-    app.commit(&clone.clone().as_path(), "add a", vec!["SOLO"])
-        .expect("first commit");
-
-    let clone2 = clone_repo(&tmp_path, "clone2", origin);
-    write_file(&clone2, "b.txt", "b\n");
-    app.commit(&clone2.clone().as_path(), "add b", vec!["SOLO"])
-        .expect("clone2 first commit");
-
-    let head = &app.commit_hashes(&clone2)[0];
-
-    app.revert(&clone2.clone().as_path(), &head)
-        .expect("g rv should succeed");
-
-    let log = app.log(&clone2);
-    assert!(
-        log.contains("Revert") || log.contains("revert"),
-        "revert commit should be in log\n{log}"
-    );
-}
 
 #[test]
 fn test_time_travel_blocks_write_commands_and_now_restores() {

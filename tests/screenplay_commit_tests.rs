@@ -7,7 +7,7 @@ mod questions;
 use abilities::{ScenarioContext, TestContext};
 use cast::{developer_bob, developer_kent};
 use interactions::{CloneRepo, Commit, DeleteFile, InitialCommit, Pull, SetUpRemote, WriteFile};
-use questions::{Log, Status};
+use questions::{FileExists, Log, Status};
 use screenplay::*;
 
 #[test]
@@ -70,11 +70,21 @@ fn commit_stages_deleted_files() {
             co_authors: vec!["SOLO"],
         },
         Ensure::that(Log, contains("delete the file")),
-        Ensure::that(Status, does_not_contain("to_delete.txt")),
+        Ensure::that(
+            FileExists {
+                name: "to_delete.txt",
+            },
+            is_false(),
+        ),
     ));
 
     kent.attempts_to((
         Pull,
-        Ensure::that(Status, does_not_contain("to_delete.txt")),
+        Ensure::that(
+            FileExists {
+                name: "to_delete.txt",
+            },
+            is_false(),
+        ),
     ));
 }
