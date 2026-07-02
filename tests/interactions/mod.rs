@@ -1,17 +1,21 @@
+mod abort_commit;
 mod add_alias;
 mod clone_repo;
 mod commit;
 mod config;
 mod initial_commit;
 mod pull;
+mod resolve_commit;
 mod set_up_remote;
 mod write_file;
 
+pub use abort_commit::AbortCommit;
 pub use add_alias::AddAlias;
 pub use clone_repo::CloneRepo;
 pub use commit::Commit;
 pub use config::Config;
 pub use initial_commit::InitialCommit;
 pub use pull::Pull;
+pub use resolve_commit::ResolveCommit;
 pub use set_up_remote::SetUpRemote;
 pub use write_file::WriteFile;

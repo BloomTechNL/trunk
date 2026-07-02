@@ -9,72 +9,6 @@ use common::use_git::{
 mod common;
 
 #[test]
-fn test_commit_conflict_and_resolve() {
-    let app = TestApp::new();
-    let repo1 = set_up_basic_repo(app.base_dir.path());
-    let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
-    let repo1 = &repo1.as_path();
-    let repo2 = &repo2.as_path();
-
-    let shared_file = "shared.txt";
-    write_file(repo1, shared_file, "version A\n");
-    app.commit(repo1, "clone_a: add shared", vec!["SOLO"])
-        .expect("initial commit from A");
-
-    app.pull(repo2).expect("Pull should succeed");
-    write_file(repo2, shared_file, "version B\n");
-
-    write_file(repo1, shared_file, "version A2\n");
-    app.commit(repo1, "clone_a: update shared", vec!["SOLO"])
-        .expect("second commit from A");
-
-    let err = app.commit(repo2, "clone_b: conflicting change", vec!["SOLO"]);
-    assert!(err.is_err(), "expected conflict error");
-
-    write_file(repo2, shared_file, "resolved content\n");
-    app.commit_resolve(repo2)
-        .expect("g c --resolve should succeed");
-
-    let log = app.log(repo2);
-    assert!(
-        log.contains("clone_b: conflicting change"),
-        "resolved commit should be in the log\n{log}"
-    );
-}
-
-#[test]
-fn test_commit_conflict_and_abort() {
-    let app = TestApp::new();
-    let repo1 = set_up_basic_repo(app.base_dir.path());
-    let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
-    let repo1 = &repo1.as_path();
-    let repo2 = &repo2.as_path();
-
-    let shared_file = "conflict.txt";
-    write_file(repo1, shared_file, "original\n");
-    app.commit(repo1, "seed conflict file", vec!["SOLO"])
-        .expect("seed");
-
-    app.pull(repo2).expect("Pull should succeed");
-
-    write_file(repo1, shared_file, "clone_a update\n");
-    app.commit(repo1, "clone_a update", vec!["SOLO"])
-        .expect("clone_a update");
-
-    write_file(repo2, shared_file, "clone_b update\n");
-    let err = app.commit(repo2, "clone_b conflicting", vec!["SOLO"]);
-    assert!(err.is_err(), "expected conflict");
-
-    app.commit_abort(repo2).expect("g c --abort should succeed");
-
-    let status = app.status(repo2);
-    assert!(
-        !status.trim().is_empty(),
-        "after abort, working dir should have uncommitted changes\n{status}"
-    );
-}
-
-#[test]
 fn test_revert_flow() {
     let app = TestApp::new();
     let repo1 = set_up_basic_repo(app.base_dir.path());
@@ -99,37 +33,6 @@ fn test_revert_flow() {
                 .unwrap_or_default()
                 .is_empty(),
         "the reverted file should no longer have content"
-    );
-}
-
-#[test]
-fn test_commit_while_in_conflict_state_is_blocked() {
-    let app = TestApp::new();
-    let repo1 = set_up_basic_repo(app.base_dir.path());
-    let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
-    let repo1 = &repo1.as_path();
-    let repo2 = &repo2.as_path();
-
-    let shared = "clash.txt";
-    write_file(repo1, shared, "A\n");
-    app.commit(repo1, "A init", vec!["SOLO"]).expect("A init");
-
-    app.pull(repo2).expect("Pull should succeed");
-
-    write_file(repo1, shared, "A updated\n");
-    app.commit(repo1, "A update", vec!["SOLO"])
-        .expect("A update");
-
-    write_file(repo2, shared, "B update\n");
-    app.commit(repo2, "B conflicting", vec!["SOLO"])
-        .expect_err("fails because of conflicts");
-
-    let err = app
-        .commit(repo2, "should be blocked", vec!["SOLO"])
-        .expect_err("should be blocked while in conflict state");
-    assert!(
-        err.to_string().contains("middle of resolving a conflict"),
-        "unexpected error message: {err}"
     );
 }
 
