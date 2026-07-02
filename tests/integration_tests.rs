@@ -65,39 +65,6 @@ fn test_revert_without_remote_tracking_branch() {
 }
 
 #[test]
-fn test_commit_stages_deleted_files() {
-    let app = TestApp::new();
-    let repo1 = set_up_basic_repo(app.base_dir.path());
-    let dir = &repo1.as_path();
-    let repo2 = clone_repo(app.base_dir.path(), "another_clone", "origin.git");
-    let repo2 = &repo2.as_path();
-
-    write_file(dir, "to_delete.txt", "goodbye\n");
-    app.commit(dir, "add file that will be deleted", vec!["SOLO"])
-        .expect("g c seed");
-
-    fs::remove_file(dir.join("to_delete.txt")).expect("remove file");
-    app.commit(dir, "delete the file", vec!["SOLO"])
-        .expect("g c with deletion");
-
-    let log = app.log(dir);
-    assert!(
-        log.contains("delete the file"),
-        "deletion commit should be in log\n{log}"
-    );
-    assert!(
-        !dir.join("to_delete.txt").exists(),
-        "deleted file should not exist after commit"
-    );
-
-    app.pull(repo2).expect("Pull should succeed");
-    assert!(
-        !repo2.join("to_delete.txt").exists(),
-        "deletion should have been pushed to the remote and visible in clone_b"
-    );
-}
-
-#[test]
 fn test_time_travel_blocks_write_commands_and_now_restores() {
     let app = TestApp::new();
     let repo1 = set_up_basic_repo(app.base_dir.path());

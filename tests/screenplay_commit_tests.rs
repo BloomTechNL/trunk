@@ -6,7 +6,7 @@ mod questions;
 
 use abilities::{ScenarioContext, TestContext};
 use cast::{developer_bob, developer_kent};
-use interactions::{CloneRepo, Commit, InitialCommit, Pull, SetUpRemote, WriteFile};
+use interactions::{CloneRepo, Commit, DeleteFile, InitialCommit, Pull, SetUpRemote, WriteFile};
 use questions::{Log, Status};
 use screenplay::*;
 
@@ -38,4 +38,43 @@ fn bob_commits_kent_pulls() {
     kent.attempts_to((Pull, Ensure::that(Log, contains("add hello.txt"))));
 
     bob.attempts_to((Ensure::that(Status, contains("nothing to commit")),));
+}
+
+#[test]
+fn commit_stages_deleted_files() {
+    let ctx = ScenarioContext::new(TestContext::new());
+
+    let bob = developer_bob(&ctx);
+    let kent = developer_kent(&ctx);
+
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "bob" },));
+    bob.attempts_to((InitialCommit,));
+
+    kent.attempts_to((CloneRepo { name: "kent" },));
+
+    bob.attempts_to((
+        WriteFile {
+            name: "to_delete.txt",
+            content: "goodbye\n",
+        },
+        Commit {
+            message: "add file that will be deleted",
+            co_authors: vec!["SOLO"],
+        },
+        DeleteFile {
+            name: "to_delete.txt",
+        },
+        Commit {
+            message: "delete the file",
+            co_authors: vec!["SOLO"],
+        },
+        Ensure::that(Log, contains("delete the file")),
+        Ensure::that(Status, does_not_contain("to_delete.txt")),
+    ));
+
+    kent.attempts_to((
+        Pull,
+        Ensure::that(Status, does_not_contain("to_delete.txt")),
+    ));
 }
