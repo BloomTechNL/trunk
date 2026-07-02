@@ -1,13 +1,7 @@
-//! Screenplay-pattern integration tests for `g`.
+//! Screenplay-pattern collaboration tests for `g`.
 //!
-//! These tests use the [`screenplay`] framework to model `g`'s happy path
-//! through three abilities — `UseTrunk`, `UseGit`, and `UseFileSystem` — plus
-//! a shared [`AccessScenarioContext`] that holds infrastructure both actors
-//! need (the bare `origin.git` remote).
-//!
-//! Tests model multiple developers as separate [`Actor`]s, each with their
-//! own repo checkout. Every git operation (including repo setup) goes through
-//! actor interactions.
+//! Tests that model multiple developers working together through
+//! trunk-based development — committing, pulling, and checking status.
 
 mod abilities;
 mod common;
@@ -22,7 +16,7 @@ use questions::{Log, Status};
 use screenplay::*;
 
 // ---------------------------------------------------------------------------
-// Tests
+// Happy-path collaboration tests
 // ---------------------------------------------------------------------------
 
 /// Two developers collaborate through trunk-based development.

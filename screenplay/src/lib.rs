@@ -52,6 +52,7 @@
 mod ability;
 mod actor;
 mod contains;
+mod does_not_contain;
 mod ensure;
 mod expectation;
 mod interaction;
@@ -63,6 +64,7 @@ pub use ability::Ability;
 pub use actor::Actor;
 pub use ensure::Ensure;
 pub use contains::contains;
+pub use does_not_contain::does_not_contain;
 pub use expectation::{equals, is_greater_than, is_true, Expectation};
 pub use interaction::{Interaction, Interactions};
 pub use question::Question;
