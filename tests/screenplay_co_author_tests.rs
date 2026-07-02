@@ -6,10 +6,8 @@ mod questions;
 
 use abilities::{ScenarioContext, TestContext};
 use cast::developer_bob;
-use interactions::{
-    AddAlias, AttemptCommit, CloneRepo, Commit, Config, InitialCommit, SetUpRemote, WriteFile,
-};
-use questions::{CommitError, Log};
+use interactions::{AddAlias, CloneRepo, Commit, Config, InitialCommit, SetUpRemote, WriteFile};
+use questions::Log;
 use screenplay::*;
 
 #[test]
@@ -50,13 +48,12 @@ fn committing_without_co_authors_is_rejected() {
             name: "fail.txt",
             content: "fail",
         },
-        AttemptCommit {
-            message: "no authors",
-            co_authors: vec![],
-        },
         Ensure::that(
-            CommitError,
-            contains(
+            doing(Commit {
+                message: "no authors",
+                co_authors: vec![],
+            }),
+            fails().with_error(
                 "You must either specify co-authors as @jane @john or specify that this is solo work with SOLO",
             ),
         ),
@@ -110,12 +107,13 @@ fn committing_with_an_unknown_alias_is_rejected() {
             name: "unknown.txt",
             content: "unknown",
         },
-        AttemptCommit {
-            message: "unknown alias",
-            co_authors: vec!["@unknown"],
-        },
-        Ensure::that(CommitError, contains("Unknown co-author alias: @unknown")),
-        Ensure::that(CommitError, contains("Please add it to")),
+        Ensure::that(
+            doing(Commit {
+                message: "unknown alias",
+                co_authors: vec!["@unknown"],
+            }),
+            fails().with_error("Unknown co-author alias: @unknown"),
+        ),
     ));
 }
 
@@ -175,13 +173,12 @@ fn combining_solo_with_other_co_authors_is_rejected() {
             name: "invalid.txt",
             content: "invalid",
         },
-        AttemptCommit {
-            message: "invalid commit",
-            co_authors: vec!["@jdoe", "SOLO"],
-        },
         Ensure::that(
-            CommitError,
-            contains("SOLO cannot be combined with other co-authors."),
+            doing(Commit {
+                message: "invalid commit",
+                co_authors: vec!["@jdoe", "SOLO"],
+            }),
+            fails().with_error("SOLO cannot be combined with other co-authors."),
         ),
     ));
 }

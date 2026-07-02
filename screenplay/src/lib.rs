@@ -53,9 +53,12 @@ mod ability;
 mod actor;
 mod contains;
 mod does_not_contain;
+mod doing;
 mod ensure;
 mod expectation;
+mod fails;
 mod interaction;
+mod outcome;
 mod question;
 
 // -- Public API re-exports -------------------------------------------------
@@ -65,8 +68,11 @@ pub use actor::Actor;
 pub use ensure::Ensure;
 pub use contains::contains;
 pub use does_not_contain::does_not_contain;
+pub use doing::doing;
 pub use expectation::{equals, is_greater_than, is_true, Expectation};
+pub use fails::fails;
 pub use interaction::{Interaction, Interactions};
+pub use outcome::Outcome;
 pub use question::Question;
 
 // -- Tests -----------------------------------------------------------------
