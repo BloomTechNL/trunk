@@ -13,4 +13,13 @@
 /// struct WebBrowser { headless: bool }
 /// impl Ability for WebBrowser {}
 /// ```
-pub trait Ability: 'static {}
+use crate::Actor;
+
+pub trait Ability: 'static {
+    fn by(actor: &Actor) -> &Self
+    where
+        Self: Sized,
+    {
+        actor.ability::<Self>().expect("actor needs ability")
+    }
+}

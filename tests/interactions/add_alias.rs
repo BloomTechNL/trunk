@@ -1,5 +1,5 @@
 use crate::abilities::UseTrunk;
-use screenplay::{Actor, Interaction};
+use screenplay::{Ability, Actor, Interaction};
 
 /// Add a co-author alias via `g add-alias`.
 pub struct AddAlias {
@@ -10,7 +10,7 @@ pub struct AddAlias {
 
 impl Interaction for AddAlias {
     fn perform_as(&self, actor: &Actor) {
-        let trunk = actor.ability::<UseTrunk>().expect("actor needs UseTrunk");
+        let trunk = UseTrunk::by(actor);
         trunk
             .app
             .add_alias(self.alias, self.name, self.email)

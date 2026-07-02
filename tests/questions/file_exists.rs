@@ -1,5 +1,5 @@
 use crate::abilities::{AccessScenarioContext, UseFileSystem};
-use screenplay::{Actor, Question};
+use screenplay::{Ability, Actor, Question};
 
 pub struct FileExists {
     pub name: &'static str,
@@ -7,12 +7,8 @@ pub struct FileExists {
 
 impl Question<bool> for FileExists {
     fn answered_by(&self, actor: &Actor) -> bool {
-        let asc = actor
-            .ability::<AccessScenarioContext>()
-            .expect("actor needs AccessScenarioContext");
-        let fs = actor
-            .ability::<UseFileSystem>()
-            .expect("actor needs UseFileSystem");
+        let asc = AccessScenarioContext::by(actor);
+        let fs = UseFileSystem::by(actor);
         fs.file_exists(&asc.actor_context(actor).working_dir, self.name)
     }
 }

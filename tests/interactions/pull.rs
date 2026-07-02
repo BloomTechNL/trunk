@@ -1,15 +1,13 @@
 use crate::abilities::{AccessScenarioContext, UseTrunk};
-use screenplay::{Actor, Interaction};
+use screenplay::{Ability, Actor, Interaction};
 
 /// Run `g p` in the actor's repo.
 pub struct Pull;
 
 impl Interaction for Pull {
     fn perform_as(&self, actor: &Actor) {
-        let trunk = actor.ability::<UseTrunk>().expect("actor needs UseTrunk");
-        let asc = actor
-            .ability::<AccessScenarioContext>()
-            .expect("actor needs AccessScenarioContext");
+        let trunk = UseTrunk::by(actor);
+        let asc = AccessScenarioContext::by(actor);
         trunk
             .app
             .pull(&asc.actor_context(actor).working_dir)

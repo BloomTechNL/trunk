@@ -1,5 +1,5 @@
 use crate::abilities::{AccessScenarioContext, UseTrunk};
-use screenplay::{Actor, Interaction};
+use screenplay::{Ability, Actor, Interaction};
 
 pub struct TimeTravel {
     pub target: &'static str,
@@ -7,10 +7,8 @@ pub struct TimeTravel {
 
 impl Interaction for TimeTravel {
     fn perform_as(&self, actor: &Actor) {
-        let trunk = actor.ability::<UseTrunk>().expect("actor needs UseTrunk");
-        let asc = actor
-            .ability::<AccessScenarioContext>()
-            .expect("actor needs AccessScenarioContext");
+        let trunk = UseTrunk::by(actor);
+        let asc = AccessScenarioContext::by(actor);
         trunk
             .app
             .time_travel(&asc.actor_context(actor).working_dir, self.target)

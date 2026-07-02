@@ -1,5 +1,5 @@
 use crate::abilities::{AccessScenarioContext, UseTrunk};
-use screenplay::{Actor, Interaction};
+use screenplay::{Ability, Actor, Interaction};
 
 /// Run `g c` in the actor's repo.
 pub struct Commit {
@@ -9,10 +9,8 @@ pub struct Commit {
 
 impl Interaction for Commit {
     fn perform_as(&self, actor: &Actor) {
-        let trunk = actor.ability::<UseTrunk>().expect("actor needs UseTrunk");
-        let asc = actor
-            .ability::<AccessScenarioContext>()
-            .expect("actor needs AccessScenarioContext");
+        let trunk = UseTrunk::by(actor);
+        let asc = AccessScenarioContext::by(actor);
         trunk
             .app
             .commit(
