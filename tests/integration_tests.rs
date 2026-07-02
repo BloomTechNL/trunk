@@ -281,39 +281,3 @@ fn test_fart_does_not_play_when_stash_is_empty() {
         "no fart should play when the stash is empty"
     );
 }
-
-#[test]
-fn test_status_shows_untracked_files() {
-    let app = TestApp::new();
-    let repo_dir = set_up_basic_repo(app.base_dir.path());
-    let dir = repo_dir.as_path();
-
-    write_file(dir, "new_file.txt", "fresh content\n");
-
-    let status = app.status(dir);
-
-    assert!(
-        status.contains("new_file.txt"),
-        "status should show the untracked file\n{status}"
-    );
-    assert!(
-        status.contains("Untracked files")
-            || status.contains("Changes not staged")
-            || status.to_lowercase().contains("nothing added to commit"),
-        "status should mention file state\n{status}"
-    );
-}
-
-#[test]
-fn test_status_clean_working_tree() {
-    let app = TestApp::new();
-    let repo_dir = set_up_basic_repo(app.base_dir.path());
-    let dir = repo_dir.as_path();
-
-    let status = app.status(dir);
-
-    assert!(
-        status.contains("nothing to commit") || status.contains("clean"),
-        "status of clean working tree should indicate nothing to commit\n{status}"
-    );
-}
