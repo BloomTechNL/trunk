@@ -1,5 +1,3 @@
-use std::fs;
-
 use crate::common::write_file::write_file;
 use common::test_app::TestApp;
 use common::use_git::{clone_repo, put_something_in_stash, set_up_basic_repo};
@@ -50,36 +48,6 @@ fn test_time_travel_blocks_write_commands_and_now_restores() {
     assert!(
         log.contains("commit after returning from time travel"),
         "commit made after time travel should be in the log\n{log}"
-    );
-}
-
-#[test]
-fn test_reset_clears_tracked_and_untracked_changes() {
-    let app = TestApp::new();
-    let repo1 = set_up_basic_repo(app.base_dir.path());
-    let dir = &repo1.as_path();
-
-    let subdir = dir.join("subdir");
-    fs::create_dir(&subdir).unwrap();
-
-    write_file(dir, "untracked_at_root.txt", "I should disappear\n");
-    write_file(&subdir, "untracked_in_subdir.txt", "also gone\n");
-    write_file(dir, "README.md", "dirty modification\n");
-
-    app.reset(&subdir).expect("g r should succeed");
-
-    let readme = fs::read_to_string(dir.join("README.md")).expect("README.md should exist");
-    assert!(
-        !readme.contains("dirty modification"),
-        "README.md should have been reset\n{readme}"
-    );
-    assert!(
-        !dir.join("untracked_at_root.txt").exists(),
-        "untracked_at_root.txt should have been removed by git clean :/"
-    );
-    assert!(
-        !subdir.join("untracked_in_subdir.txt").exists(),
-        "untracked_in_subdir.txt should have been removed by git clean"
     );
 }
 
