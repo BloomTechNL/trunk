@@ -1,4 +1,4 @@
-use crate::abilities::UseGit;
+use crate::abilities::{UseFileSystem, UseGit};
 use screenplay::{Actor, Question};
 
 pub struct FileExists {
@@ -7,7 +7,10 @@ pub struct FileExists {
 
 impl Question<bool> for FileExists {
     fn answered_by(&self, actor: &Actor) -> bool {
+        let fs = actor
+            .ability::<UseFileSystem>()
+            .expect("actor needs UseFileSystem");
         let git = actor.ability::<UseGit>().expect("actor needs UseGit");
-        git.repo.borrow().join(self.name).exists()
+        fs.file_exists(&git.repo.borrow(), self.name)
     }
 }
