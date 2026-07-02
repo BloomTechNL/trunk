@@ -1,5 +1,4 @@
 use crate::abilities::{AccessScenarioContext, UseFileSystem, UseGit};
-use crate::common::use_git::clone_repo;
 use screenplay::{Actor, Interaction};
 
 pub struct CloneRepo {
@@ -15,7 +14,7 @@ impl Interaction for CloneRepo {
             .ability::<UseFileSystem>()
             .expect("actor needs UseFileSystem");
         let git = actor.ability::<UseGit>().expect("actor needs UseGit");
-        let path = clone_repo(
+        let path = UseGit::clone_repo(
             asc.context.borrow().base_dir.path(),
             self.name,
             "origin.git",
