@@ -47,6 +47,10 @@ impl TestApp {
         self.fart_player.was_played()
     }
 
+    pub fn fart_flag(&self) -> std::rc::Rc<std::cell::Cell<bool>> {
+        self.fart_player.inner()
+    }
+
     pub fn add_alias(&self, alias: &str, name: &str, email: &str) -> anyhow::Result<()> {
         let path = self.base_dir.path().to_path_buf();
         self.app().dispatch_command(
