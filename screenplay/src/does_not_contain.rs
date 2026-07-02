@@ -15,7 +15,7 @@ use crate::expectation::Expectation;
 ///     }
 /// }
 ///
-/// let actor = Actor::new();
+/// let actor = Actor::new("user");
 /// actor.attempts_to((Ensure::that(Greeting, does_not_contain("goodbye")),));
 /// ```
 pub fn does_not_contain(expected: impl Into<String>) -> impl Expectation<String> {

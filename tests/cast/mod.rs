@@ -6,7 +6,7 @@ use screenplay::Actor;
 pub fn developer_bob(ctx: &ScenarioContext) -> Actor {
     let trunk = UseTrunk::new();
     let flag = trunk.app.fart_flag();
-    Actor::new()
+    Actor::new("bob")
         .who_can(AccessScenarioContext::new(ctx))
         .who_can(trunk)
         .who_can(UseGit::new())
@@ -17,7 +17,7 @@ pub fn developer_bob(ctx: &ScenarioContext) -> Actor {
 pub fn developer_kent(ctx: &ScenarioContext) -> Actor {
     let trunk = UseTrunk::new();
     let flag = trunk.app.fart_flag();
-    Actor::new()
+    Actor::new("kent")
         .who_can(AccessScenarioContext::new(ctx))
         .who_can(trunk)
         .who_can(UseGit::new())

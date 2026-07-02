@@ -14,7 +14,7 @@ use crate::expectation::Expectation;
 ///     }
 /// }
 ///
-/// let actor = Actor::new();
+/// let actor = Actor::new("user");
 /// actor.attempts_to((Ensure::that(Greeting, contains("hello")),));
 /// ```
 pub fn contains(expected: impl Into<String>) -> impl Expectation<String> {

@@ -44,7 +44,7 @@ pub trait Expectation<T> {
 ///     fn answered_by(&self, _actor: &Actor) -> bool { true }
 /// }
 ///
-/// let actor = Actor::new();
+/// let actor = Actor::new("user");
 /// actor.attempts_to((Ensure::that(IsLoggedIn, is_true()),));
 /// ```
 pub fn is_true() -> impl Expectation<bool> {
@@ -88,7 +88,7 @@ impl Expectation<bool> for IsFalse {
 ///     fn answered_by(&self, _actor: &Actor) -> i32 { 42 }
 /// }
 ///
-/// let actor = Actor::new();
+/// let actor = Actor::new("user");
 /// actor.attempts_to((Ensure::that(TheAnswer, equals(42)),));
 /// ```
 pub fn equals<T: PartialEq + Debug + 'static>(expected: T) -> impl Expectation<T> {
@@ -118,7 +118,7 @@ impl<T: PartialEq + Debug + 'static> Expectation<T> for Equals<T> {
 ///     fn answered_by(&self, _actor: &Actor) -> i32 { 42 }
 /// }
 ///
-/// let actor = Actor::new();
+/// let actor = Actor::new("user");
 /// actor.attempts_to((Ensure::that(TheAnswer, is_greater_than(0)),));
 /// ```
 pub fn is_greater_than<T: PartialOrd + Debug + 'static>(expected: T) -> impl Expectation<T> {

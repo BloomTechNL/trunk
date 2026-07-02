@@ -23,7 +23,7 @@ use crate::question::Question;
 ///     fn answered_by(&self, _actor: &Actor) -> i32 { 42 }
 /// }
 ///
-/// let actor = Actor::new();
+/// let actor = Actor::new("user");
 ///
 /// // This passes (42 == 42):
 /// actor.attempts_to((Ensure::that(TheAnswer, equals(42)),));

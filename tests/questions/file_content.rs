@@ -1,4 +1,4 @@
-use crate::abilities::{UseFileSystem, UseGit};
+use crate::abilities::{AccessScenarioContext, UseFileSystem};
 use screenplay::{Actor, Question};
 
 pub struct FileContent {
@@ -7,10 +7,12 @@ pub struct FileContent {
 
 impl Question<String> for FileContent {
     fn answered_by(&self, actor: &Actor) -> String {
+        let asc = actor
+            .ability::<AccessScenarioContext>()
+            .expect("actor needs AccessScenarioContext");
         let fs = actor
             .ability::<UseFileSystem>()
             .expect("actor needs UseFileSystem");
-        let git = actor.ability::<UseGit>().expect("actor needs UseGit");
-        fs.read_file(&git.repo.borrow(), self.name)
+        fs.read_file(&asc.actor_context(actor).working_dir, self.name)
     }
 }

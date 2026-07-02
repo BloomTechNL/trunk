@@ -34,7 +34,7 @@
 //! }
 //!
 //! // ── Wire everything together ──
-//! let user = Actor::new().who_can(Counter(0));
+//! let user = Actor::new("test").who_can(Counter(0));
 //!
 //! // Single interaction
 //! user.attempts_to((Increment,));
@@ -109,13 +109,13 @@ mod tests {
 
     #[test]
     fn actor_starts_with_no_abilities() {
-        let actor = Actor::new();
+        let actor = Actor::new("test");
         assert!(actor.ability::<Logging>().is_none());
     }
 
     #[test]
     fn who_can_adds_and_retrieves_ability() {
-        let actor = Actor::new().who_can(Logging);
+        let actor = Actor::new("test").who_can(Logging);
         assert!(actor.ability::<Logging>().is_some());
     }
 
@@ -124,16 +124,16 @@ mod tests {
         struct Counter(i32);
         impl Ability for Counter {}
 
-        let actor = Actor::new().who_can(Counter(1)).who_can(Counter(99));
+        let actor = Actor::new("test").who_can(Counter(1)).who_can(Counter(99));
 
         let counter = actor.ability::<Counter>().unwrap();
         assert_eq!(counter.0, 99);
     }
 
     #[test]
-    fn actor_default_is_empty() {
-        let actor: Actor = Default::default();
-        assert!(actor.ability::<Logging>().is_none());
+    fn actor_has_name() {
+        let actor = Actor::new("bob");
+        assert_eq!(actor.name(), "bob");
     }
 
     // ── Interaction execution ──
@@ -141,7 +141,7 @@ mod tests {
     #[test]
     fn attempts_to_single_interaction() {
         let called = Cell::new(false);
-        let actor = Actor::new();
+        let actor = Actor::new("test");
         actor.attempts_to((FlagInteraction { flag: &called },));
         assert!(called.get());
     }
@@ -157,7 +157,7 @@ mod tests {
             }
         }
 
-        let actor = Actor::new();
+        let actor = Actor::new("test");
         actor.attempts_to((A(&log, 1), A(&log, 2), A(&log, 3)));
 
         assert_eq!(*log.borrow(), vec![1, 2, 3]);
@@ -174,7 +174,7 @@ mod tests {
             }
         }
 
-        let actor = Actor::new();
+        let actor = Actor::new("test");
         actor.attempts_to((
             Bump(&count),
             Bump(&count),
@@ -225,7 +225,7 @@ mod tests {
 
     #[test]
     fn ensure_passes_when_expectation_met() {
-        let actor = Actor::new();
+        let actor = Actor::new("test");
         // Should not panic
         actor.attempts_to((Ensure::that(ConstantQuestion { value: 42 }, equals(42)),));
     }
@@ -233,21 +233,21 @@ mod tests {
     #[test]
     #[should_panic(expected = "Expected 99 to equal 42")]
     fn ensure_panics_when_expectation_not_met() {
-        let actor = Actor::new();
+        let actor = Actor::new("test");
         actor.attempts_to((Ensure::that(ConstantQuestion { value: 99 }, equals(42)),));
     }
 
     #[test]
     #[should_panic(expected = "Expected true, but got false")]
     fn ensure_is_true_panics_with_message() {
-        let actor = Actor::new();
+        let actor = Actor::new("test");
         actor.attempts_to((Ensure::that(ConstantQuestion { value: false }, is_true()),));
     }
 
     #[test]
     #[should_panic(expected = "Expected 5 to be greater than 10")]
     fn ensure_is_greater_than_panics_with_message() {
-        let actor = Actor::new();
+        let actor = Actor::new("test");
         actor.attempts_to((Ensure::that(
             ConstantQuestion { value: 5 },
             is_greater_than(10),
@@ -272,7 +272,7 @@ mod tests {
             }
         }
 
-        let actor = Actor::new().who_can(Counter(77));
+        let actor = Actor::new("test").who_can(Counter(77));
         actor.attempts_to((InspectAbility(&log),));
 
         assert_eq!(*log.borrow(), vec![77]);

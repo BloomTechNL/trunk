@@ -1,29 +1,29 @@
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell, RefMut};
+use std::collections::HashMap;
+use std::path::PathBuf;
 use std::rc::Rc;
 
-use screenplay::Ability;
+use screenplay::{Ability, Actor};
 use tempfile::TempDir;
 
-/// Shared state that every actor in the scenario can access.
-///
-/// Owns the temp directory where `origin.git` lives so both developers can
-/// clone from the same remote.
+pub struct ActorContext {
+    pub working_dir: PathBuf,
+}
+
 pub struct TestContext {
     pub base_dir: TempDir,
+    pub actors: HashMap<&'static str, ActorContext>,
 }
 
 impl TestContext {
     pub fn new() -> Self {
         TestContext {
             base_dir: TempDir::new().expect("temp dir"),
+            actors: HashMap::new(),
         }
     }
 }
 
-/// A reference-counted, interior-mutable handle to the shared [`TestContext`].
-///
-/// Created once by the test function. Each actor that needs shared state
-/// receives an [`AccessScenarioContext`] ability cloned from this.
 pub struct ScenarioContext {
     pub(crate) inner: Rc<RefCell<TestContext>>,
 }
@@ -36,11 +36,6 @@ impl ScenarioContext {
     }
 }
 
-/// Ability that gives an [`Actor`] access to the shared [`ScenarioContext`].
-///
-/// The inner `Rc<RefCell<TestContext>>` is deliberately exposed — borrow it
-/// with `.context.borrow()` or `.context.borrow_mut()` inside interactions
-/// and questions.
 pub struct AccessScenarioContext {
     pub context: Rc<RefCell<TestContext>>,
 }
@@ -52,5 +47,17 @@ impl AccessScenarioContext {
         AccessScenarioContext {
             context: ctx.inner.clone(),
         }
+    }
+
+    pub fn actor_context(&self, actor: &Actor) -> Ref<ActorContext> {
+        Ref::map(self.context.borrow(), |ctx| &ctx.actors[actor.name()])
+    }
+
+    pub fn actor_context_mut(&self, actor: &Actor) -> RefMut<ActorContext> {
+        RefMut::map(self.context.borrow_mut(), |ctx| {
+            ctx.actors.entry(actor.name()).or_insert(ActorContext {
+                working_dir: PathBuf::new(),
+            })
+        })
     }
 }

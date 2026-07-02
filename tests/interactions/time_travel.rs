@@ -1,4 +1,4 @@
-use crate::abilities::{UseGit, UseTrunk};
+use crate::abilities::{AccessScenarioContext, UseTrunk};
 use screenplay::{Actor, Interaction};
 
 pub struct TimeTravel {
@@ -8,10 +8,12 @@ pub struct TimeTravel {
 impl Interaction for TimeTravel {
     fn perform_as(&self, actor: &Actor) {
         let trunk = actor.ability::<UseTrunk>().expect("actor needs UseTrunk");
-        let git = actor.ability::<UseGit>().expect("actor needs UseGit");
+        let asc = actor
+            .ability::<AccessScenarioContext>()
+            .expect("actor needs AccessScenarioContext");
         trunk
             .app
-            .time_travel(&git.repo.borrow(), self.target)
+            .time_travel(&asc.actor_context(actor).working_dir, self.target)
             .expect("g tt should succeed");
     }
 }

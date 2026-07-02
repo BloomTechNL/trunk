@@ -1,4 +1,4 @@
-use crate::abilities::{UseGit, UseTrunk};
+use crate::abilities::{AccessScenarioContext, UseTrunk};
 use screenplay::{Actor, Interaction};
 
 pub struct Fart;
@@ -6,10 +6,12 @@ pub struct Fart;
 impl Interaction for Fart {
     fn perform_as(&self, actor: &Actor) {
         let trunk = actor.ability::<UseTrunk>().expect("actor needs UseTrunk");
-        let git = actor.ability::<UseGit>().expect("actor needs UseGit");
+        let asc = actor
+            .ability::<AccessScenarioContext>()
+            .expect("actor needs AccessScenarioContext");
         trunk
             .app
-            .fart(&git.repo.borrow())
+            .fart(&asc.actor_context(actor).working_dir)
             .expect("Fart should succeed");
     }
 }
