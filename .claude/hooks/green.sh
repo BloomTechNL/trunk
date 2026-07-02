@@ -3,7 +3,7 @@ set -euo pipefail
 
 echo "🟢 TDD GREEN: verifying all tests pass..." >&2
 
-if cargo test 2>&1; then
+if cargo test -q 2>&1; then
     echo "✅ GREEN GATE PASSED: All tests pass." >&2
 else
     echo "" >&2

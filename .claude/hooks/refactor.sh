@@ -14,7 +14,7 @@ fi
 
 # ── Gate 2: all tests must pass ───────────────────────────────────
 echo "  Running tests..." >&2
-if ! cargo test 2>&1; then
+if ! cargo test -q 2>&1; then
     echo "" >&2
     echo "❌ REFACTOR GATE FAILED: Tests are failing." >&2
     echo "   Keep all tests green while refactoring." >&2

@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 cargo build                    # debug build
 cargo build --release          # release build (binary at target/release/g)
-cargo test                     # run all tests
-cargo test --test integration_tests -- test_clean_commit_flow  # single test
+cargo test -q                    # run all tests
+cargo test -q --test integration_tests -- test_clean_commit_flow  # single test
 cargo check                    # fast compile-check (no codegen)
 cargo fmt -- --check           # verify formatting
 cargo fmt                      # auto-format

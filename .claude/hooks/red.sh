@@ -16,7 +16,7 @@ fi
 
 # ── Gate 2: the targeted test must fail ───────────────────────────
 echo "  Running test '$TARGET'..." >&2
-if cargo test "$TARGET" 2>&1; then
+if cargo test -q "$TARGET" 2>&1; then
     echo "" >&2
     echo "❌ RED GATE FAILED: Test '$TARGET' passed." >&2
     echo "   You are in RED mode — write a failing test first." >&2
