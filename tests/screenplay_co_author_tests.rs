@@ -1,37 +1,21 @@
-//! Screenplay-pattern co-author tests for `g`.
-//!
-//! Tests for co-author alias resolution, SOLO commits, config-driven
-//! co-author requirements, and error handling around invalid co-author
-//! combinations.
-
 mod abilities;
+mod cast;
 mod common;
 mod interactions;
 mod questions;
 
-use abilities::{
-    AccessScenarioContext, ScenarioContext, TestContext, UseFileSystem, UseGit, UseTrunk,
-};
+use abilities::{ScenarioContext, TestContext};
+use cast::developer_bob;
 use interactions::{
     AddAlias, AttemptCommit, CloneRepo, Commit, Config, InitialCommit, SetUpRemote, WriteFile,
 };
 use questions::{CommitError, Log};
 use screenplay::*;
 
-// ---------------------------------------------------------------------------
-// Co-author tests
-// ---------------------------------------------------------------------------
-
-/// A developer commits solo work — the log records `(Solo-work)` and no
-/// co-author trailer.
 #[test]
 fn committing_solo_work() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = Actor::new()
-        .who_can(AccessScenarioContext::new(&ctx))
-        .who_can(UseTrunk::new())
-        .who_can(UseGit::new())
-        .who_can(UseFileSystem);
+    let dev = developer_bob(&ctx);
 
     dev.attempts_to((SetUpRemote,));
     dev.attempts_to((CloneRepo { name: "dev" },));
@@ -52,16 +36,10 @@ fn committing_solo_work() {
     ));
 }
 
-/// Committing with an empty co-author list is rejected with a helpful
-/// message when `coAuthorsRequired` is enabled (the default).
 #[test]
 fn committing_without_co_authors_is_rejected() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = Actor::new()
-        .who_can(AccessScenarioContext::new(&ctx))
-        .who_can(UseTrunk::new())
-        .who_can(UseGit::new())
-        .who_can(UseFileSystem);
+    let dev = developer_bob(&ctx);
 
     dev.attempts_to((SetUpRemote,));
     dev.attempts_to((CloneRepo { name: "dev" },));
@@ -85,16 +63,10 @@ fn committing_without_co_authors_is_rejected() {
     ));
 }
 
-/// A developer adds a co-author alias and commits with it — the log includes
-/// the `Co-authored-by:` trailer.
 #[test]
 fn committing_with_a_known_alias() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = Actor::new()
-        .who_can(AccessScenarioContext::new(&ctx))
-        .who_can(UseTrunk::new())
-        .who_can(UseGit::new())
-        .who_can(UseFileSystem);
+    let dev = developer_bob(&ctx);
 
     dev.attempts_to((SetUpRemote,));
     dev.attempts_to((CloneRepo { name: "dev" },));
@@ -119,16 +91,10 @@ fn committing_with_a_known_alias() {
     ));
 }
 
-/// Committing with an unknown alias fails and the error message suggests
-/// adding the alias.
 #[test]
 fn committing_with_an_unknown_alias_is_rejected() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = Actor::new()
-        .who_can(AccessScenarioContext::new(&ctx))
-        .who_can(UseTrunk::new())
-        .who_can(UseGit::new())
-        .who_can(UseFileSystem);
+    let dev = developer_bob(&ctx);
 
     dev.attempts_to((SetUpRemote,));
     dev.attempts_to((CloneRepo { name: "dev" },));
@@ -153,16 +119,10 @@ fn committing_with_an_unknown_alias_is_rejected() {
     ));
 }
 
-/// A developer can commit with multiple co-authors — each gets a
-/// `Co-authored-by:` trailer.
 #[test]
 fn committing_with_multiple_co_authors() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = Actor::new()
-        .who_can(AccessScenarioContext::new(&ctx))
-        .who_can(UseTrunk::new())
-        .who_can(UseGit::new())
-        .who_can(UseFileSystem);
+    let dev = developer_bob(&ctx);
 
     dev.attempts_to((SetUpRemote,));
     dev.attempts_to((CloneRepo { name: "dev" },));
@@ -196,15 +156,10 @@ fn committing_with_multiple_co_authors() {
     ));
 }
 
-/// Using `SOLO` together with other co-authors is rejected.
 #[test]
 fn combining_solo_with_other_co_authors_is_rejected() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = Actor::new()
-        .who_can(AccessScenarioContext::new(&ctx))
-        .who_can(UseTrunk::new())
-        .who_can(UseGit::new())
-        .who_can(UseFileSystem);
+    let dev = developer_bob(&ctx);
 
     dev.attempts_to((SetUpRemote,));
     dev.attempts_to((CloneRepo { name: "dev" },));
@@ -231,16 +186,10 @@ fn combining_solo_with_other_co_authors_is_rejected() {
     ));
 }
 
-/// When `coAuthorsRequired` is disabled, a commit with no co-authors
-/// succeeds without the `(Solo-work)` marker.
 #[test]
 fn committing_without_co_authors_when_config_disabled() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = Actor::new()
-        .who_can(AccessScenarioContext::new(&ctx))
-        .who_can(UseTrunk::new())
-        .who_can(UseGit::new())
-        .who_can(UseFileSystem);
+    let dev = developer_bob(&ctx);
 
     dev.attempts_to((SetUpRemote,));
     dev.attempts_to((CloneRepo { name: "dev" },));
@@ -263,16 +212,10 @@ fn committing_without_co_authors_when_config_disabled() {
     ));
 }
 
-/// Even when `coAuthorsRequired` is disabled, co-author aliases are still
-/// honoured and recorded in the log.
 #[test]
 fn committing_with_co_authors_when_config_disabled() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = Actor::new()
-        .who_can(AccessScenarioContext::new(&ctx))
-        .who_can(UseTrunk::new())
-        .who_can(UseGit::new())
-        .who_can(UseFileSystem);
+    let dev = developer_bob(&ctx);
 
     dev.attempts_to((SetUpRemote,));
     dev.attempts_to((CloneRepo { name: "dev" },));
@@ -299,15 +242,10 @@ fn committing_with_co_authors_when_config_disabled() {
     ));
 }
 
-/// The `SOLO` keyword still works when `coAuthorsRequired` is disabled.
 #[test]
 fn committing_solo_when_config_disabled() {
     let ctx = ScenarioContext::new(TestContext::new());
-    let dev = Actor::new()
-        .who_can(AccessScenarioContext::new(&ctx))
-        .who_can(UseTrunk::new())
-        .who_can(UseGit::new())
-        .who_can(UseFileSystem);
+    let dev = developer_bob(&ctx);
 
     dev.attempts_to((SetUpRemote,));
     dev.attempts_to((CloneRepo { name: "dev" },));
