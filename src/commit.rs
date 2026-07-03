@@ -1,7 +1,9 @@
 use std::path::{Path, PathBuf};
 
 use crate::config::TrunkConfig;
-use crate::git::{git_capture, git_passthrough, is_detached_head, is_rebasing};
+use crate::git::{
+    git_capture, git_passthrough, has_conflict_markers, is_detached_head, is_rebasing,
+};
 use crate::output::OutputSink;
 use crate::CoAuthorAliases;
 use anyhow::{bail, Result};
@@ -80,6 +82,11 @@ fn cmd_commit(
 }
 
 fn cmd_commit_resolve(dir: &Path, sink: &impl OutputSink) -> Result<()> {
+    if has_conflict_markers(dir, sink) {
+        bail!(
+            "Your files contain unresolved conflict markers. Please resolve all conflicts before running `g c --resolve`."
+        );
+    }
     git_passthrough(dir, &["add", "-A"], sink)?;
     git_passthrough(dir, &["rebase", "--continue"], sink)?;
     git_passthrough(dir, &["push"], sink)

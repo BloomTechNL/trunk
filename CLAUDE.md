@@ -18,7 +18,17 @@ The pre-commit hook (installed via `scripts/set_up_dev.sh`, which runs `git conf
 
 ## Architecture
 
-`g` is a deliberately narrow git wrapper for trunk-based development. All subcommands ultimately shell out to `git` — `src/git.rs` provides the passthrough/capture helpers (`git_passthrough`, `git_capture`, `git_capture_silent`). Some commands also use `git2` for repo introspection (e.g., `reset.rs` for status-based clean-up, `time_travel.rs` for revwalk).
+`g` is a deliberately narrow git wrapper for trunk-based development. `src/git.rs` provides the passthrough/capture helpers (`git_passthrough`, `git_capture`, `git_capture_silent`).
+
+### When to use `git2` vs shelling out to `git`
+
+**Use `git2` for all local repository operations** — repo introspection, index inspection, diffing, status checks, conflict detection, etc. Examples: `time_travel.rs` revwalk, `reset.rs` status-based clean-up, `has_stash.rs` stash detection, `has_conflict_markers`.
+
+**Shell out to `git` only in two cases:**
+1. **Network I/O** — push, pull, fetch, clone (libgit2 handles these poorly).
+2. **Passing through output to the user** — when the user needs to see raw git output (log, status, diff display).
+
+This means `git_passthrough` / `git_capture` should be reserved for those two cases; new local operations should prefer `git2`.
 
 ### Trait-based dependency injection
 

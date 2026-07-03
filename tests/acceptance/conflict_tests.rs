@@ -120,6 +120,65 @@ fn aborting_a_merge_conflict() {
 }
 
 #[test]
+fn bob_cannot_commit_conflicts() {
+    let ctx = ScenarioContext::new(TestContext::new());
+
+    let bob = developer_bob(&ctx);
+    let kent = developer_kent(&ctx);
+
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "bob" },));
+    bob.attempts_to((InitialCommit,));
+
+    kent.attempts_to((CloneRepo { name: "kent" },));
+
+    bob.attempts_to((
+        WriteFile {
+            name: "shared.txt",
+            content: "version A\n",
+        },
+        Commit {
+            message: "bob: add shared",
+            co_authors: vec!["SOLO"],
+        },
+    ));
+
+    kent.attempts_to((Pull,));
+
+    kent.attempts_to((WriteFile {
+        name: "shared.txt",
+        content: "version B\n",
+    },));
+
+    bob.attempts_to((
+        WriteFile {
+            name: "shared.txt",
+            content: "version A2\n",
+        },
+        Commit {
+            message: "bob: update shared",
+            co_authors: vec!["SOLO"],
+        },
+    ));
+
+    // Kent's commit triggers a conflict during pull --rebase.
+    // Without resolving the conflict markers, resolve is blocked.
+    kent.attempts_to((
+        Ensure::that(
+            doing(Commit {
+                message: "kent: conflicting change",
+                co_authors: vec!["SOLO"],
+            }),
+            fails(),
+        ),
+        Ensure::that(
+            doing(ResolveCommit),
+            fails().with_error("unresolved conflict"),
+        ),
+    ));
+}
+
+#[test]
 fn commit_is_blocked_while_in_conflict_state() {
     let ctx = ScenarioContext::new(TestContext::new());
 
