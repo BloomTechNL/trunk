@@ -44,7 +44,7 @@ fn resolve_to_commit_hash(dir: &Path, spec: &str, sink: &impl OutputSink) -> Res
     if repo.find_branch(spec, git2::BranchType::Local).is_ok()
         || repo.find_branch(spec, git2::BranchType::Remote).is_ok()
     {
-        bail!("'{}' is a branch name. g does not support branches.", spec);
+        bail!("'{spec}' is a branch name. g does not support branches.");
     }
 
     if let Some(hash) = try_resolve_time_ago(&repo, spec) {
@@ -57,7 +57,7 @@ fn resolve_to_commit_hash(dir: &Path, spec: &str, sink: &impl OutputSink) -> Res
     let obj = repo.revparse_single(&hash)?;
     let commit = obj
         .peel_to_commit()
-        .map_err(|_| anyhow!("'{}' does not resolve to a commit", spec))?;
+        .map_err(|_| anyhow!("'{spec}' does not resolve to a commit"))?;
     Ok(commit.id().to_string())
 }
 

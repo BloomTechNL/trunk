@@ -6,7 +6,8 @@ pub struct RealCoAuthorAliases {
 }
 
 impl RealCoAuthorAliases {
-    pub fn new(path: PathBuf) -> Self {
+    #[must_use]
+    pub const fn new(path: PathBuf) -> Self {
         Self { path }
     }
 }
@@ -33,9 +34,9 @@ impl CoAuthorAliases for RealCoAuthorAliases {
     }
 
     fn add_alias(&self, alias: &str, name: &str, email: &str) -> Result<()> {
-        let content = format!("{}:{} <{}>\n", alias, name, email);
         use std::fs::OpenOptions;
         use std::io::Write;
+        let content = format!("{alias}:{name} <{email}>\n");
         if let Some(parent) = self.path.parent() {
             std::fs::create_dir_all(parent)?;
         }

@@ -5,6 +5,7 @@ use anyhow::{bail, Result};
 
 use crate::output::OutputSink;
 
+#[must_use]
 pub fn base_cmd(dir: &Path) -> Command {
     let mut cmd = Command::new("git");
     cmd.current_dir(dir)

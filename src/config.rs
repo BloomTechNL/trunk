@@ -9,7 +9,7 @@ pub struct Config {
     pub co_authors_required: bool,
 }
 
-fn default_co_authors_required() -> bool {
+const fn default_co_authors_required() -> bool {
     true
 }
 
@@ -32,7 +32,8 @@ pub struct RealTrunkConfig {
 }
 
 impl RealTrunkConfig {
-    pub fn new(path: PathBuf) -> Self {
+    #[must_use]
+    pub const fn new(path: PathBuf) -> Self {
         Self { path }
     }
 }

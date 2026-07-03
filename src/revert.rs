@@ -22,7 +22,7 @@ pub fn get_revert_info(dir: &Path, hash: &str, sink: &impl OutputSink) -> Result
     let obj = repo.revparse_single(hash)?;
     let commit = obj
         .peel_to_commit()
-        .map_err(|_| anyhow!("'{}' does not point to a commit", hash))?;
+        .map_err(|_| anyhow!("'{hash}' does not point to a commit"))?;
 
     let short_hash = git_capture(dir, &["rev-parse", "--short", hash], sink)?
         .trim()
@@ -126,7 +126,7 @@ impl RevertInput {
         } else {
             opt = RevertOpt::Ref(hash.unwrap_or_else(|| "HEAD".to_string()));
         }
-        RevertInput {
+        Self {
             repo,
             opt,
             interactive,
@@ -137,7 +137,7 @@ impl RevertInput {
 pub fn revert(input: &RevertInput, sink: &impl OutputSink) -> Result<()> {
     match input.opt {
         RevertOpt::Ref(ref reference) => {
-            cmd_revert(&input.repo, &reference, !input.interactive, sink)
+            cmd_revert(&input.repo, reference, !input.interactive, sink)
         }
         RevertOpt::Resolve => cmd_revert_resolve(&input.repo, sink),
         RevertOpt::Abort => cmd_revert_abort(&input.repo, sink),

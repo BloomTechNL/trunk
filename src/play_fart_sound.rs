@@ -16,17 +16,17 @@ struct Asset;
 
 fn play_fart_sound() -> Result<()> {
     let random_index = rand::random_range(1..=6);
-    let file_name = format!("fart-{}.mp3", random_index);
+    let file_name = format!("fart-{random_index}.mp3");
 
     let asset = Asset::get(&file_name)
-        .with_context(|| format!("Failed to find {} in bundled assets", file_name))?;
+        .with_context(|| format!("Failed to find {file_name} in bundled assets"))?;
 
     let mut handle = DeviceSinkBuilder::open_default_sink()
         .context("Could not open default audio output device")?;
 
     handle.log_on_drop(false);
 
-    let player = Player::connect_new(&handle.mixer());
+    let player = Player::connect_new(handle.mixer());
 
     let cursor = Cursor::new(asset.data);
     let source = Decoder::new(cursor).context("Failed to decode MP3 data")?;
@@ -110,7 +110,7 @@ impl FartVault {
             return vault;
         }
 
-        let vault_file_content = fs::read_to_string(&FartVault::vault_path()).expect("uh oh");
+        let vault_file_content = fs::read_to_string(FartVault::vault_path()).expect("uh oh");
         for line in vault_file_content.lines() {
             let (repo, pid) = FartVault::parse_vault_line(line);
             vault.processes.insert(repo, pid);
@@ -121,7 +121,8 @@ impl FartVault {
     fn parse_vault_line(raw: &str) -> (PathBuf, Pid) {
         let parts: Vec<&str> = raw.splitn(2, ':').collect();
         let repo = PathBuf::from(parts[1]);
-        let pid = parse_pid(parts[0]).expect(&format!("Failed to parse pid {}", parts[0]));
+        let pid =
+            parse_pid(parts[0]).unwrap_or_else(|()| panic!("Failed to parse pid {}", parts[0]));
         (repo, pid)
     }
 }

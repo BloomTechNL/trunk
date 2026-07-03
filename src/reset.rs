@@ -5,7 +5,7 @@ use std::path::Path;
 
 pub fn cmd_reset(dir: &Path) -> Result<()> {
     let repo = Repository::discover(dir)
-        .with_context(|| format!("Failed to discover git repository from {:?}", dir))?;
+        .with_context(|| format!("Failed to discover git repository from {dir:?}"))?;
 
     let head = repo.head().context("Failed to resolve HEAD")?;
     let target = head
@@ -37,10 +37,10 @@ pub fn cmd_reset(dir: &Path) -> Result<()> {
 
                 if full_path.is_dir() {
                     fs::remove_dir_all(&full_path)
-                        .with_context(|| format!("Failed to remove directory {:?}", full_path))?;
+                        .with_context(|| format!("Failed to remove directory {full_path:?}"))?;
                 } else {
                     fs::remove_file(&full_path)
-                        .with_context(|| format!("Failed to remove file {:?}", full_path))?;
+                        .with_context(|| format!("Failed to remove file {full_path:?}"))?;
                 }
             }
         }

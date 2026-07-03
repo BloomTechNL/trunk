@@ -57,7 +57,7 @@ fn cmd_commit(
     }
 
     let postfix = co_authors.format_postfix(aliases)?;
-    let final_message = format!("{}{}", message, postfix);
+    let final_message = format!("{message}{postfix}");
 
     git_passthrough(dir, &["add", "-A"], sink)?;
     git_passthrough(dir, &["commit", "-m", &final_message], sink)?;
@@ -116,11 +116,10 @@ impl MessagePostfix for CoAuthors {
             let alias = &author_input[1..];
             match aliases.format_alias(alias) {
                 Some(full_author) => {
-                    lines.push(format!("Co-authored-by: {}", full_author));
+                    lines.push(format!("Co-authored-by: {full_author}"));
                 }
                 None => bail!(
-                    "Unknown co-author alias: @{}. Please add it to ~/.config/trunk/aliases in the format alias:Name <email@example.com>\n",
-                    alias,
+                    "Unknown co-author alias: @{alias}. Please add it to ~/.config/trunk/aliases in the format alias:Name <email@example.com>\n",
                 ),
             }
         }
@@ -174,7 +173,7 @@ fn parse_co_authors(co_authors: Vec<String>) -> Result<Box<dyn MessagePostfix>> 
     if has_solo {
         bail!("SOLO cannot be combined with other co-authors.");
     }
-    if co_authors.len() > 0 {
+    if !co_authors.is_empty() {
         for author in &co_authors {
             if !author.starts_with('@') {
                 bail!("Invalid co-author format. Use @alias or SOLO.");
@@ -203,7 +202,7 @@ impl CommitInput {
                 co_authors: parse_co_authors(co_authors)?,
             }
         };
-        Ok(CommitInput { repo, action })
+        Ok(Self { repo, action })
     }
 }
 
