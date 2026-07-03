@@ -22,18 +22,27 @@ Improve the **internal structure** of the code without changing its observable b
 - Run `cargo fmt` to auto-format
 - Run `cargo test` after **every** change to verify nothing broke
 - Run `cargo build` to verify the project builds
+- Fix clippy warnings to lower the clippy ratchet baseline
 
 ## Forbidden
 - **Do NOT change behavior** — all existing tests must continue to pass exactly as before
 - **Do NOT add new features** — no new functions that aren't extracted from existing code
 - **Do NOT write new tests** — not even for coverage gaps you discover (those go in the next RED cycle)
 - **Do NOT change test assertions** — tests are the specification; modifying them to "match" your refactor is a bug
-- **Do NOT "improve" the test file** — tests are off-limits during refactor (formatting-only changes via `cargo fmt` are OK)
 
 ## Success criteria
 - `cargo fmt -- --check` passes
 - `cargo test` passes with **zero failures**
+- `python3 scripts/clippy_ratchet.py` passes (no new lint violations introduced)
 - Code is measurably better (less duplication, clearer names, simpler structure)
+
+## Clippy ratchet
+
+This project uses a clippy ratchet (`scripts/clippy_ratchet.py`) to prevent lint regressions. It stores the current clippy warning count in `.clippy_baseline.json` (checked into git).
+
+- **Do NOT increase the baseline.** The ratchet fails if you introduce new lint violations.
+- **Lowering the baseline is encouraged.** Fix clippy warnings in source files and the ratchet will automatically ratchet the baseline down.
+- Run `python3 scripts/clippy_ratchet.py` before finishing the refactor phase to verify the baseline hasn't increased.
 
 ## Refactoring catalog
 
