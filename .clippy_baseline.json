@@ -29,7 +29,6 @@
   "src/git.rs||clippy::missing_errors_doc||docs for function returning `Result` missing `# Errors` section": 4,
   "src/git.rs||clippy::option_if_let_else||use Option::map_or_else instead of an if let/else": 2,
   "src/git.rs||clippy::too_long_first_doc_paragraph||first doc comment paragraph is too long": 2,
-  "src/git.rs||clippy::manual_let_else||this could be rewritten as `let...else`": 12,
   "src/output.rs||clippy::missing_errors_doc||docs for function returning `Result` missing `# Errors` section": 4,
   "src/play_fart_sound.rs||clippy::missing_errors_doc||docs for function returning `Result` missing `# Errors` section": 8,
   "src/play_fart_sound.rs||clippy::use_self||unnecessary structure name repetition": 8,

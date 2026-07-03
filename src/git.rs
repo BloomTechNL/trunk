@@ -71,34 +71,26 @@ pub fn is_rebasing(dir: &Path, sink: &impl OutputSink) -> bool {
 /// (`<<<<<<<`). Uses `git2` to find files with unmerged index entries, then
 /// checks whether their working-tree copies still contain conflict markers.
 pub fn has_conflict_markers(dir: &Path, _sink: &impl OutputSink) -> bool {
-    let repo = match git2::Repository::open(dir) {
-        Ok(r) => r,
-        Err(_) => return false,
+    let Ok(repo) = git2::Repository::open(dir) else {
+        return false;
     };
-    let index = match repo.index() {
-        Ok(i) => i,
-        Err(_) => return false,
+    let Ok(index) = repo.index() else {
+        return false;
     };
     if !index.has_conflicts() {
         return false;
     }
-    let conflicts = match index.conflicts() {
-        Ok(c) => c,
-        Err(_) => return false,
+    let Ok(conflicts) = index.conflicts() else {
+        return false;
     };
     for conflict in conflicts {
-        let c = match conflict {
-            Ok(c) => c,
-            Err(_) => continue,
-        };
+        let Ok(c) = conflict else { continue };
         let entry = c.ancestor.as_ref().or(c.our.as_ref()).or(c.their.as_ref());
-        let path = match entry.and_then(|e| std::str::from_utf8(&e.path).ok()) {
-            Some(p) => p,
-            None => continue,
+        let Some(path) = entry.and_then(|e| std::str::from_utf8(&e.path).ok()) else {
+            continue;
         };
-        let content = match std::fs::read(dir.join(path)) {
-            Ok(c) => c,
-            Err(_) => continue,
+        let Ok(content) = std::fs::read(dir.join(path)) else {
+            continue;
         };
         if content.windows(b"<<<<<<<".len()).any(|w| w == b"<<<<<<<") {
             return true;
