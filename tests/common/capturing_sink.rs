@@ -4,20 +4,13 @@ use std::sync::Mutex;
 
 use g_cli::output::OutputSink;
 
-/// Test-only `OutputSink` that accumulates everything written into an
-/// internal buffer — both direct `write_str` calls and the stdout of any
-/// child process the application spawns through `run`.
-///
-/// `take()` is stateful: it returns everything written since the last call
-/// and then clears the buffer, so successive test assertions see only the
-/// output produced by the most recent command.
 pub struct CapturingSink {
     buf: Mutex<String>,
 }
 
 impl CapturingSink {
-    pub fn new() -> Self {
-        CapturingSink {
+    pub const fn new() -> Self {
+        Self {
             buf: Mutex::new(String::new()),
         }
     }
