@@ -67,9 +67,6 @@ pub fn is_rebasing(dir: &Path, sink: &impl OutputSink) -> bool {
     gd.join("rebase-merge").exists() || gd.join("rebase-apply").exists()
 }
 
-/// Returns `true` when the working tree contains leftover conflict markers
-/// (`<<<<<<<`). Uses `git2` to find files with unmerged index entries, then
-/// checks whether their working-tree copies still contain conflict markers.
 pub fn has_conflict_markers(dir: &Path, _sink: &impl OutputSink) -> bool {
     let Ok(repo) = git2::Repository::open(dir) else {
         return false;

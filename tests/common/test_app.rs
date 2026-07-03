@@ -26,7 +26,7 @@ impl TestApp {
         let trunk_config = InMemoryTrunkConfig::new();
         let output = CapturingSink::new();
         let updater = MockUpdater::new();
-        TestApp {
+        Self {
             base_dir,
             fart_player,
             co_author_aliases,

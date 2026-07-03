@@ -102,17 +102,17 @@ impl FartVault {
     }
 
     fn get() -> Self {
-        let mut vault = FartVault {
+        let mut vault = Self {
             processes: HashMap::new(),
         };
-        let vault_path = &FartVault::vault_path();
+        let vault_path = &Self::vault_path();
         if !vault_path.exists() {
             return vault;
         }
 
-        let vault_file_content = fs::read_to_string(FartVault::vault_path()).expect("uh oh");
+        let vault_file_content = fs::read_to_string(Self::vault_path()).expect("uh oh");
         for line in vault_file_content.lines() {
-            let (repo, pid) = FartVault::parse_vault_line(line);
+            let (repo, pid) = Self::parse_vault_line(line);
             vault.processes.insert(repo, pid);
         }
         vault

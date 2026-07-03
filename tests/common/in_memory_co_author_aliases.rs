@@ -8,7 +8,7 @@ pub struct InMemoryCoAuthorAliases {
 
 impl InMemoryCoAuthorAliases {
     pub fn new() -> Self {
-        InMemoryCoAuthorAliases {
+        Self {
             aliases: RefCell::new(HashMap::new()),
         }
     }
@@ -23,7 +23,7 @@ impl CoAuthorAliases for InMemoryCoAuthorAliases {
     }
 
     fn add_alias(&self, alias: &str, name: &str, email: &str) -> anyhow::Result<()> {
-        let content = format!("{}:{} <{}>", alias, name, email);
+        let content = format!("{alias}:{name} <{email}>");
         self.aliases.borrow_mut().insert(alias.to_string(), content);
         Ok(())
     }

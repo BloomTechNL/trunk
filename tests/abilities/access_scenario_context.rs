@@ -17,7 +17,7 @@ pub struct TestContext {
 
 impl TestContext {
     pub fn new() -> Self {
-        TestContext {
+        Self {
             base_dir: TempDir::new().expect("temp dir"),
             actors: HashMap::new(),
         }
@@ -30,7 +30,7 @@ pub struct ScenarioContext {
 
 impl ScenarioContext {
     pub fn new(ctx: TestContext) -> Self {
-        ScenarioContext {
+        Self {
             inner: Rc::new(RefCell::new(ctx)),
         }
     }
@@ -44,7 +44,7 @@ impl Ability for AccessScenarioContext {}
 
 impl AccessScenarioContext {
     pub fn new(ctx: &ScenarioContext) -> Self {
-        AccessScenarioContext {
+        Self {
             context: ctx.inner.clone(),
         }
     }

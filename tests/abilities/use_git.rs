@@ -12,7 +12,7 @@ pub struct UseGit {
 impl Ability for UseGit {}
 
 impl UseGit {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         UseGit {
             repo: RefCell::new(PathBuf::new()),
         }
