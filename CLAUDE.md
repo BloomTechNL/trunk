@@ -67,3 +67,6 @@ All integration tests live in `tests/` and use `TestApp` (`tests/common/test_app
 ## Build script
 
 `build.rs` bakes the current short git hash into `GIT_HASH` env var, used by `version_string()` in `cli.rs` for `--version` output. Re-runs when `.git/HEAD` or refs change.
+
+## Verbosity
+Do not put comments in your code, unless it's used as a doctest in the screenplay lib.
