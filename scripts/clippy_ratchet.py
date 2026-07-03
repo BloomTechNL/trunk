@@ -76,7 +76,7 @@ def save_baseline(lint_instances):
     fingerprints = [item["fingerprint"] for item in lint_instances]
     counts = dict(Counter(fingerprints))
     with open(BASELINE_FILE, "w") as f:
-        json.dump(counts, f, indent=2)
+        json.dump(counts, f, indent=2, sort_keys=True)
 
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "--init":

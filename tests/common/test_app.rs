@@ -36,7 +36,7 @@ impl TestApp {
         }
     }
 
-    fn app(
+    const fn app(
         &self,
     ) -> AppService<
         '_,
