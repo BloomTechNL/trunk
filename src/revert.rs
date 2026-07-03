@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, bail, Result};
 
 use crate::commit::{has_remote, has_remote_tracking};
-use crate::git::{git_capture, git_passthrough, is_detached_head};
+use crate::git::{git_capture, git_passthrough, has_conflict_markers, is_detached_head};
 use crate::output::OutputSink;
 
 // ---------------------------------------------------------------------------
@@ -83,6 +83,11 @@ fn cmd_revert(dir: &Path, hash: &str, bypass_prompt: bool, sink: &impl OutputSin
 }
 
 fn cmd_revert_resolve(dir: &Path, sink: &impl OutputSink) -> Result<()> {
+    if has_conflict_markers(dir, sink) {
+        bail!(
+            "Your files contain unresolved conflict markers. Please resolve all conflicts before running `g rv --resolve`."
+        );
+    }
     git_passthrough(dir, &["add", "-A"], sink)?;
     git_passthrough(dir, &["rebase", "--continue"], sink)?;
     git_passthrough(dir, &["push"], sink)

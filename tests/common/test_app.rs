@@ -150,6 +150,20 @@ impl TestApp {
         )
     }
 
+    pub fn revert_resolve(&self, dir: &Path) -> anyhow::Result<()> {
+        self.app().dispatch_command(
+            Cli {
+                command: Commands::Revert {
+                    resolve: true,
+                    abort: false,
+                    noninteractive: true,
+                    hash: None,
+                },
+            },
+            dir.to_path_buf(),
+        )
+    }
+
     pub fn time_travel(&self, dir: &Path, target: &str) -> anyhow::Result<()> {
         self.app().dispatch_command(
             Cli {

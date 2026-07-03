@@ -1,7 +1,8 @@
 use crate::abilities::{ScenarioContext, TestContext};
 use crate::cast::{developer_bob, developer_kent};
 use crate::interactions::{
-    AbortCommit, CloneRepo, Commit, InitialCommit, Pull, ResolveCommit, SetUpRemote, WriteFile,
+    AbortCommit, CloneRepo, Commit, InitialCommit, Pull, ResolveCommit, ResolveRevert, SetUpRemote,
+    WriteFile,
 };
 use crate::questions::{Log, Status};
 use screenplay::*;
@@ -233,6 +234,66 @@ fn commit_is_blocked_while_in_conflict_state() {
                 co_authors: vec!["SOLO"],
             }),
             fails().with_error("middle of resolving a conflict"),
+        ),
+    ));
+}
+
+#[test]
+fn bob_cannot_commit_conflicts_when_reverting() {
+    let ctx = ScenarioContext::new(TestContext::new());
+
+    let bob = developer_bob(&ctx);
+    let kent = developer_kent(&ctx);
+
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "bob" },));
+    bob.attempts_to((InitialCommit,));
+
+    kent.attempts_to((CloneRepo { name: "kent" },));
+
+    bob.attempts_to((
+        WriteFile {
+            name: "shared.txt",
+            content: "version A\n",
+        },
+        Commit {
+            message: "bob: add shared",
+            co_authors: vec!["SOLO"],
+        },
+    ));
+
+    kent.attempts_to((Pull,));
+
+    kent.attempts_to((WriteFile {
+        name: "shared.txt",
+        content: "version B\n",
+    },));
+
+    bob.attempts_to((
+        WriteFile {
+            name: "shared.txt",
+            content: "version A2\n",
+        },
+        Commit {
+            message: "bob: update shared",
+            co_authors: vec!["SOLO"],
+        },
+    ));
+
+    // Kent's commit triggers a conflict during pull --rebase, leaving
+    // the repo in a rebase state with <<<<<<< conflict markers.
+    // Without resolving those markers, revert --resolve is blocked.
+    kent.attempts_to((
+        Ensure::that(
+            doing(Commit {
+                message: "kent: conflicting change",
+                co_authors: vec!["SOLO"],
+            }),
+            fails(),
+        ),
+        Ensure::that(
+            doing(ResolveRevert),
+            fails().with_error("unresolved conflict"),
         ),
     ));
 }
