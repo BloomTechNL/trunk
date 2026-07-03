@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "🔵 TDD REFACTOR: verifying formatting and tests..." >&2
+echo "🔵 TDD REFACTOR: verifying lint baseline, formatting, and tests..." >&2
 
-scripts/check_acceptance_mods.sh
+echo "  Checking clippy ratchet..." >&2
+if ! python3 scripts/clippy_ratchet.py; then
+    echo "" >&2
+    echo "❌ REFACTOR GATE FAILED: New clippy lints introduced or compilation broken." >&2
+    exit 2
+fi
 
-# ── Gate 1: formatting must be clean ──────────────────────────────
 echo "  Running cargo fmt..." >&2
 if ! cargo fmt -- --check 2>&1; then
     echo "" >&2
@@ -14,7 +18,9 @@ if ! cargo fmt -- --check 2>&1; then
     exit 2
 fi
 
-# ── Gate 2: all tests must pass ───────────────────────────────────
+echo " Checking that acceptance tests live where they belong"
+scripts/check_acceptance_mods.sh
+
 echo "  Running tests..." >&2
 if ! cargo test -q 2>&1; then
     echo "" >&2
@@ -23,4 +29,4 @@ if ! cargo test -q 2>&1; then
     exit 2
 fi
 
-echo "✅ REFACTOR GATE PASSED: Formatting clean and all tests pass." >&2
+echo "✅ REFACTOR GATE PASSED: Lints stable, formatting clean, and all tests pass." >&2
