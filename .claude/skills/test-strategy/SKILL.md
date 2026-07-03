@@ -224,17 +224,7 @@ aliases_test_suite!(create_real_co_author_aliases);
 aliases_test_suite!(create_in_memory_co_author_aliases);
 ```
 
-Every new trait should get a contract test suite like this. Additional tests specific to the real implementation (file I/O, error handling) go in a separate module.
+Every new trait should get a contract test suite like this.
 
-## Git fixture helpers (`tests/common/use_git.rs`)
+**No divergence.** The shared test suite must cover the complete trait contract. There are no separate test modules for individual implementations. If behaviour matters to the application, the fake must implement it and the shared tests must verify both impls. If it doesn't matter, the test is testing adapter internals and doesn't belong in the suite. This keeps the trait contract — the only thing the app depends on — as the single source of truth.
 
-These spawn real `git` subprocesses — they are not behind a trait. They set up repos on disk with `GIT_EDITOR=true` and `GIT_TERMINAL_PROMPT=0`.
-
-| Function | Does |
-|---|---|
-| `set_up_remote(base_dir)` | `git init --bare origin.git` |
-| `clone_repo(base_dir, name, from)` | Clone, configure identity, return `PathBuf` |
-| `initial_commit(repo_dir)` | README + add + commit + push |
-| `put_something_in_stash(repo_dir)` | Write file, add, stash |
-| `commit_file(repo_dir)` | Write file, add, commit — no push |
-| `set_up_basic_repo(base_dir)` | remote + clone + initial commit |
