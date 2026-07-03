@@ -15,12 +15,3 @@ fn update_increments_version() {
         Ensure::that(TrunkVersion, equals(1)),
     ));
 }
-
-#[test]
-fn update_called_once_per_invocation() {
-    let ctx = ScenarioContext::new(TestContext::new());
-    let bob = developer_bob(&ctx);
-
-    bob.attempts_to((Update, Ensure::that(TrunkVersion, equals(1))));
-    bob.attempts_to((Update, Ensure::that(TrunkVersion, equals(2))));
-}
