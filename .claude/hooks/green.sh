@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SENSOR_DIR="$(cd "$(dirname "$0")/../../agent_sensors/green" && pwd)"
+
 echo "🟢 TDD GREEN: verifying all tests pass..." >&2
 
-scripts/check_acceptance_mods.sh
+for sensor in "$SENSOR_DIR"/*.sh; do
+    [ -x "$sensor" ] || continue
+    if ! "$sensor"; then
+        echo "❌ GREEN GATE FAILED" >&2
+        exit 2
+    fi
+done
 
-if cargo test -q 2>&1; then
-    echo "✅ GREEN GATE PASSED: All tests pass." >&2
-else
-    echo "" >&2
-    echo "❌ GREEN GATE FAILED: Tests are failing." >&2
-    echo "   Make all tests pass before the turn ends." >&2
-    exit 2
-fi
+echo "✅ GREEN GATE PASSED: All tests pass." >&2

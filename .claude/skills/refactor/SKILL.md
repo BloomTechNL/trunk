@@ -33,16 +33,16 @@ Improve the **internal structure** of the code without changing its observable b
 ## Success criteria
 - `cargo fmt -- --check` passes
 - `cargo test` passes with **zero failures**
-- `python3 scripts/clippy_ratchet.py` passes (no new lint violations introduced)
+- `python3 agent_sensors/clippy-ratchet.py` passes (no new lint violations introduced)
 - Code is measurably better (less duplication, clearer names, simpler structure)
 
 ## Clippy ratchet
 
-This project uses a clippy ratchet (`scripts/clippy_ratchet.py`) to prevent lint regressions. It stores the current clippy warning count in `.clippy_baseline.json` (checked into git).
+This project uses a clippy ratchet (`agent_sensors/clippy-ratchet.py`) to prevent lint regressions. It stores the current clippy warning count in `.clippy_baseline.json` (checked into git).
 
 - **Do NOT increase the baseline.** The ratchet fails if you introduce new lint violations.
 - **Lowering the baseline is encouraged.** Fix clippy warnings in source files and the ratchet will automatically ratchet the baseline down.
-- Run `python3 scripts/clippy_ratchet.py` before finishing the refactor phase to verify the baseline hasn't increased.
+- Run `python3 agent_sensors/clippy-ratchet.py` before finishing the refactor phase to verify the baseline hasn't increased.
 
 ## Refactoring catalog
 
