@@ -9,7 +9,7 @@ use crate::output::OutputSink;
 use crate::revert::{revert, RevertInput};
 use crate::{
     cmd_diff, cmd_log, cmd_pull, cmd_reset, cmd_status, cmd_time_travel, has_stash,
-    play_fart_sound::FartPlayer, CoAuthorAliases,
+    play_fart_sound::FartPlayer, CoAuthorAliases, Updater,
 };
 
 fn version_string() -> &'static str {
@@ -115,6 +115,7 @@ pub fn run_cli(
     aliases: &impl CoAuthorAliases,
     config: &impl TrunkConfig,
     output: &impl OutputSink,
+    updater: &impl Updater,
 ) -> Result<()> {
     if cli.command != Commands::Fart && has_stash(dir) {
         let _ = fart_player.play_asynchronously();
@@ -156,26 +157,27 @@ pub fn run_cli(
         Commands::Config {
             co_authors_required,
         } => cmd_config(co_authors_required, config),
-        Commands::Update => {
-            std::process::Command::new("bash")
-                .arg("-c")
-                .arg("curl -fsSL https://raw.githubusercontent.com/BloomTechNL/trunk/main/scripts/install.sh | bash")
-                .status()
-                .map(|_| ())
-                .map_err(anyhow::Error::from)
-        }
+        Commands::Update => updater.update(),
     }
 }
 
-pub struct AppService<'a, FP: FartPlayer, CAA: CoAuthorAliases, O: OutputSink, TC: TrunkConfig> {
+pub struct AppService<
+    'a,
+    FP: FartPlayer,
+    CAA: CoAuthorAliases,
+    U: Updater,
+    O: OutputSink,
+    TC: TrunkConfig,
+> {
     pub fart_player: &'a FP,
     pub co_author_aliases: &'a CAA,
+    pub updater: &'a U,
     pub output: &'a O,
     pub trunk_config: &'a TC,
 }
 
-impl<'a, FP: FartPlayer, CA: CoAuthorAliases, O: OutputSink, TC: TrunkConfig>
-    AppService<'a, FP, CA, O, TC>
+impl<'a, FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: TrunkConfig>
+    AppService<'a, FP, CA, U, O, TC>
 {
     pub fn dispatch_command(&self, cli: Cli, repo: PathBuf) -> Result<()> {
         run_cli(
@@ -185,6 +187,7 @@ impl<'a, FP: FartPlayer, CA: CoAuthorAliases, O: OutputSink, TC: TrunkConfig>
             self.co_author_aliases,
             self.trunk_config,
             self.output,
+            self.updater,
         )
     }
 }

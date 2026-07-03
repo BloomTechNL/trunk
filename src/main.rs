@@ -4,7 +4,7 @@ use std::process;
 use clap::Parser;
 use g_cli::cli::AppService;
 use g_cli::output::StdoutSink;
-use g_cli::{Cli, RealCoAuthorAliases, RealFartPlayer, RealTrunkConfig};
+use g_cli::{Cli, RealCoAuthorAliases, RealFartPlayer, RealTrunkConfig, RealUpdater};
 
 fn main() {
     let cli = Cli::parse();
@@ -28,6 +28,7 @@ fn main() {
         co_author_aliases: &co_author_aliases,
         trunk_config: &trunk_config,
         output: &StdoutSink,
+        updater: &RealUpdater,
     };
 
     if let Err(e) = app_service.dispatch_command(cli, PathBuf::from(".")) {

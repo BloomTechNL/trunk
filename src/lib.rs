@@ -11,6 +11,7 @@ pub mod query;
 pub mod reset;
 pub mod revert;
 pub mod time_travel;
+pub mod update;
 
 pub use cli::{run_cli, Cli, Commands};
 pub use co_author_aliases::{CoAuthorAliases, RealCoAuthorAliases};
@@ -22,3 +23,4 @@ pub use query::{cmd_diff, cmd_log, cmd_status};
 pub use reset::cmd_reset;
 pub use revert::{get_revert_info, RevertInfo};
 pub use time_travel::cmd_time_travel;
+pub use update::{RealUpdater, Updater};

@@ -2,6 +2,7 @@ use crate::common::capturing_sink::CapturingSink;
 use crate::common::in_memory_co_author_aliases::InMemoryCoAuthorAliases;
 use crate::common::in_memory_trunk_config::InMemoryTrunkConfig;
 use crate::common::mock_fart_player::MockFartPlayer;
+use crate::common::mock_updater::MockUpdater;
 use g_cli::cli::AppService;
 use g_cli::{Cli, Commands};
 use std::path::Path;
@@ -13,8 +14,10 @@ pub struct TestApp {
     co_author_aliases: InMemoryCoAuthorAliases,
     trunk_config: InMemoryTrunkConfig,
     output: CapturingSink,
+    updater: MockUpdater,
 }
 
+#[allow(dead_code)]
 impl TestApp {
     pub fn new() -> Self {
         let base_dir = TempDir::new().unwrap();
@@ -22,24 +25,33 @@ impl TestApp {
         let co_author_aliases = InMemoryCoAuthorAliases::new();
         let trunk_config = InMemoryTrunkConfig::new();
         let output = CapturingSink::new();
+        let updater = MockUpdater::new();
         TestApp {
             base_dir,
             fart_player,
             co_author_aliases,
             trunk_config,
             output,
+            updater,
         }
     }
 
     fn app(
         &self,
-    ) -> AppService<'_, MockFartPlayer, InMemoryCoAuthorAliases, CapturingSink, InMemoryTrunkConfig>
-    {
+    ) -> AppService<
+        '_,
+        MockFartPlayer,
+        InMemoryCoAuthorAliases,
+        MockUpdater,
+        CapturingSink,
+        InMemoryTrunkConfig,
+    > {
         AppService {
             fart_player: &self.fart_player,
             co_author_aliases: &self.co_author_aliases,
             trunk_config: &self.trunk_config,
             output: &self.output,
+            updater: &self.updater,
         }
     }
 
@@ -49,6 +61,14 @@ impl TestApp {
 
     pub fn fart_flag(&self) -> std::rc::Rc<std::cell::Cell<bool>> {
         self.fart_player.inner()
+    }
+
+    pub fn update_count(&self) -> u32 {
+        self.updater.update_count()
+    }
+
+    pub fn update_flag(&self) -> std::rc::Rc<std::cell::Cell<u32>> {
+        self.updater.inner()
     }
 
     pub fn add_alias(&self, alias: &str, name: &str, email: &str) -> anyhow::Result<()> {
