@@ -17,7 +17,6 @@ Write a **failing test** — nothing more.
 ## Allowed
 - Read existing code to understand the interface you're testing
 - Write a new test (or add a test case to an existing test) that exercises behavior that does **not exist yet**
-- Run `cargo check` to verify the test compiles
 - Run `cargo build` to verify the project builds with the new test
 
 ## Forbidden
@@ -25,7 +24,7 @@ Write a **failing test** — nothing more.
 - **Do NOT fix existing tests** — if other tests break because of your changes, stop and reconsider
 - **Do NOT make the test pass** — the test must FAIL. That is the point of RED mode.
 - **Do NOT refactor anything** — even if you see ugly code
-- **Do NOT run `cargo test`** (except to verify your test name is correct and it fails for the expected reason)
+- **Do NOT run `cargo test`** except to verify the test fails for the expected reason
 
 ## Success criteria
 - `cargo build` succeeds

@@ -35,15 +35,9 @@ Improve the **internal structure** of the code without changing its observable b
 - `cargo test` passes with **zero failures**
 - Code is measurably better (less duplication, clearer names, simpler structure)
 
-## Refactoring catalog (safe transformations)
+## Refactoring catalog
 
-These are always safe — they cannot change behavior:
-1. **Rename** a variable, function, or type (use IDE rename, not find-and-replace)
-2. **Extract** a block of code into a helper function
-3. **Inline** a function that's only called once and is trivial
-4. **Simplify** a conditional: `if x { true } else { false }` → `x`
-5. **Remove** unreachable code or unnecessary clones
-6. **Replace** magic numbers with named constants
+Safe transformations (cannot change behavior): rename, extract function, inline trivial single-call functions, simplify conditionals, remove dead code, replace magic numbers with named constants.
 
 ## When you're done
 
