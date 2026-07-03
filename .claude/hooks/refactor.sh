@@ -3,6 +3,8 @@ set -euo pipefail
 
 echo "🔵 TDD REFACTOR: verifying formatting and tests..." >&2
 
+scripts/check_acceptance_mods.sh
+
 # ── Gate 1: formatting must be clean ──────────────────────────────
 echo "  Running cargo fmt..." >&2
 if ! cargo fmt -- --check 2>&1; then
