@@ -16,6 +16,7 @@ mod resolve_revert;
 mod revert_head;
 mod set_up_remote;
 mod time_travel;
+mod update;
 mod write_file;
 
 pub use abort_commit::AbortCommit;
@@ -36,4 +37,5 @@ pub use resolve_revert::ResolveRevert;
 pub use revert_head::RevertHead;
 pub use set_up_remote::SetUpRemote;
 pub use time_travel::TimeTravel;
+pub use update::Update;
 pub use write_file::WriteFile;

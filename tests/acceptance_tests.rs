@@ -29,3 +29,5 @@ mod revert_tests;
 mod status_tests;
 #[path = "acceptance/time_travel_tests.rs"]
 mod time_travel_tests;
+#[path = "acceptance/update_tests.rs"]
+mod update_tests;

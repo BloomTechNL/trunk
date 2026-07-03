@@ -247,4 +247,13 @@ impl TestApp {
             dir.to_path_buf(),
         )
     }
+
+    pub fn update(&self, dir: &Path) -> anyhow::Result<()> {
+        self.app().dispatch_command(
+            Cli {
+                command: Commands::Update,
+            },
+            dir.to_path_buf(),
+        )
+    }
 }
