@@ -1,13 +1,7 @@
-mod abilities;
-mod cast;
-mod common;
-mod interactions;
-mod questions;
-
-use abilities::{ScenarioContext, TestContext};
-use cast::developer_bob;
-use interactions::{CloneRepo, Fart, InitialCommit, Pull, PutInStash, SetUpRemote};
-use questions::HeardFart;
+use crate::abilities::{ScenarioContext, TestContext};
+use crate::cast::developer_bob;
+use crate::interactions::{CloneRepo, Fart, InitialCommit, Pull, PutInStash, SetUpRemote};
+use crate::questions::HeardFart;
 use screenplay::*;
 
 #[test]

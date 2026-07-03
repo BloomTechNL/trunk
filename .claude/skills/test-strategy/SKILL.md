@@ -37,20 +37,24 @@ Tests follow BDD: they describe behavior from a **user's perspective**, not the 
 
 The test reads as a scenario — "Bob writes a file and commits, Kent pulls and sees the commit" — rather than as a sequence of implementation details.
 
-### Screenplay test files
+### Acceptance tests
 
-| File | Tests | Focus |
+All screenplay tests live under `tests/acceptance/` as submodules of `tests/acceptance_tests.rs`. This keeps them in a single crate — shared dependencies compile once, dramatically reducing build time.
+
+| Submodule | Tests | Focus |
 |---|---|---|
-| `screenplay_commit_tests.rs` | 2 | Collaboration, commit+delete flow |
-| `screenplay_co_author_tests.rs` | 9 | SOLO, aliases, unknown aliases, config-disabled |
-| `screenplay_conflict_tests.rs` | 3 | Merge conflict resolve/abort, blocked while conflicted |
-| `screenplay_diff_tests.rs` | 3 | Modified file, empty diff, deleted content |
-| `screenplay_fart_tests.rs` | 3 | Fart sound, stash-triggered fart, empty stash |
-| `screenplay_pull_tests.rs` | 3 | Blocked by unpushed/dirty, clean pull |
-| `screenplay_reset_tests.rs` | 1 | Reset clears tracked + untracked |
-| `screenplay_revert_tests.rs` | 2 | Revert flow, revert without remote tracking |
-| `screenplay_status_tests.rs` | 2 | Untracked files, clean working tree |
-| `screenplay_time_travel_tests.rs` | 1 | Time travel blocks writes, `now` restores |
+| `commit_tests.rs` | 2 | Collaboration, commit+delete flow |
+| `co_author_tests.rs` | 9 | SOLO, aliases, unknown aliases, config-disabled |
+| `conflict_tests.rs` | 3 | Merge conflict resolve/abort, blocked while conflicted |
+| `diff_tests.rs` | 3 | Modified file, empty diff, deleted content |
+| `fart_tests.rs` | 3 | Fart sound, stash-triggered fart, empty stash |
+| `pull_tests.rs` | 3 | Blocked by unpushed/dirty, clean pull |
+| `reset_tests.rs` | 1 | Reset clears tracked + untracked |
+| `revert_tests.rs` | 2 | Revert flow, revert without remote tracking |
+| `status_tests.rs` | 2 | Untracked files, clean working tree |
+| `time_travel_tests.rs` | 1 | Time travel blocks writes, `now` restores |
+
+New tests go in a new file under `tests/acceptance/`, then add `mod new_test_file;` to `tests/acceptance_tests.rs`. Imports use `crate::` prefix (`use crate::abilities::...`).
 
 ### Building blocks
 

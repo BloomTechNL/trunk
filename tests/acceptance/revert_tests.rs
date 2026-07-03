@@ -1,13 +1,7 @@
-mod abilities;
-mod cast;
-mod common;
-mod interactions;
-mod questions;
-
-use abilities::{ScenarioContext, TestContext};
-use cast::{developer_bob, developer_kent};
-use interactions::{CloneRepo, Commit, InitialCommit, RevertHead, SetUpRemote, WriteFile};
-use questions::{FileExists, Log};
+use crate::abilities::{ScenarioContext, TestContext};
+use crate::cast::{developer_bob, developer_kent};
+use crate::interactions::{CloneRepo, Commit, InitialCommit, RevertHead, SetUpRemote, WriteFile};
+use crate::questions::{FileExists, Log};
 use screenplay::*;
 
 #[test]

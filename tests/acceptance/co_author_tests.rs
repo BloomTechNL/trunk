@@ -1,13 +1,9 @@
-mod abilities;
-mod cast;
-mod common;
-mod interactions;
-mod questions;
-
-use abilities::{ScenarioContext, TestContext};
-use cast::developer_bob;
-use interactions::{AddAlias, CloneRepo, Commit, Config, InitialCommit, SetUpRemote, WriteFile};
-use questions::Log;
+use crate::abilities::{ScenarioContext, TestContext};
+use crate::cast::developer_bob;
+use crate::interactions::{
+    AddAlias, CloneRepo, Commit, Config, InitialCommit, SetUpRemote, WriteFile,
+};
+use crate::questions::Log;
 use screenplay::*;
 
 #[test]

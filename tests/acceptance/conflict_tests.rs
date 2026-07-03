@@ -1,15 +1,9 @@
-mod abilities;
-mod cast;
-mod common;
-mod interactions;
-mod questions;
-
-use abilities::{ScenarioContext, TestContext};
-use cast::{developer_bob, developer_kent};
-use interactions::{
+use crate::abilities::{ScenarioContext, TestContext};
+use crate::cast::{developer_bob, developer_kent};
+use crate::interactions::{
     AbortCommit, CloneRepo, Commit, InitialCommit, Pull, ResolveCommit, SetUpRemote, WriteFile,
 };
-use questions::{Log, Status};
+use crate::questions::{Log, Status};
 use screenplay::*;
 
 #[test]
