@@ -45,15 +45,16 @@ impl UseGit {
         assert!(status.success(), "git {} failed", args.join(" "));
     }
 
-    pub fn set_up_remote(dir: &Path) -> &str {
+    #[allow(clippy::unused_self)]
+    pub fn set_up_remote(&self, dir: &Path) {
         Self::git_at(dir, &["init", "--bare", "origin.git"]);
-        "origin.git"
     }
 
-    pub fn clone_repo(dir: &Path, repo_name: &str, from: &str) -> PathBuf {
+    pub fn clone_repo(&self, dir: &Path, repo_name: &str, from: &str) -> PathBuf {
         let repo_dir = dir.join(repo_name);
         Self::git_at(dir, &["clone", from, repo_name]);
         Self::configure_identity(&repo_dir);
+        self.repo.borrow_mut().clone_from(&repo_dir);
         repo_dir
     }
 

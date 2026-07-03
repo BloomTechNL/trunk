@@ -7,6 +7,7 @@ impl Interaction for SetUpRemote {
     fn perform_as(&self, actor: &Actor) {
         let ctx = AccessScenarioContext::by(actor);
         let _fs = UseFileSystem::by(actor);
-        UseGit::set_up_remote(ctx.context.borrow().base_dir.path());
+        let git = UseGit::by(actor);
+        git.set_up_remote(ctx.context.borrow().base_dir.path());
     }
 }
