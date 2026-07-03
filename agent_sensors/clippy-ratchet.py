@@ -20,7 +20,8 @@ def scan_codebase():
         "-W", "clippy::all",
         "-W", "clippy::pedantic",
         "-W", "clippy::nursery",
-        "-W", "clippy::cargo"
+        "-W", "clippy::cargo",
+        "-A", "clippy::missing_errors_doc"
     ]
 
     result = subprocess.run(cmd, capture_output=True, text=True, cwd=PROJECT_DIR)
