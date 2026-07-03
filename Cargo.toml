@@ -2,6 +2,11 @@
 name = "g_cli"
 version = "0.1.0"
 edition = "2021"
+description = "A narrow git wrapper for trunk-based development"
+license = "MIT"
+repository = "https://github.com/BloomTechNL/trunk"
+keywords = ["git", "trunk", "cli"]
+categories = ["command-line-utilities", "development-tools"]
 
 [[bin]]
 name = "g"
