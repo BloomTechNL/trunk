@@ -13,10 +13,7 @@ use crate::{
 };
 
 fn version_string() -> &'static str {
-    match option_env!("GIT_HASH") {
-        Some(h) => h,
-        None => "unknown",
-    }
+    option_env!("GIT_HASH").map_or("unknown", |h| h)
 }
 
 #[derive(Parser)]
@@ -195,24 +192,8 @@ impl<
     > AppService<'a, FP, CA, U, O, TC, C, LS>
 {
     pub fn dispatch_command(&self, cli: Cli, repo: PathBuf) -> Result<()> {
-        let config = self.trunk_config.load();
-        let is_config = matches!(cli.command, Commands::Config { .. });
-        if !is_config && config.auto_update_period > 0 {
-            let now = self.clock.now_secs();
-            let should_update = match self.last_update_store.read() {
-                None => {
-                    self.last_update_store.write(now)?;
-                    true
-                }
-                Some(prev) if now - prev >= config.auto_update_period => {
-                    self.last_update_store.write(now)?;
-                    true
-                }
-                Some(_) => false,
-            };
-            if should_update {
-                self.updater.update()?;
-            }
+        if !matches!(cli.command, Commands::Config { .. }) {
+            self.maybe_update()?;
         }
 
         run_cli(
@@ -223,5 +204,25 @@ impl<
             self.trunk_config,
             self.output,
         )
+    }
+
+    fn maybe_update(&self) -> Result<()> {
+        let config = self.trunk_config.load();
+        if config.auto_update_period == 0 {
+            return Ok(());
+        }
+
+        let now = self.clock.now_secs();
+        let should_update = self
+            .last_update_store
+            .read()
+            .is_none_or(|prev| now - prev >= config.auto_update_period);
+
+        if should_update {
+            self.last_update_store.write(now)?;
+            self.updater.update()?;
+        }
+
+        Ok(())
     }
 }
