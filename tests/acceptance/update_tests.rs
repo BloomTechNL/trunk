@@ -77,5 +77,29 @@ fn test_application_does_not_update_if_user_turns_this_off() {
 }
 
 #[test]
-#[ignore = "TODO"]
-fn test_update_period_is_configurable() {}
+fn test_update_period_is_configurable() {
+    let ctx = ScenarioContext::new(TestContext::new());
+    let bob = developer_bob(&ctx);
+
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
+    bob.attempts_to((Config {
+        co_authors_required: None,
+        auto_update_period: Some(1),
+    },));
+
+    bob.attempts_to((
+        Ensure::that(TrunkVersion, equals(0)),
+        Ensure::that(Status, contains("nothing to commit")),
+        Ensure::that(TrunkVersion, equals(1)),
+    ));
+
+    bob.attempts_to((AdvanceTime { secs: 1 },));
+
+    bob.attempts_to((
+        Ensure::that(Status, contains("nothing to commit")),
+        Ensure::that(Status, contains("nothing to commit")),
+        Ensure::that(TrunkVersion, equals(2)),
+    ));
+}
