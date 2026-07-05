@@ -7,16 +7,24 @@ pub struct Config {
     #[serde(rename = "coAuthorsRequired")]
     #[serde(default = "default_co_authors_required")]
     pub co_authors_required: bool,
+    #[serde(rename = "autoUpdatePeriod")]
+    #[serde(default = "default_auto_update_period")]
+    pub auto_update_period: u64,
 }
 
 const fn default_co_authors_required() -> bool {
     true
 }
 
+const fn default_auto_update_period() -> u64 {
+    604_800
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
             co_authors_required: true,
+            auto_update_period: 604_800,
         }
     }
 }
@@ -25,6 +33,8 @@ pub trait TrunkConfig {
     fn load(&self) -> Config;
 
     fn set_co_authors_required(&self, required: bool) -> Result<()>;
+
+    fn set_auto_update_period(&self, period: u64) -> Result<()>;
 }
 
 pub struct RealTrunkConfig {
@@ -64,8 +74,18 @@ impl TrunkConfig for RealTrunkConfig {
     }
 
     fn set_co_authors_required(&self, required: bool) -> Result<()> {
+        self.write_config(|c| c.co_authors_required = required)
+    }
+
+    fn set_auto_update_period(&self, period: u64) -> Result<()> {
+        self.write_config(|c| c.auto_update_period = period)
+    }
+}
+
+impl RealTrunkConfig {
+    fn write_config(&self, mutate: impl FnOnce(&mut Config)) -> Result<()> {
         let mut config = self.load();
-        config.co_authors_required = required;
+        mutate(&mut config);
 
         if let Some(parent) = self.path.parent() {
             std::fs::create_dir_all(parent)?;
@@ -77,9 +97,16 @@ impl TrunkConfig for RealTrunkConfig {
     }
 }
 
-pub fn cmd_config(co_authors_required: Option<bool>, config: &impl TrunkConfig) -> Result<()> {
+pub fn cmd_config(
+    co_authors_required: Option<bool>,
+    auto_update_period: Option<u64>,
+    config: &impl TrunkConfig,
+) -> Result<()> {
     if let Some(required) = co_authors_required {
         config.set_co_authors_required(required)?;
+    }
+    if let Some(period) = auto_update_period {
+        config.set_auto_update_period(period)?;
     }
     Ok(())
 }

@@ -9,7 +9,7 @@ use crate::output::OutputSink;
 use crate::revert::{revert, RevertInput};
 use crate::{
     cmd_diff, cmd_log, cmd_pull, cmd_reset, cmd_status, cmd_time_travel, has_stash,
-    play_fart_sound::FartPlayer, CoAuthorAliases, Updater,
+    play_fart_sound::FartPlayer, Clock, CoAuthorAliases, LastUpdateStore, Updater,
 };
 
 fn version_string() -> &'static str {
@@ -102,6 +102,9 @@ pub enum Commands {
         /// Whether co-authors are required on commits. Defaults to true.
         #[arg(long = "co-authors-required")]
         co_authors_required: Option<bool>,
+        /// Auto-update period in seconds. 0 disables auto-update. Defaults to 604800 (1 week).
+        #[arg(long = "auto-update-period")]
+        auto_update_period: Option<u64>,
     },
     /// Update g to the latest version
     #[command(name = "update")]
@@ -115,7 +118,6 @@ pub fn run_cli(
     aliases: &impl CoAuthorAliases,
     config: &impl TrunkConfig,
     output: &impl OutputSink,
-    updater: &impl Updater,
 ) -> Result<()> {
     if cli.command != Commands::Fart && has_stash(dir) {
         let _ = fart_player.play_asynchronously();
@@ -156,8 +158,9 @@ pub fn run_cli(
         }
         Commands::Config {
             co_authors_required,
-        } => cmd_config(co_authors_required, config),
-        Commands::Update => updater.update(),
+            auto_update_period,
+        } => cmd_config(co_authors_required, auto_update_period, config),
+        Commands::Update => Ok(()),
     }
 }
 
@@ -168,18 +171,50 @@ pub struct AppService<
     U: Updater,
     O: OutputSink,
     TC: TrunkConfig,
+    C: Clock,
+    LS: LastUpdateStore,
 > {
     pub fart_player: &'a FP,
     pub co_author_aliases: &'a CAA,
     pub updater: &'a U,
     pub output: &'a O,
     pub trunk_config: &'a TC,
+    pub clock: &'a C,
+    pub last_update_store: &'a LS,
 }
 
-impl<'a, FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: TrunkConfig>
-    AppService<'a, FP, CA, U, O, TC>
+impl<
+        'a,
+        FP: FartPlayer,
+        CA: CoAuthorAliases,
+        U: Updater,
+        O: OutputSink,
+        TC: TrunkConfig,
+        C: Clock,
+        LS: LastUpdateStore,
+    > AppService<'a, FP, CA, U, O, TC, C, LS>
 {
     pub fn dispatch_command(&self, cli: Cli, repo: PathBuf) -> Result<()> {
+        let config = self.trunk_config.load();
+        let is_config = matches!(cli.command, Commands::Config { .. });
+        if !is_config && config.auto_update_period > 0 {
+            let now = self.clock.now_secs();
+            let should_update = match self.last_update_store.read() {
+                None => {
+                    self.last_update_store.write(now)?;
+                    true
+                }
+                Some(prev) if now - prev >= config.auto_update_period => {
+                    self.last_update_store.write(now)?;
+                    true
+                }
+                Some(_) => false,
+            };
+            if should_update {
+                self.updater.update()?;
+            }
+        }
+
         run_cli(
             cli,
             repo.as_path(),
@@ -187,7 +222,6 @@ impl<'a, FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: Tru
             self.co_author_aliases,
             self.trunk_config,
             self.output,
-            self.updater,
         )
     }
 }

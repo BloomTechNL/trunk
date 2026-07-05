@@ -4,6 +4,7 @@ use screenplay::{Ability, Actor, Interaction};
 /// Configure trunk settings via `g config`.
 pub struct Config {
     pub co_authors_required: Option<bool>,
+    pub auto_update_period: Option<u64>,
 }
 
 impl Interaction for Config {
@@ -15,6 +16,7 @@ impl Interaction for Config {
             .config(
                 &asc.actor_context(actor).working_dir,
                 self.co_authors_required,
+                self.auto_update_period,
             )
             .expect("g config should succeed");
     }

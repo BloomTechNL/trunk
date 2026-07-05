@@ -99,6 +99,5 @@ pub fn has_conflict_markers(dir: &Path, _sink: &impl OutputSink) -> bool {
 pub fn is_detached_head(dir: &Path, sink: &impl OutputSink) -> bool {
     let head_path = git_dir(dir, sink).join("HEAD");
     std::fs::read_to_string(head_path)
-        .map(|content| !content.trim_start().starts_with("ref:"))
-        .unwrap_or(false)
+        .is_ok_and(|content| !content.trim_start().starts_with("ref:"))
 }

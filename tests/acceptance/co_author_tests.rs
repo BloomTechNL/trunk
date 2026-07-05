@@ -191,6 +191,7 @@ fn committing_without_co_authors_when_config_disabled() {
     bob.attempts_to((
         Config {
             co_authors_required: Some(false),
+            auto_update_period: None,
         },
         WriteFile {
             name: "noauthor.txt",
@@ -222,6 +223,7 @@ fn committing_with_co_authors_when_config_disabled() {
         },
         Config {
             co_authors_required: Some(false),
+            auto_update_period: None,
         },
         WriteFile {
             name: "coauthor.txt",
@@ -247,6 +249,7 @@ fn committing_solo_when_config_disabled() {
     bob.attempts_to((
         Config {
             co_authors_required: Some(false),
+            auto_update_period: None,
         },
         WriteFile {
             name: "solo.txt",

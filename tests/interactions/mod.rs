@@ -1,5 +1,6 @@
 mod abort_commit;
 mod add_alias;
+mod advance_time;
 mod clone_repo;
 mod commit;
 mod commit_unpushed;
@@ -21,6 +22,7 @@ mod write_file;
 
 pub use abort_commit::AbortCommit;
 pub use add_alias::AddAlias;
+pub use advance_time::AdvanceTime;
 pub use clone_repo::CloneRepo;
 pub use commit::Commit;
 pub use commit_unpushed::CommitUnpushed;

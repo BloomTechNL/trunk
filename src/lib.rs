@@ -1,9 +1,11 @@
 pub mod cli;
+pub mod clock;
 pub mod co_author_aliases;
 pub mod commit;
 pub mod config;
 pub mod git;
 pub mod has_stash;
+pub mod last_update_store;
 pub mod output;
 pub mod play_fart_sound;
 pub mod pull;
@@ -14,9 +16,11 @@ pub mod time_travel;
 pub mod update;
 
 pub use cli::{run_cli, Cli, Commands};
+pub use clock::{Clock, RealClock};
 pub use co_author_aliases::{CoAuthorAliases, RealCoAuthorAliases};
 pub use config::{cmd_config, Config, RealTrunkConfig, TrunkConfig};
 pub use has_stash::has_stash;
+pub use last_update_store::{LastUpdateStore, RealLastUpdateStore};
 pub use play_fart_sound::{run_fart_daemon, FartPlayer, RealFartPlayer};
 pub use pull::cmd_pull;
 pub use query::{cmd_diff, cmd_log, cmd_status};

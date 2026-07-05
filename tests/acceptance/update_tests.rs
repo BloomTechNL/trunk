@@ -1,7 +1,7 @@
 use crate::abilities::{ScenarioContext, TestContext};
 use crate::cast::developer_bob;
-use crate::interactions::Update;
-use crate::questions::TrunkVersion;
+use crate::interactions::{AdvanceTime, CloneRepo, Config, InitialCommit, SetUpRemote, Update};
+use crate::questions::{Status, TrunkVersion};
 use screenplay::*;
 
 #[test]
@@ -17,16 +17,64 @@ fn update_increments_version() {
 }
 
 #[test]
-#[ignore = "TODO"]
-fn test_application_updates_automatically_on_every_call() {}
+fn test_application_updates_automatically_on_every_call() {
+    let ctx = ScenarioContext::new(TestContext::new());
+    let bob = developer_bob(&ctx);
+
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
+
+    bob.attempts_to((
+        Ensure::that(TrunkVersion, equals(0)),
+        Ensure::that(Status, contains("nothing to commit")),
+        Ensure::that(TrunkVersion, equals(1)),
+    ));
+}
 
 #[test]
-#[ignore = "TODO"]
-fn test_application_only_updates_after_week_passes() {}
+fn test_application_only_updates_after_week_passes() {
+    let ctx = ScenarioContext::new(TestContext::new());
+    let bob = developer_bob(&ctx);
+
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
+
+    bob.attempts_to((
+        Ensure::that(TrunkVersion, equals(0)),
+        Ensure::that(Status, contains("nothing to commit")),
+        Ensure::that(TrunkVersion, equals(1)),
+    ));
+
+    bob.attempts_to((AdvanceTime { secs: 604_800 },));
+
+    bob.attempts_to((
+        Ensure::that(Status, contains("nothing to commit")),
+        Ensure::that(Status, contains("nothing to commit")),
+        Ensure::that(TrunkVersion, equals(2)),
+    ));
+}
 
 #[test]
-#[ignore = "TODO"]
-fn test_application_does_not_update_if_user_turns_this_off() {}
+fn test_application_does_not_update_if_user_turns_this_off() {
+    let ctx = ScenarioContext::new(TestContext::new());
+    let bob = developer_bob(&ctx);
+
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
+    bob.attempts_to((Config {
+        co_authors_required: None,
+        auto_update_period: Some(0),
+    },));
+
+    bob.attempts_to((
+        Ensure::that(TrunkVersion, equals(0)),
+        Ensure::that(Status, contains("nothing to commit")),
+        Ensure::that(TrunkVersion, equals(0)),
+    ));
+}
 
 #[test]
 #[ignore = "TODO"]

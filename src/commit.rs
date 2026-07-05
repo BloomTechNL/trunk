@@ -14,9 +14,7 @@ use anyhow::{bail, Result};
 
 /// Returns `true` when at least one remote is configured for this repo.
 pub fn has_remote(dir: &Path, sink: &impl OutputSink) -> bool {
-    git_capture(dir, &["remote"], sink)
-        .map(|out| !out.trim().is_empty())
-        .unwrap_or(false)
+    git_capture(dir, &["remote"], sink).is_ok_and(|out| !out.trim().is_empty())
 }
 
 /// Returns `true` when the current branch has a remote tracking branch

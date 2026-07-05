@@ -22,4 +22,9 @@ impl TrunkConfig for InMemoryTrunkConfig {
         self.config.borrow_mut().co_authors_required = required;
         Ok(())
     }
+
+    fn set_auto_update_period(&self, period: u64) -> anyhow::Result<()> {
+        self.config.borrow_mut().auto_update_period = period;
+        Ok(())
+    }
 }
