@@ -15,3 +15,19 @@ fn update_increments_version() {
         Ensure::that(TrunkVersion, equals(1)),
     ));
 }
+
+#[test]
+#[ignore = "TODO"]
+fn test_application_updates_automatically_on_every_call() {}
+
+#[test]
+#[ignore = "TODO"]
+fn test_application_only_updates_after_week_passes() {}
+
+#[test]
+#[ignore = "TODO"]
+fn test_application_does_not_update_if_user_turns_this_off() {}
+
+#[test]
+#[ignore = "TODO"]
+fn test_update_period_is_configurable() {}
