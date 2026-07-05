@@ -49,6 +49,31 @@ macro_rules! trunk_config_test_suite {
                 let cfg = config.load();
                 assert!(cfg.co_authors_required);
             }
+
+            #[test]
+            fn test_default_auto_update_period_is_one_week() {
+                $init_macro!(config);
+                let cfg = config.load();
+                assert_eq!(cfg.auto_update_period, 604_800);
+            }
+
+            #[test]
+            fn test_set_auto_update_period() {
+                $init_macro!(config);
+                config
+                    .set_auto_update_period(3_600)
+                    .expect("should succeed");
+                let cfg = config.load();
+                assert_eq!(cfg.auto_update_period, 3_600);
+            }
+
+            #[test]
+            fn test_set_auto_update_period_to_zero_disables() {
+                $init_macro!(config);
+                config.set_auto_update_period(0).expect("should succeed");
+                let cfg = config.load();
+                assert_eq!(cfg.auto_update_period, 0);
+            }
         }
     };
 }
