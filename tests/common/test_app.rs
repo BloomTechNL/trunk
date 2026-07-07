@@ -1,9 +1,7 @@
 use crate::common::capturing_sink::CapturingSink;
 use crate::common::in_memory_co_author_aliases::InMemoryCoAuthorAliases;
 use crate::common::in_memory_trunk_config::InMemoryTrunkConfig;
-use crate::common::mock_clock::MockClock;
 use crate::common::mock_fart_player::MockFartPlayer;
-use crate::common::mock_last_update_store::MockLastUpdateStore;
 use crate::common::mock_updater::MockUpdater;
 use g_cli::cli::AppService;
 use g_cli::{Cli, Commands};
@@ -17,8 +15,6 @@ pub struct TestApp {
     trunk_config: InMemoryTrunkConfig,
     output: CapturingSink,
     updater: MockUpdater,
-    clock: MockClock,
-    last_update_store: MockLastUpdateStore,
 }
 
 #[allow(dead_code)]
@@ -30,8 +26,6 @@ impl TestApp {
         let trunk_config = InMemoryTrunkConfig::new();
         let output = CapturingSink::new();
         let updater = MockUpdater::new();
-        let clock = MockClock::new();
-        let last_update_store = MockLastUpdateStore::new();
         Self {
             base_dir,
             fart_player,
@@ -39,8 +33,6 @@ impl TestApp {
             trunk_config,
             output,
             updater,
-            clock,
-            last_update_store,
         }
     }
 
@@ -53,8 +45,6 @@ impl TestApp {
         MockUpdater,
         CapturingSink,
         InMemoryTrunkConfig,
-        MockClock,
-        MockLastUpdateStore,
     > {
         AppService {
             fart_player: &self.fart_player,
@@ -62,8 +52,6 @@ impl TestApp {
             trunk_config: &self.trunk_config,
             output: &self.output,
             updater: &self.updater,
-            clock: &self.clock,
-            last_update_store: &self.last_update_store,
         }
     }
 
@@ -84,7 +72,7 @@ impl TestApp {
     }
 
     pub fn clock_flag(&self) -> std::rc::Rc<std::cell::Cell<u64>> {
-        self.clock.inner()
+        self.updater.clock_inner()
     }
 
     pub fn add_alias(&self, alias: &str, name: &str, email: &str) -> anyhow::Result<()> {

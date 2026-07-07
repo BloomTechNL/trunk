@@ -32,15 +32,14 @@ fn main() {
         .join(".config/trunk/last_update");
 
     let last_update_store = RealLastUpdateStore::new(last_update_path);
+    let updater = RealUpdater::new(RealClock, last_update_store);
 
     let app_service = AppService {
         fart_player: &RealFartPlayer,
         co_author_aliases: &co_author_aliases,
         trunk_config: &trunk_config,
         output: &StdoutSink,
-        updater: &RealUpdater,
-        clock: &RealClock,
-        last_update_store: &last_update_store,
+        updater: &updater,
     };
 
     if let Err(e) = app_service.dispatch_command(cli, PathBuf::from(".")) {

@@ -9,7 +9,7 @@ use crate::output::OutputSink;
 use crate::revert::{revert, RevertInput};
 use crate::{
     cmd_diff, cmd_log, cmd_pull, cmd_reset, cmd_status, cmd_time_travel, has_stash,
-    play_fart_sound::FartPlayer, Clock, CoAuthorAliases, LastUpdateStore, Updater,
+    play_fart_sound::FartPlayer, CoAuthorAliases, Updater,
 };
 
 fn version_string() -> &'static str {
@@ -168,32 +168,20 @@ pub struct AppService<
     U: Updater,
     O: OutputSink,
     TC: TrunkConfig,
-    C: Clock,
-    LS: LastUpdateStore,
 > {
     pub fart_player: &'a FP,
     pub co_author_aliases: &'a CAA,
     pub updater: &'a U,
     pub output: &'a O,
     pub trunk_config: &'a TC,
-    pub clock: &'a C,
-    pub last_update_store: &'a LS,
 }
 
-impl<
-        'a,
-        FP: FartPlayer,
-        CA: CoAuthorAliases,
-        U: Updater,
-        O: OutputSink,
-        TC: TrunkConfig,
-        C: Clock,
-        LS: LastUpdateStore,
-    > AppService<'a, FP, CA, U, O, TC, C, LS>
+impl<'a, FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: TrunkConfig>
+    AppService<'a, FP, CA, U, O, TC>
 {
     pub fn dispatch_command(&self, cli: Cli, repo: PathBuf) -> Result<()> {
         if !matches!(cli.command, Commands::Config { .. }) {
-            self.maybe_update()?;
+            self.updater.auto_update(self.trunk_config)?;
         }
 
         run_cli(
@@ -204,25 +192,5 @@ impl<
             self.trunk_config,
             self.output,
         )
-    }
-
-    fn maybe_update(&self) -> Result<()> {
-        let config = self.trunk_config.load();
-        if config.auto_update_period == 0 {
-            return Ok(());
-        }
-
-        let now = self.clock.now_secs();
-        let should_update = self
-            .last_update_store
-            .read()
-            .is_none_or(|prev| now - prev >= config.auto_update_period);
-
-        if should_update {
-            self.last_update_store.write(now)?;
-            self.updater.update()?;
-        }
-
-        Ok(())
     }
 }
