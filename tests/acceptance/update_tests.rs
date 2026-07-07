@@ -93,6 +93,26 @@ fn user_does_not_see_auto_update_output() {
 }
 
 #[test]
+fn explicit_update_works_even_when_auto_update_disabled() {
+    let ctx = ScenarioContext::new(TestContext::new());
+    let bob = developer_bob(&ctx);
+
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
+    bob.attempts_to((Config {
+        co_authors_required: None,
+        auto_update_period: Some(0),
+    },));
+
+    bob.attempts_to((
+        Ensure::that(TrunkVersion, equals(0)),
+        Update,
+        Ensure::that(TrunkVersion, equals(1)),
+    ));
+}
+
+#[test]
 fn test_update_period_is_configurable() {
     let ctx = ScenarioContext::new(TestContext::new());
     let bob = developer_bob(&ctx);

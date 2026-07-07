@@ -180,7 +180,9 @@ impl<'a, FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: Tru
     AppService<'a, FP, CA, U, O, TC>
 {
     pub fn dispatch_command(&self, cli: Cli, repo: PathBuf) -> Result<()> {
-        if !matches!(cli.command, Commands::Config { .. }) {
+        if matches!(cli.command, Commands::Update) {
+            self.updater.update(self.output)?;
+        } else if !matches!(cli.command, Commands::Config { .. }) {
             self.updater.auto_update(self.trunk_config)?;
         }
 
