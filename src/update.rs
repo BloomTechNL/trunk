@@ -1,6 +1,7 @@
 use anyhow::Result;
 
 use crate::config::TrunkConfig;
+use crate::output::{DiscardSink, OutputSink};
 use crate::{Clock, LastUpdateStore};
 
 pub trait Updater {
@@ -9,7 +10,7 @@ pub trait Updater {
     /// # Errors
     ///
     /// Returns an error if the update command fails.
-    fn update(&self) -> Result<()>;
+    fn update(&self, output: &impl OutputSink) -> Result<()>;
 
     fn auto_update(&self, config: &impl TrunkConfig) -> Result<()> {
         let cfg = config.load();
@@ -23,7 +24,7 @@ pub trait Updater {
             .is_none_or(|prev| now - prev >= cfg.auto_update_period);
         if should_update {
             self.last_update_store().write(now)?;
-            self.update()?;
+            self.update(&DiscardSink)?;
         }
         Ok(())
     }
@@ -48,13 +49,12 @@ impl<C: Clock, LS: LastUpdateStore> RealUpdater<C, LS> {
 }
 
 impl<C: Clock, LS: LastUpdateStore> Updater for RealUpdater<C, LS> {
-    fn update(&self) -> Result<()> {
-        std::process::Command::new("bash")
-            .arg("-c")
-            .arg("curl -fsSL https://raw.githubusercontent.com/BloomTechNL/trunk/main/scripts/install.sh | bash")
-            .status()
-            .map(|_| ())
-            .map_err(anyhow::Error::from)
+    fn update(&self, output: &impl OutputSink) -> Result<()> {
+        let mut cmd = std::process::Command::new("bash");
+        cmd.arg("-c")
+            .arg("curl -fsSL https://raw.githubusercontent.com/BloomTechNL/trunk/main/scripts/install.sh | bash");
+        output.run(&mut cmd)?;
+        Ok(())
     }
 
     fn clock(&self) -> &dyn Clock {

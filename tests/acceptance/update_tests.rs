@@ -77,6 +77,22 @@ fn test_application_does_not_update_if_user_turns_this_off() {
 }
 
 #[test]
+fn user_does_not_see_auto_update_output() {
+    let ctx = ScenarioContext::new(TestContext::new());
+    let bob = developer_bob(&ctx);
+
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
+
+    bob.attempts_to((
+        Ensure::that(TrunkVersion, equals(0)),
+        Ensure::that(Status, does_not_contain("updating")),
+        Ensure::that(TrunkVersion, equals(1)),
+    ));
+}
+
+#[test]
 fn test_update_period_is_configurable() {
     let ctx = ScenarioContext::new(TestContext::new());
     let bob = developer_bob(&ctx);

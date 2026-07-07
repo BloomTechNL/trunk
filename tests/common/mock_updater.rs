@@ -36,8 +36,9 @@ impl MockUpdater {
 }
 
 impl Updater for MockUpdater {
-    fn update(&self) -> anyhow::Result<()> {
+    fn update(&self, output: &impl g_cli::output::OutputSink) -> anyhow::Result<()> {
         self.update_count.set(self.update_count.get() + 1);
+        output.write_str("updating\n");
         Ok(())
     }
 

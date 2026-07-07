@@ -7,6 +7,21 @@ pub trait OutputSink {
     fn capture(&self, cmd: &mut Command) -> io::Result<(ExitStatus, Vec<u8>)>;
 }
 
+pub struct DiscardSink;
+
+impl OutputSink for DiscardSink {
+    fn write_str(&self, _s: &str) {}
+
+    fn run(&self, cmd: &mut Command) -> io::Result<ExitStatus> {
+        cmd.stdout(Stdio::null()).stderr(Stdio::null()).status()
+    }
+
+    fn capture(&self, cmd: &mut Command) -> io::Result<(ExitStatus, Vec<u8>)> {
+        let status = cmd.stdout(Stdio::null()).stderr(Stdio::null()).status()?;
+        Ok((status, Vec::new()))
+    }
+}
+
 pub struct StdoutSink;
 
 impl OutputSink for StdoutSink {
