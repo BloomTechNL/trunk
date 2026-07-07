@@ -70,9 +70,9 @@ fn test_application_does_not_update_if_user_turns_this_off() {
     },));
 
     bob.attempts_to((
-        Ensure::that(TrunkVersion, equals(0)),
+        Ensure::that(TrunkVersion, equals(1)),
         Ensure::that(Status, contains("nothing to commit")),
-        Ensure::that(TrunkVersion, equals(0)),
+        Ensure::that(TrunkVersion, equals(1)),
     ));
 }
 
@@ -106,8 +106,27 @@ fn explicit_update_works_even_when_auto_update_disabled() {
     },));
 
     bob.attempts_to((
-        Ensure::that(TrunkVersion, equals(0)),
+        Ensure::that(TrunkVersion, equals(1)),
         Update,
+        Ensure::that(TrunkVersion, equals(2)),
+    ));
+}
+
+#[test]
+fn auto_update_also_runs_on_config_calls() {
+    let ctx = ScenarioContext::new(TestContext::new());
+    let bob = developer_bob(&ctx);
+
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
+
+    bob.attempts_to((
+        Ensure::that(TrunkVersion, equals(0)),
+        Config {
+            co_authors_required: Some(false),
+            auto_update_period: None,
+        },
         Ensure::that(TrunkVersion, equals(1)),
     ));
 }
@@ -126,7 +145,7 @@ fn test_update_period_is_configurable() {
     },));
 
     bob.attempts_to((
-        Ensure::that(TrunkVersion, equals(0)),
+        Ensure::that(TrunkVersion, equals(1)),
         Ensure::that(Status, contains("nothing to commit")),
         Ensure::that(TrunkVersion, equals(1)),
     ));

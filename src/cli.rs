@@ -182,7 +182,7 @@ impl<'a, FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: Tru
     pub fn dispatch_command(&self, cli: Cli, repo: PathBuf) -> Result<()> {
         if matches!(cli.command, Commands::Update) {
             self.updater.update(self.output)?;
-        } else if !matches!(cli.command, Commands::Config { .. }) {
+        } else {
             self.updater.auto_update(self.trunk_config)?;
         }
 
