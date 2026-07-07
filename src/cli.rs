@@ -115,6 +115,7 @@ pub fn run_cli(
     aliases: &impl CoAuthorAliases,
     config: &impl TrunkConfig,
     output: &impl OutputSink,
+    updater: &impl Updater,
 ) -> Result<()> {
     if cli.command != Commands::Fart && has_stash(dir) {
         let _ = fart_player.play_asynchronously();
@@ -157,7 +158,7 @@ pub fn run_cli(
             co_authors_required,
             auto_update_period,
         } => cmd_config(co_authors_required, auto_update_period, config),
-        Commands::Update => Ok(()),
+        Commands::Update => updater.update(output),
     }
 }
 
@@ -180,9 +181,7 @@ impl<'a, FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: Tru
     AppService<'a, FP, CA, U, O, TC>
 {
     pub fn dispatch_command(&self, cli: Cli, repo: PathBuf) -> Result<()> {
-        if matches!(cli.command, Commands::Update) {
-            self.updater.update(self.output)?;
-        } else {
+        if !matches!(cli.command, Commands::Update) {
             self.updater.auto_update(self.trunk_config)?;
         }
 
@@ -193,6 +192,7 @@ impl<'a, FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: Tru
             self.co_author_aliases,
             self.trunk_config,
             self.output,
+            self.updater,
         )
     }
 }
