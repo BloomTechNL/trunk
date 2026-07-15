@@ -3,6 +3,7 @@ use std::process;
 
 use clap::Parser;
 use g_cli::cli::AppService;
+use g_cli::container::Dependencies;
 use g_cli::output::StdoutSink;
 use g_cli::{
     Cli, RealClock, RealCoAuthorAliases, RealFartPlayer, RealLastUpdateStore, RealTrunkConfig,
@@ -28,13 +29,15 @@ fn main() {
     let last_update_store = RealLastUpdateStore::new(config_dir.join("last_update"));
     let updater = RealUpdater::new(RealClock, last_update_store);
 
-    let app_service = AppService {
+    let dependencies = Dependencies {
         fart_player: &RealFartPlayer,
         co_author_aliases: &co_author_aliases,
-        trunk_config: &trunk_config,
-        output: &StdoutSink,
         updater: &updater,
+        output: &StdoutSink,
+        trunk_config: &trunk_config,
     };
+
+    let app_service = AppService::new(dependencies);
 
     if let Err(e) = app_service.dispatch_command(cli, PathBuf::from(".")) {
         eprintln!("Error: {e}");

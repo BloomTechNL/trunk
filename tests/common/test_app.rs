@@ -4,6 +4,7 @@ use crate::common::in_memory_trunk_config::InMemoryTrunkConfig;
 use crate::common::mock_fart_player::MockFartPlayer;
 use crate::common::mock_updater::MockUpdater;
 use g_cli::cli::AppService;
+use g_cli::container::Dependencies;
 use g_cli::{Cli, Commands};
 use std::path::Path;
 use tempfile::TempDir;
@@ -46,13 +47,14 @@ impl TestApp {
         CapturingSink,
         InMemoryTrunkConfig,
     > {
-        AppService {
+        let dependencies = Dependencies {
             fart_player: &self.fart_player,
             co_author_aliases: &self.co_author_aliases,
-            trunk_config: &self.trunk_config,
-            output: &self.output,
             updater: &self.updater,
-        }
+            output: &self.output,
+            trunk_config: &self.trunk_config,
+        };
+        AppService::new(dependencies)
     }
 
     pub fn was_fart_played(&self) -> bool {
