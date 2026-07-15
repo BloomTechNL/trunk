@@ -3,6 +3,7 @@ use std::path::Path;
 use anyhow::{anyhow, bail, Result};
 
 use crate::git::{git_capture, git_passthrough};
+use crate::handler::Handler;
 use crate::output::OutputSink;
 
 // ---------------------------------------------------------------------------
@@ -36,8 +37,10 @@ impl<'a, O: OutputSink> TimeTravelHandler<'a, O> {
     pub const fn new(sink: &'a O) -> Self {
         Self { sink }
     }
+}
 
-    pub fn handle(&self, dir: &Path, target: &str) -> Result<()> {
+impl<O: OutputSink> Handler<(&Path, &str)> for TimeTravelHandler<'_, O> {
+    fn handle(&self, (dir, target): (&Path, &str)) -> Result<()> {
         if target == "now" {
             return cmd_time_travel_now(dir, self.sink);
         }

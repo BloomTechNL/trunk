@@ -3,6 +3,7 @@ use std::path::Path;
 use anyhow::{bail, Result};
 
 use crate::git::{git_capture, git_passthrough};
+use crate::handler::Handler;
 use crate::output::OutputSink;
 
 // ---------------------------------------------------------------------------
@@ -17,8 +18,10 @@ impl<'a, O: OutputSink> PullHandler<'a, O> {
     pub const fn new(sink: &'a O) -> Self {
         Self { sink }
     }
+}
 
-    pub fn handle(&self, dir: &Path) -> Result<()> {
+impl<O: OutputSink> Handler<&Path> for PullHandler<'_, O> {
+    fn handle(&self, dir: &Path) -> Result<()> {
         let porcelain = git_capture(dir, &["status", "--porcelain"], self.sink)?;
         if !porcelain.trim().is_empty() {
             bail!("You have uncommitted changes. Please commit them with `g c` before pulling.");

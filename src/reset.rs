@@ -3,6 +3,8 @@ use git2::{Repository, ResetType, Status, StatusOptions};
 use std::fs;
 use std::path::Path;
 
+use crate::handler::Handler;
+
 pub struct ResetHandler;
 
 impl Default for ResetHandler {
@@ -16,8 +18,10 @@ impl ResetHandler {
     pub const fn new() -> Self {
         Self
     }
+}
 
-    pub fn handle(&self, dir: &Path) -> Result<()> {
+impl Handler<&Path> for ResetHandler {
+    fn handle(&self, dir: &Path) -> Result<()> {
         cmd_reset(dir)
     }
 }

@@ -2,6 +2,8 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+use crate::handler::Handler;
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Config {
     #[serde(rename = "coAuthorsRequired")]
@@ -105,11 +107,12 @@ impl<'a, TC: TrunkConfig> ConfigHandler<'a, TC> {
     pub const fn new(config: &'a TC) -> Self {
         Self { config }
     }
+}
 
-    pub fn handle(
+impl<TC: TrunkConfig> Handler<(Option<bool>, Option<u64>)> for ConfigHandler<'_, TC> {
+    fn handle(
         &self,
-        co_authors_required: Option<bool>,
-        auto_update_period: Option<u64>,
+        (co_authors_required, auto_update_period): (Option<bool>, Option<u64>),
     ) -> Result<()> {
         if let Some(required) = co_authors_required {
             self.config.set_co_authors_required(required)?;

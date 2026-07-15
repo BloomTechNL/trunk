@@ -8,8 +8,8 @@ use crate::config::{ConfigHandler, TrunkConfig};
 use crate::output::OutputSink;
 use crate::revert::{RevertHandler, RevertInput};
 use crate::{
-    has_stash, play_fart_sound::FartPlayer, CoAuthorAliases, DiffHandler, LogHandler, PullHandler,
-    ResetHandler, StatusHandler, TimeTravelHandler, Updater,
+    has_stash, play_fart_sound::FartPlayer, CoAuthorAliases, DiffHandler, Handler, LogHandler,
+    PullHandler, ResetHandler, StatusHandler, TimeTravelHandler, Updater,
 };
 
 fn version_string() -> &'static str {
@@ -138,7 +138,7 @@ pub fn run_cli(
         Commands::Log => LogHandler::new(output).handle(dir),
         Commands::Status => StatusHandler::new(output).handle(dir),
         Commands::Diff => DiffHandler::new(output).handle(dir),
-        Commands::TimeTravel { target } => TimeTravelHandler::new(output).handle(dir, &target),
+        Commands::TimeTravel { target } => TimeTravelHandler::new(output).handle((dir, &target)),
         Commands::Reset => ResetHandler::new().handle(dir),
         Commands::Revert {
             hash,
@@ -161,7 +161,7 @@ pub fn run_cli(
         Commands::Config {
             co_authors_required,
             auto_update_period,
-        } => ConfigHandler::new(config).handle(co_authors_required, auto_update_period),
+        } => ConfigHandler::new(config).handle((co_authors_required, auto_update_period)),
         Commands::Update => updater.update(output),
     }
 }

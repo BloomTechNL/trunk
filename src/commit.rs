@@ -4,6 +4,7 @@ use crate::config::TrunkConfig;
 use crate::git::{
     git_capture, git_passthrough, has_conflict_markers, is_detached_head, is_rebasing,
 };
+use crate::handler::Handler;
 use crate::output::OutputSink;
 use crate::CoAuthorAliases;
 use anyhow::{bail, Result};
@@ -44,17 +45,6 @@ impl<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> CommitHandler<'a, 
             aliases,
             config,
             sink,
-        }
-    }
-
-    pub fn handle(&self, input: &CommitInput) -> Result<()> {
-        match &input.action {
-            CommitAction::Commit {
-                message,
-                co_authors,
-            } => self.cmd_commit(input.repo.as_path(), message, co_authors.as_ref()),
-            CommitAction::Resolve => self.cmd_commit_resolve(input.repo.as_path()),
-            CommitAction::Abort => self.cmd_commit_abort(input.repo.as_path()),
         }
     }
 
@@ -116,6 +106,21 @@ impl<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> CommitHandler<'a, 
     fn cmd_commit_abort(&self, dir: &Path) -> Result<()> {
         git_passthrough(dir, &["rebase", "--abort"], self.sink)?;
         git_passthrough(dir, &["reset", "--soft", "HEAD~1"], self.sink)
+    }
+}
+
+impl<CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> Handler<&CommitInput>
+    for CommitHandler<'_, CA, TC, O>
+{
+    fn handle(&self, input: &CommitInput) -> Result<()> {
+        match &input.action {
+            CommitAction::Commit {
+                message,
+                co_authors,
+            } => self.cmd_commit(input.repo.as_path(), message, co_authors.as_ref()),
+            CommitAction::Resolve => self.cmd_commit_resolve(input.repo.as_path()),
+            CommitAction::Abort => self.cmd_commit_abort(input.repo.as_path()),
+        }
     }
 }
 

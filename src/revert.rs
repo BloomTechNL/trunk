@@ -4,6 +4,7 @@ use anyhow::{anyhow, bail, Result};
 
 use crate::commit::{has_remote, has_remote_tracking};
 use crate::git::{git_capture, git_passthrough, has_conflict_markers, is_detached_head};
+use crate::handler::Handler;
 use crate::output::OutputSink;
 
 // ---------------------------------------------------------------------------
@@ -44,16 +45,6 @@ pub struct RevertHandler<'a, O: OutputSink> {
 impl<'a, O: OutputSink> RevertHandler<'a, O> {
     pub const fn new(sink: &'a O) -> Self {
         Self { sink }
-    }
-
-    pub fn handle(&self, input: &RevertInput) -> Result<()> {
-        match &input.opt {
-            RevertOpt::Ref(reference) => {
-                self.cmd_revert(&input.repo, reference, !input.interactive)
-            }
-            RevertOpt::Resolve => self.cmd_revert_resolve(&input.repo),
-            RevertOpt::Abort => self.cmd_revert_abort(&input.repo),
-        }
     }
 
     fn cmd_revert(&self, dir: &Path, hash: &str, bypass_prompt: bool) -> Result<()> {
@@ -119,6 +110,18 @@ impl<'a, O: OutputSink> RevertHandler<'a, O> {
     fn cmd_revert_abort(&self, dir: &Path) -> Result<()> {
         git_passthrough(dir, &["rebase", "--abort"], self.sink)?;
         git_passthrough(dir, &["reset", "--hard", "HEAD~1"], self.sink)
+    }
+}
+
+impl<O: OutputSink> Handler<&RevertInput> for RevertHandler<'_, O> {
+    fn handle(&self, input: &RevertInput) -> Result<()> {
+        match &input.opt {
+            RevertOpt::Ref(reference) => {
+                self.cmd_revert(&input.repo, reference, !input.interactive)
+            }
+            RevertOpt::Resolve => self.cmd_revert_resolve(&input.repo),
+            RevertOpt::Abort => self.cmd_revert_abort(&input.repo),
+        }
     }
 }
 

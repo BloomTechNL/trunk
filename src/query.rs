@@ -3,6 +3,7 @@ use std::path::Path;
 use anyhow::Result;
 
 use crate::git::git_passthrough;
+use crate::handler::Handler;
 use crate::output::OutputSink;
 
 // ---------------------------------------------------------------------------
@@ -17,8 +18,10 @@ impl<'a, O: OutputSink> LogHandler<'a, O> {
     pub const fn new(sink: &'a O) -> Self {
         Self { sink }
     }
+}
 
-    pub fn handle(&self, dir: &Path) -> Result<()> {
+impl<O: OutputSink> Handler<&Path> for LogHandler<'_, O> {
+    fn handle(&self, dir: &Path) -> Result<()> {
         git_passthrough(dir, &["log"], self.sink)
     }
 }
@@ -31,8 +34,10 @@ impl<'a, O: OutputSink> StatusHandler<'a, O> {
     pub const fn new(sink: &'a O) -> Self {
         Self { sink }
     }
+}
 
-    pub fn handle(&self, dir: &Path) -> Result<()> {
+impl<O: OutputSink> Handler<&Path> for StatusHandler<'_, O> {
+    fn handle(&self, dir: &Path) -> Result<()> {
         git_passthrough(dir, &["status"], self.sink)
     }
 }
@@ -45,8 +50,10 @@ impl<'a, O: OutputSink> DiffHandler<'a, O> {
     pub const fn new(sink: &'a O) -> Self {
         Self { sink }
     }
+}
 
-    pub fn handle(&self, dir: &Path) -> Result<()> {
+impl<O: OutputSink> Handler<&Path> for DiffHandler<'_, O> {
+    fn handle(&self, dir: &Path) -> Result<()> {
         git_passthrough(dir, &["diff"], self.sink)
     }
 }
