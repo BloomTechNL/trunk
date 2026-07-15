@@ -9,29 +9,23 @@ use g_cli::{
     RealUpdater,
 };
 
+fn trunk_config_dir() -> PathBuf {
+    std::env::var("HOME")
+        .map(PathBuf::from)
+        .expect("HOME environment variable not set")
+        .join(".config/trunk")
+}
+
 fn main() {
     let cli = Cli::parse();
 
-    let alias_path = std::env::var("HOME")
-        .map(PathBuf::from)
-        .expect("HOME environment variable not set")
-        .join(".config/trunk/aliases");
+    let config_dir = trunk_config_dir();
 
-    let co_author_aliases = RealCoAuthorAliases::new(alias_path);
+    let co_author_aliases = RealCoAuthorAliases::new(config_dir.join("aliases"));
 
-    let config_path = std::env::var("HOME")
-        .map(PathBuf::from)
-        .expect("HOME environment variable not set")
-        .join(".config/trunk/trunk.json");
+    let trunk_config = RealTrunkConfig::new(config_dir.join("trunk.json"));
 
-    let trunk_config = RealTrunkConfig::new(config_path);
-
-    let last_update_path = std::env::var("HOME")
-        .map(PathBuf::from)
-        .expect("HOME environment variable not set")
-        .join(".config/trunk/last_update");
-
-    let last_update_store = RealLastUpdateStore::new(last_update_path);
+    let last_update_store = RealLastUpdateStore::new(config_dir.join("last_update"));
     let updater = RealUpdater::new(RealClock, last_update_store);
 
     let app_service = AppService {
