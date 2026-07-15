@@ -37,65 +37,89 @@ pub fn get_revert_info(dir: &Path, hash: &str, sink: &impl OutputSink) -> Result
     })
 }
 
-fn cmd_revert(dir: &Path, hash: &str, bypass_prompt: bool, sink: &impl OutputSink) -> Result<()> {
-    if is_detached_head(dir, sink) {
-        bail!("You are currently time travelling. Run `g tt now` to return to the present before making changes.");
+pub struct RevertHandler<'a, O: OutputSink> {
+    sink: &'a O,
+}
+
+impl<'a, O: OutputSink> RevertHandler<'a, O> {
+    pub const fn new(sink: &'a O) -> Self {
+        Self { sink }
     }
 
-    let info = get_revert_info(dir, hash, sink)?;
-
-    if !bypass_prompt {
-        let prompt_text = format!(
-            "⏪ Revert Commit: {} - \"{}\" (by {})\nAre you sure you want to revert this commit?",
-            info.short_hash, info.subject, info.author
-        );
-        let confirmed = inquire::Confirm::new(&prompt_text)
-            .with_default(false)
-            .prompt()?;
-        if !confirmed {
-            println!("Aborted.");
-            return Ok(());
+    pub fn handle(&self, input: &RevertInput) -> Result<()> {
+        match &input.opt {
+            RevertOpt::Ref(reference) => {
+                self.cmd_revert(&input.repo, reference, !input.interactive)
+            }
+            RevertOpt::Resolve => self.cmd_revert_resolve(&input.repo),
+            RevertOpt::Abort => self.cmd_revert_abort(&input.repo),
         }
     }
 
-    let full_hash = git_capture(dir, &["rev-parse", hash], sink)?
-        .trim()
-        .to_string();
-    git_passthrough(dir, &["revert", "--no-edit", &full_hash], sink)?;
+    fn cmd_revert(&self, dir: &Path, hash: &str, bypass_prompt: bool) -> Result<()> {
+        if is_detached_head(dir, self.sink) {
+            bail!("You are currently time travelling. Run `g tt now` to return to the present before making changes.");
+        }
 
-    if !has_remote(dir, sink) {
-        return Ok(());
+        let info = get_revert_info(dir, hash, self.sink)?;
+
+        if !bypass_prompt {
+            let prompt_text = format!(
+                "⏪ Revert Commit: {} - \"{}\" (by {})\nAre you sure you want to revert this commit?",
+                info.short_hash, info.subject, info.author
+            );
+            let confirmed = inquire::Confirm::new(&prompt_text)
+                .with_default(false)
+                .prompt()?;
+            if !confirmed {
+                println!("Aborted.");
+                return Ok(());
+            }
+        }
+
+        let full_hash = git_capture(dir, &["rev-parse", hash], self.sink)?
+            .trim()
+            .to_string();
+        git_passthrough(dir, &["revert", "--no-edit", &full_hash], self.sink)?;
+
+        if !has_remote(dir, self.sink) {
+            return Ok(());
+        }
+
+        if !has_remote_tracking(dir, self.sink) {
+            return git_passthrough(
+                dir,
+                &["push", "--set-upstream", "origin", "HEAD"],
+                self.sink,
+            );
+        }
+
+        let pull_result = git_passthrough(dir, &["pull", "--rebase"], self.sink);
+        if pull_result.is_err() {
+            eprintln!(
+                "\nAfter resolving the conflict, run\n  g rv --resolve\nOr run\n  g rv --abort\nTo give up (will permanently delete the revert commit)"
+            );
+            bail!("Conflict during rebase — see instructions above");
+        }
+
+        git_passthrough(dir, &["push"], self.sink)
     }
 
-    if !has_remote_tracking(dir, sink) {
-        return git_passthrough(dir, &["push", "--set-upstream", "origin", "HEAD"], sink);
+    fn cmd_revert_resolve(&self, dir: &Path) -> Result<()> {
+        if has_conflict_markers(dir, self.sink) {
+            bail!(
+                "Your files contain unresolved conflict markers. Please resolve all conflicts before running `g rv --resolve`."
+            );
+        }
+        git_passthrough(dir, &["add", "-A"], self.sink)?;
+        git_passthrough(dir, &["rebase", "--continue"], self.sink)?;
+        git_passthrough(dir, &["push"], self.sink)
     }
 
-    let pull_result = git_passthrough(dir, &["pull", "--rebase"], sink);
-    if pull_result.is_err() {
-        eprintln!(
-            "\nAfter resolving the conflict, run\n  g rv --resolve\nOr run\n  g rv --abort\nTo give up (will permanently delete the revert commit)"
-        );
-        bail!("Conflict during rebase — see instructions above");
+    fn cmd_revert_abort(&self, dir: &Path) -> Result<()> {
+        git_passthrough(dir, &["rebase", "--abort"], self.sink)?;
+        git_passthrough(dir, &["reset", "--hard", "HEAD~1"], self.sink)
     }
-
-    git_passthrough(dir, &["push"], sink)
-}
-
-fn cmd_revert_resolve(dir: &Path, sink: &impl OutputSink) -> Result<()> {
-    if has_conflict_markers(dir, sink) {
-        bail!(
-            "Your files contain unresolved conflict markers. Please resolve all conflicts before running `g rv --resolve`."
-        );
-    }
-    git_passthrough(dir, &["add", "-A"], sink)?;
-    git_passthrough(dir, &["rebase", "--continue"], sink)?;
-    git_passthrough(dir, &["push"], sink)
-}
-
-fn cmd_revert_abort(dir: &Path, sink: &impl OutputSink) -> Result<()> {
-    git_passthrough(dir, &["rebase", "--abort"], sink)?;
-    git_passthrough(dir, &["reset", "--hard", "HEAD~1"], sink)
 }
 
 pub enum RevertOpt {
@@ -131,15 +155,5 @@ impl RevertInput {
             opt,
             interactive,
         }
-    }
-}
-
-pub fn revert(input: &RevertInput, sink: &impl OutputSink) -> Result<()> {
-    match input.opt {
-        RevertOpt::Ref(ref reference) => {
-            cmd_revert(&input.repo, reference, !input.interactive, sink)
-        }
-        RevertOpt::Resolve => cmd_revert_resolve(&input.repo, sink),
-        RevertOpt::Abort => cmd_revert_abort(&input.repo, sink),
     }
 }

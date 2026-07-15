@@ -28,12 +28,22 @@ fn cmd_time_travel_now(dir: &Path, sink: &impl OutputSink) -> Result<()> {
     git_passthrough(dir, &["checkout", &branch], sink)
 }
 
-pub fn cmd_time_travel(dir: &Path, target: &str, sink: &impl OutputSink) -> Result<()> {
-    if target == "now" {
-        return cmd_time_travel_now(dir, sink);
+pub struct TimeTravelHandler<'a, O: OutputSink> {
+    sink: &'a O,
+}
+
+impl<'a, O: OutputSink> TimeTravelHandler<'a, O> {
+    pub const fn new(sink: &'a O) -> Self {
+        Self { sink }
     }
-    let hash = resolve_to_commit_hash(dir, target, sink)?;
-    git_passthrough(dir, &["checkout", &hash], sink)
+
+    pub fn handle(&self, dir: &Path, target: &str) -> Result<()> {
+        if target == "now" {
+            return cmd_time_travel_now(dir, self.sink);
+        }
+        let hash = resolve_to_commit_hash(dir, target, self.sink)?;
+        git_passthrough(dir, &["checkout", &hash], self.sink)
+    }
 }
 
 fn resolve_to_commit_hash(dir: &Path, spec: &str, sink: &impl OutputSink) -> Result<String> {

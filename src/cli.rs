@@ -3,13 +3,13 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
-use crate::commit::{commit, CommitInput};
-use crate::config::{cmd_config, TrunkConfig};
+use crate::commit::{CommitHandler, CommitInput};
+use crate::config::{ConfigHandler, TrunkConfig};
 use crate::output::OutputSink;
-use crate::revert::{revert, RevertInput};
+use crate::revert::{RevertHandler, RevertInput};
 use crate::{
-    cmd_diff, cmd_log, cmd_pull, cmd_reset, cmd_status, cmd_time_travel, has_stash,
-    play_fart_sound::FartPlayer, CoAuthorAliases, Updater,
+    has_stash, play_fart_sound::FartPlayer, CoAuthorAliases, DiffHandler, LogHandler, PullHandler,
+    ResetHandler, StatusHandler, TimeTravelHandler, Updater,
 };
 
 fn version_string() -> &'static str {
@@ -127,27 +127,31 @@ pub fn run_cli(
             co_authors,
             resolve,
             abort,
-        } => commit(
-            &CommitInput::from_cli(PathBuf::from(dir), message, co_authors, resolve, abort)?,
-            aliases,
-            config,
-            output,
-        ),
-        Commands::Pull => cmd_pull(dir, output),
-        Commands::Log => cmd_log(dir, output),
-        Commands::Status => cmd_status(dir, output),
-        Commands::Diff => cmd_diff(dir, output),
-        Commands::TimeTravel { target } => cmd_time_travel(dir, &target, output),
-        Commands::Reset => cmd_reset(dir),
+        } => CommitHandler::new(aliases, config, output).handle(&CommitInput::from_cli(
+            PathBuf::from(dir),
+            message,
+            co_authors,
+            resolve,
+            abort,
+        )?),
+        Commands::Pull => PullHandler::new(output).handle(dir),
+        Commands::Log => LogHandler::new(output).handle(dir),
+        Commands::Status => StatusHandler::new(output).handle(dir),
+        Commands::Diff => DiffHandler::new(output).handle(dir),
+        Commands::TimeTravel { target } => TimeTravelHandler::new(output).handle(dir, &target),
+        Commands::Reset => ResetHandler::new().handle(dir),
         Commands::Revert {
             hash,
             resolve,
             abort,
             noninteractive,
-        } => revert(
-            &RevertInput::from_cli(PathBuf::from(dir), hash, resolve, abort, !noninteractive),
-            output,
-        ),
+        } => RevertHandler::new(output).handle(&RevertInput::from_cli(
+            PathBuf::from(dir),
+            hash,
+            resolve,
+            abort,
+            !noninteractive,
+        )),
         Commands::Fart => fart_player.play(),
         Commands::FartDaemon => fart_player.run_daemon(dir),
         Commands::AddAlias { alias, name, email } => {
@@ -157,7 +161,7 @@ pub fn run_cli(
         Commands::Config {
             co_authors_required,
             auto_update_period,
-        } => cmd_config(co_authors_required, auto_update_period, config),
+        } => ConfigHandler::new(config).handle(co_authors_required, auto_update_period),
         Commands::Update => updater.update(output),
     }
 }

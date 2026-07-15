@@ -32,67 +32,91 @@ pub fn has_remote_tracking(dir: &Path, sink: &impl OutputSink) -> bool {
 // g c  — commit + sync
 // ---------------------------------------------------------------------------
 
-fn cmd_commit(
-    dir: &Path,
-    message: &str,
-    co_authors: &dyn MessagePostfix,
-    aliases: &impl CoAuthorAliases,
-    config: &impl TrunkConfig,
-    sink: &impl OutputSink,
-) -> Result<()> {
-    if is_rebasing(dir, sink) {
-        bail!(
-            "You are in the middle of resolving a conflict. Resolve the conflict and then run\n  g c --resolve"
-        );
-    }
-
-    if is_detached_head(dir, sink) {
-        bail!("You are currently time travelling. Run `g tt now` to return to the present before making changes.");
-    }
-
-    if !co_authors.is_explicit() && config.load().co_authors_required {
-        bail!("You must either specify co-authors as @jane @john or specify that this is solo work with SOLO");
-    }
-
-    let postfix = co_authors.format_postfix(aliases)?;
-    let final_message = format!("{message}{postfix}");
-
-    git_passthrough(dir, &["add", "-A"], sink)?;
-    git_passthrough(dir, &["commit", "-m", &final_message], sink)?;
-
-    if !has_remote(dir, sink) {
-        return Ok(());
-    }
-
-    if !has_remote_tracking(dir, sink) {
-        return git_passthrough(dir, &["push", "--set-upstream", "origin", "HEAD"], sink);
-    }
-
-    let pull_result = git_passthrough(dir, &["pull", "--rebase"], sink);
-    if pull_result.is_err() {
-        eprintln!(
-            "\nAfter resolving the conflict, run\n  g c --resolve\nOr run\n  g c --abort\nTo give up (will softly reset your commit)"
-        );
-        bail!("Conflict during rebase — see instructions above");
-    }
-
-    git_passthrough(dir, &["push"], sink)
+pub struct CommitHandler<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> {
+    aliases: &'a CA,
+    config: &'a TC,
+    sink: &'a O,
 }
 
-fn cmd_commit_resolve(dir: &Path, sink: &impl OutputSink) -> Result<()> {
-    if has_conflict_markers(dir, sink) {
-        bail!(
-            "Your files contain unresolved conflict markers. Please resolve all conflicts before running `g c --resolve`."
-        );
+impl<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> CommitHandler<'a, CA, TC, O> {
+    pub const fn new(aliases: &'a CA, config: &'a TC, sink: &'a O) -> Self {
+        Self {
+            aliases,
+            config,
+            sink,
+        }
     }
-    git_passthrough(dir, &["add", "-A"], sink)?;
-    git_passthrough(dir, &["rebase", "--continue"], sink)?;
-    git_passthrough(dir, &["push"], sink)
-}
 
-fn cmd_commit_abort(dir: &Path, sink: &impl OutputSink) -> Result<()> {
-    git_passthrough(dir, &["rebase", "--abort"], sink)?;
-    git_passthrough(dir, &["reset", "--soft", "HEAD~1"], sink)
+    pub fn handle(&self, input: &CommitInput) -> Result<()> {
+        match &input.action {
+            CommitAction::Commit {
+                message,
+                co_authors,
+            } => self.cmd_commit(input.repo.as_path(), message, co_authors.as_ref()),
+            CommitAction::Resolve => self.cmd_commit_resolve(input.repo.as_path()),
+            CommitAction::Abort => self.cmd_commit_abort(input.repo.as_path()),
+        }
+    }
+
+    fn cmd_commit(&self, dir: &Path, message: &str, co_authors: &dyn MessagePostfix) -> Result<()> {
+        if is_rebasing(dir, self.sink) {
+            bail!(
+                "You are in the middle of resolving a conflict. Resolve the conflict and then run\n  g c --resolve"
+            );
+        }
+
+        if is_detached_head(dir, self.sink) {
+            bail!("You are currently time travelling. Run `g tt now` to return to the present before making changes.");
+        }
+
+        if !co_authors.is_explicit() && self.config.load().co_authors_required {
+            bail!("You must either specify co-authors as @jane @john or specify that this is solo work with SOLO");
+        }
+
+        let postfix = co_authors.format_postfix(self.aliases)?;
+        let final_message = format!("{message}{postfix}");
+
+        git_passthrough(dir, &["add", "-A"], self.sink)?;
+        git_passthrough(dir, &["commit", "-m", &final_message], self.sink)?;
+
+        if !has_remote(dir, self.sink) {
+            return Ok(());
+        }
+
+        if !has_remote_tracking(dir, self.sink) {
+            return git_passthrough(
+                dir,
+                &["push", "--set-upstream", "origin", "HEAD"],
+                self.sink,
+            );
+        }
+
+        let pull_result = git_passthrough(dir, &["pull", "--rebase"], self.sink);
+        if pull_result.is_err() {
+            eprintln!(
+                "\nAfter resolving the conflict, run\n  g c --resolve\nOr run\n  g c --abort\nTo give up (will softly reset your commit)"
+            );
+            bail!("Conflict during rebase — see instructions above");
+        }
+
+        git_passthrough(dir, &["push"], self.sink)
+    }
+
+    fn cmd_commit_resolve(&self, dir: &Path) -> Result<()> {
+        if has_conflict_markers(dir, self.sink) {
+            bail!(
+                "Your files contain unresolved conflict markers. Please resolve all conflicts before running `g c --resolve`."
+            );
+        }
+        git_passthrough(dir, &["add", "-A"], self.sink)?;
+        git_passthrough(dir, &["rebase", "--continue"], self.sink)?;
+        git_passthrough(dir, &["push"], self.sink)
+    }
+
+    fn cmd_commit_abort(&self, dir: &Path) -> Result<()> {
+        git_passthrough(dir, &["rebase", "--abort"], self.sink)?;
+        git_passthrough(dir, &["reset", "--soft", "HEAD~1"], self.sink)
+    }
 }
 
 pub trait MessagePostfix {
@@ -201,28 +225,5 @@ impl CommitInput {
             }
         };
         Ok(Self { repo, action })
-    }
-}
-
-pub fn commit(
-    input: &CommitInput,
-    aliases: &impl CoAuthorAliases,
-    config: &impl TrunkConfig,
-    sink: &impl OutputSink,
-) -> Result<()> {
-    match &input.action {
-        CommitAction::Commit {
-            message,
-            co_authors,
-        } => cmd_commit(
-            input.repo.as_path(),
-            message,
-            co_authors.as_ref(),
-            aliases,
-            config,
-            sink,
-        ),
-        CommitAction::Resolve => cmd_commit_resolve(input.repo.as_path(), sink),
-        CommitAction::Abort => cmd_commit_abort(input.repo.as_path(), sink),
     }
 }

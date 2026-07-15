@@ -9,14 +9,44 @@ use crate::output::OutputSink;
 // g l / g s / g d  — read-only pass-throughs
 // ---------------------------------------------------------------------------
 
-pub fn cmd_log(dir: &Path, sink: &impl OutputSink) -> Result<()> {
-    git_passthrough(dir, &["log"], sink)
+pub struct LogHandler<'a, O: OutputSink> {
+    sink: &'a O,
 }
 
-pub fn cmd_status(dir: &Path, sink: &impl OutputSink) -> Result<()> {
-    git_passthrough(dir, &["status"], sink)
+impl<'a, O: OutputSink> LogHandler<'a, O> {
+    pub const fn new(sink: &'a O) -> Self {
+        Self { sink }
+    }
+
+    pub fn handle(&self, dir: &Path) -> Result<()> {
+        git_passthrough(dir, &["log"], self.sink)
+    }
 }
 
-pub fn cmd_diff(dir: &Path, sink: &impl OutputSink) -> Result<()> {
-    git_passthrough(dir, &["diff"], sink)
+pub struct StatusHandler<'a, O: OutputSink> {
+    sink: &'a O,
+}
+
+impl<'a, O: OutputSink> StatusHandler<'a, O> {
+    pub const fn new(sink: &'a O) -> Self {
+        Self { sink }
+    }
+
+    pub fn handle(&self, dir: &Path) -> Result<()> {
+        git_passthrough(dir, &["status"], self.sink)
+    }
+}
+
+pub struct DiffHandler<'a, O: OutputSink> {
+    sink: &'a O,
+}
+
+impl<'a, O: OutputSink> DiffHandler<'a, O> {
+    pub const fn new(sink: &'a O) -> Self {
+        Self { sink }
+    }
+
+    pub fn handle(&self, dir: &Path) -> Result<()> {
+        git_passthrough(dir, &["diff"], self.sink)
+    }
 }

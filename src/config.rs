@@ -97,16 +97,26 @@ impl RealTrunkConfig {
     }
 }
 
-pub fn cmd_config(
-    co_authors_required: Option<bool>,
-    auto_update_period: Option<u64>,
-    config: &impl TrunkConfig,
-) -> Result<()> {
-    if let Some(required) = co_authors_required {
-        config.set_co_authors_required(required)?;
+pub struct ConfigHandler<'a, TC: TrunkConfig> {
+    config: &'a TC,
+}
+
+impl<'a, TC: TrunkConfig> ConfigHandler<'a, TC> {
+    pub const fn new(config: &'a TC) -> Self {
+        Self { config }
     }
-    if let Some(period) = auto_update_period {
-        config.set_auto_update_period(period)?;
+
+    pub fn handle(
+        &self,
+        co_authors_required: Option<bool>,
+        auto_update_period: Option<u64>,
+    ) -> Result<()> {
+        if let Some(required) = co_authors_required {
+            self.config.set_co_authors_required(required)?;
+        }
+        if let Some(period) = auto_update_period {
+            self.config.set_auto_update_period(period)?;
+        }
+        Ok(())
     }
-    Ok(())
 }

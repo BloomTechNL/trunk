@@ -3,7 +3,26 @@ use git2::{Repository, ResetType, Status, StatusOptions};
 use std::fs;
 use std::path::Path;
 
-pub fn cmd_reset(dir: &Path) -> Result<()> {
+pub struct ResetHandler;
+
+impl Default for ResetHandler {
+    fn default() -> Self {
+        Self
+    }
+}
+
+impl ResetHandler {
+    #[must_use]
+    pub const fn new() -> Self {
+        Self
+    }
+
+    pub fn handle(&self, dir: &Path) -> Result<()> {
+        cmd_reset(dir)
+    }
+}
+
+fn cmd_reset(dir: &Path) -> Result<()> {
     let repo = Repository::discover(dir)
         .with_context(|| format!("Failed to discover git repository from {dir:?}"))?;
 
