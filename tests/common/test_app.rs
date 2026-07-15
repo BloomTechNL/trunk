@@ -37,6 +37,18 @@ impl TestApp {
         }
     }
 
+    fn dispatch(&self, command: Commands, dir: &Path) -> anyhow::Result<()> {
+        self.app()
+            .dispatch_command(Cli { command }, dir.to_path_buf())
+    }
+
+    fn dispatch_and_capture(&self, command: Commands, dir: &Path) -> String {
+        self.app()
+            .dispatch_command(Cli { command }, dir.to_path_buf())
+            .unwrap_or_else(|_| panic!("command should succeed"));
+        self.output.take()
+    }
+
     const fn app(
         &self,
     ) -> AppService<
@@ -79,15 +91,13 @@ impl TestApp {
 
     pub fn add_alias(&self, alias: &str, name: &str, email: &str) -> anyhow::Result<()> {
         let path = self.base_dir.path().to_path_buf();
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::AddAlias {
-                    alias: alias.to_string(),
-                    name: name.to_string(),
-                    email: email.to_string(),
-                },
+        self.dispatch(
+            Commands::AddAlias {
+                alias: alias.to_string(),
+                name: name.to_string(),
+                email: email.to_string(),
             },
-            path,
+            &path,
         )
     }
 
@@ -97,126 +107,94 @@ impl TestApp {
         co_authors_required: Option<bool>,
         auto_update_period: Option<u64>,
     ) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Config {
-                    co_authors_required,
-                    auto_update_period,
-                },
+        self.dispatch(
+            Commands::Config {
+                co_authors_required,
+                auto_update_period,
             },
-            dir.to_path_buf(),
+            dir,
         )
     }
 
     pub fn commit(&self, dir: &Path, message: &str, co_authors: Vec<&str>) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Commit {
-                    message: Some(message.to_string()),
-                    co_authors: co_authors.iter().map(|s| s.to_string()).collect(),
-                    resolve: false,
-                    abort: false,
-                },
+        self.dispatch(
+            Commands::Commit {
+                message: Some(message.to_string()),
+                co_authors: co_authors.iter().map(|s| s.to_string()).collect(),
+                resolve: false,
+                abort: false,
             },
-            dir.to_path_buf(),
+            dir,
         )
     }
 
     pub fn commit_resolve(&self, dir: &Path) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Commit {
-                    message: None,
-                    co_authors: vec![],
-                    resolve: true,
-                    abort: false,
-                },
+        self.dispatch(
+            Commands::Commit {
+                message: None,
+                co_authors: vec![],
+                resolve: true,
+                abort: false,
             },
-            dir.to_path_buf(),
+            dir,
         )
     }
 
     pub fn commit_abort(&self, dir: &Path) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Commit {
-                    message: None,
-                    co_authors: vec![],
-                    resolve: false,
-                    abort: true,
-                },
+        self.dispatch(
+            Commands::Commit {
+                message: None,
+                co_authors: vec![],
+                resolve: false,
+                abort: true,
             },
-            dir.to_path_buf(),
+            dir,
         )
     }
 
     pub fn reset(&self, dir: &Path) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Reset,
-            },
-            dir.to_path_buf(),
-        )
+        self.dispatch(Commands::Reset, dir)
     }
 
     pub fn fart(&self, dir: &Path) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Fart,
-            },
-            dir.to_path_buf(),
-        )
+        self.dispatch(Commands::Fart, dir)
     }
 
     pub fn revert(&self, dir: &Path, hash: &str) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Revert {
-                    resolve: false,
-                    abort: false,
-                    noninteractive: true,
-                    hash: Some(hash.to_string()),
-                },
+        self.dispatch(
+            Commands::Revert {
+                resolve: false,
+                abort: false,
+                noninteractive: true,
+                hash: Some(hash.to_string()),
             },
-            dir.to_path_buf(),
+            dir,
         )
     }
 
     pub fn revert_resolve(&self, dir: &Path) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Revert {
-                    resolve: true,
-                    abort: false,
-                    noninteractive: true,
-                    hash: None,
-                },
+        self.dispatch(
+            Commands::Revert {
+                resolve: true,
+                abort: false,
+                noninteractive: true,
+                hash: None,
             },
-            dir.to_path_buf(),
+            dir,
         )
     }
 
     pub fn time_travel(&self, dir: &Path, target: &str) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::TimeTravel {
-                    target: target.to_string(),
-                },
+        self.dispatch(
+            Commands::TimeTravel {
+                target: target.to_string(),
             },
-            dir.to_path_buf(),
+            dir,
         )
     }
 
     pub fn log(&self, dir: &Path) -> String {
-        self.app()
-            .dispatch_command(
-                Cli {
-                    command: Commands::Log,
-                },
-                dir.to_path_buf(),
-            )
-            .expect("g l should succeed");
-        self.output.take()
+        self.dispatch_and_capture(Commands::Log, dir)
     }
 
     pub fn commit_hashes(&self, dir: &Path) -> Vec<String> {
@@ -228,44 +206,18 @@ impl TestApp {
     }
 
     pub fn status(&self, dir: &Path) -> String {
-        self.app()
-            .dispatch_command(
-                Cli {
-                    command: Commands::Status,
-                },
-                dir.to_path_buf(),
-            )
-            .expect("g s should succeed");
-        self.output.take()
+        self.dispatch_and_capture(Commands::Status, dir)
     }
 
     pub fn diff(&self, dir: &Path) -> String {
-        self.app()
-            .dispatch_command(
-                Cli {
-                    command: Commands::Diff,
-                },
-                dir.to_path_buf(),
-            )
-            .expect("g d should succeed");
-        self.output.take()
+        self.dispatch_and_capture(Commands::Diff, dir)
     }
 
     pub fn pull(&self, dir: &Path) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Pull,
-            },
-            dir.to_path_buf(),
-        )
+        self.dispatch(Commands::Pull, dir)
     }
 
     pub fn update(&self, dir: &Path) -> anyhow::Result<()> {
-        self.app().dispatch_command(
-            Cli {
-                command: Commands::Update,
-            },
-            dir.to_path_buf(),
-        )
+        self.dispatch(Commands::Update, dir)
     }
 }
