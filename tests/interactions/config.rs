@@ -12,7 +12,6 @@ impl Interaction for Config {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
         trunk
-            .app
             .config(
                 &asc.actor_context(actor).working_dir,
                 self.co_authors_required,

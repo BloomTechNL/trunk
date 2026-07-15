@@ -8,7 +8,6 @@ impl Interaction for AbortCommit {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
         trunk
-            .app
             .commit_abort(&asc.actor_context(actor).working_dir)
             .expect("g c --abort should succeed");
     }

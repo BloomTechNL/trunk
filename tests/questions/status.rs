@@ -8,6 +8,6 @@ impl Question<String> for Status {
     fn answered_by(&self, actor: &Actor) -> String {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
-        trunk.app.status(&asc.actor_context(actor).working_dir)
+        trunk.status(&asc.actor_context(actor).working_dir)
     }
 }

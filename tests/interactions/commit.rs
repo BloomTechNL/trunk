@@ -12,11 +12,10 @@ impl Interaction for Commit {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
         trunk
-            .app
             .commit(
                 &asc.actor_context(actor).working_dir,
                 self.message,
-                self.co_authors.iter().map(|s| *s).collect(),
+                &self.co_authors,
             )
             .expect("g c should succeed");
     }

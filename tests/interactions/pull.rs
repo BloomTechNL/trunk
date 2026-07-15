@@ -9,7 +9,6 @@ impl Interaction for Pull {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
         trunk
-            .app
             .pull(&asc.actor_context(actor).working_dir)
             .expect("g p should succeed");
     }

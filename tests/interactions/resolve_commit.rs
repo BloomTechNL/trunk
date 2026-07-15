@@ -8,7 +8,6 @@ impl Interaction for ResolveCommit {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
         trunk
-            .app
             .commit_resolve(&asc.actor_context(actor).working_dir)
             .expect("g c --resolve should succeed");
     }

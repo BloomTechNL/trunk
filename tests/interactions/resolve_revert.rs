@@ -8,7 +8,6 @@ impl Interaction for ResolveRevert {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
         trunk
-            .app
             .revert_resolve(&asc.actor_context(actor).working_dir)
             .expect("g rv --resolve should succeed");
     }

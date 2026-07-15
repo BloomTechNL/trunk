@@ -8,6 +8,6 @@ impl Interaction for Update {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
         let dir = asc.actor_context_mut(actor).working_dir.clone();
-        trunk.app.update(&dir).expect("Update should succeed");
+        trunk.update(&dir).expect("Update should succeed");
     }
 }

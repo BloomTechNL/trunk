@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use g_cli::config::{Config, TrunkConfig};
 use std::cell::RefCell;
 

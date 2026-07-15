@@ -10,7 +10,6 @@ impl Interaction for TimeTravel {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
         trunk
-            .app
             .time_travel(&asc.actor_context(actor).working_dir, self.target)
             .expect("g tt should succeed");
     }

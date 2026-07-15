@@ -12,7 +12,6 @@ impl Interaction for AddAlias {
     fn perform_as(&self, actor: &Actor) {
         let trunk = UseTrunk::by(actor);
         trunk
-            .app
             .add_alias(self.alias, self.name, self.email)
             .expect("add_alias should succeed");
     }

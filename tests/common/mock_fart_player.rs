@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use g_cli::FartPlayer;
 use std::cell::Cell;
 use std::path::Path;

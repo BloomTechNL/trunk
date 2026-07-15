@@ -5,4 +5,3 @@ pub mod mock_clock;
 pub mod mock_fart_player;
 pub mod mock_last_update_store;
 pub mod mock_updater;
-pub mod test_app;

@@ -8,7 +8,6 @@ impl Interaction for Reset {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
         trunk
-            .app
             .reset(&asc.actor_context(actor).working_dir)
             .expect("g r should succeed");
     }

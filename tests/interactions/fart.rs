@@ -8,7 +8,6 @@ impl Interaction for Fart {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
         trunk
-            .app
             .fart(&asc.actor_context(actor).working_dir)
             .expect("Fart should succeed");
     }

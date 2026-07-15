@@ -6,9 +6,9 @@ use screenplay::Actor;
 
 pub fn developer_bob(ctx: &ScenarioContext) -> Actor {
     let trunk = UseTrunk::new();
-    let flag = trunk.app.fart_flag();
-    let vers = trunk.app.update_flag();
-    let clock = trunk.app.clock_flag();
+    let flag = trunk.fart_flag();
+    let vers = trunk.update_flag();
+    let clock = trunk.clock_flag();
     Actor::new("bob")
         .who_can(AccessScenarioContext::new(ctx))
         .who_can(trunk)
@@ -21,9 +21,9 @@ pub fn developer_bob(ctx: &ScenarioContext) -> Actor {
 
 pub fn developer_kent(ctx: &ScenarioContext) -> Actor {
     let trunk = UseTrunk::new();
-    let flag = trunk.app.fart_flag();
-    let vers = trunk.app.update_flag();
-    let clock = trunk.app.clock_flag();
+    let flag = trunk.fart_flag();
+    let vers = trunk.update_flag();
+    let clock = trunk.clock_flag();
     Actor::new("kent")
         .who_can(AccessScenarioContext::new(ctx))
         .who_can(trunk)

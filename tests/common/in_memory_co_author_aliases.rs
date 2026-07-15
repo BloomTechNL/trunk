@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use g_cli::CoAuthorAliases;
 use std::cell::RefCell;
 use std::collections::HashMap;
