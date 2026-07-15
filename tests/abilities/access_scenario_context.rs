@@ -53,6 +53,10 @@ impl AccessScenarioContext {
         Ref::map(self.context.borrow(), |ctx| &ctx.actors[actor.name()])
     }
 
+    pub fn base_dir(&self) -> PathBuf {
+        self.context.borrow().base_dir.path().to_path_buf()
+    }
+
     pub fn actor_context_mut(&self, actor: &Actor) -> RefMut<ActorContext> {
         RefMut::map(self.context.borrow_mut(), |ctx| {
             ctx.actors.entry(actor.name()).or_insert(ActorContext {

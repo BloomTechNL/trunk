@@ -8,10 +8,8 @@ use g_cli::container::Dependencies;
 use g_cli::{Cli, Commands};
 use screenplay::Ability;
 use std::path::Path;
-use tempfile::TempDir;
 
 pub struct UseTrunk {
-    pub base_dir: TempDir,
     fart_player: MockFartPlayer,
     co_author_aliases: InMemoryCoAuthorAliases,
     trunk_config: InMemoryTrunkConfig,
@@ -24,14 +22,12 @@ impl Ability for UseTrunk {}
 #[allow(dead_code)]
 impl UseTrunk {
     pub fn new() -> Self {
-        let base_dir = TempDir::new().unwrap();
         let fart_player = MockFartPlayer::new();
         let co_author_aliases = InMemoryCoAuthorAliases::new();
         let trunk_config = InMemoryTrunkConfig::new();
         let output = CapturingSink::new();
         let updater = MockUpdater::new();
         Self {
-            base_dir,
             fart_player,
             co_author_aliases,
             trunk_config,

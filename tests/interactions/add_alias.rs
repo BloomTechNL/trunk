@@ -1,4 +1,4 @@
-use crate::abilities::UseTrunk;
+use crate::abilities::{AccessScenarioContext, UseTrunk};
 use g_cli::Commands;
 use screenplay::{Ability, Actor, Interaction};
 
@@ -12,7 +12,8 @@ pub struct AddAlias {
 impl Interaction for AddAlias {
     fn perform_as(&self, actor: &Actor) {
         let trunk = UseTrunk::by(actor);
-        let path = trunk.base_dir.path().to_path_buf();
+        let asc = AccessScenarioContext::by(actor);
+        let path = asc.base_dir();
         trunk
             .dispatch(
                 Commands::AddAlias {
