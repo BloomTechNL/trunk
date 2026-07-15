@@ -3,14 +3,12 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
-use crate::commit::{CommitHandler, CommitInput};
-use crate::config::{ConfigHandler, TrunkConfig};
+use crate::commit::CommitInput;
+use crate::config::TrunkConfig;
+use crate::container::HandlerContainer;
 use crate::output::OutputSink;
-use crate::revert::{RevertHandler, RevertInput};
-use crate::{
-    has_stash, play_fart_sound::FartPlayer, CoAuthorAliases, DiffHandler, Handler, LogHandler,
-    PullHandler, ResetHandler, StatusHandler, TimeTravelHandler, Updater,
-};
+use crate::revert::RevertInput;
+use crate::{has_stash, play_fart_sound::FartPlayer, CoAuthorAliases, Handler, Updater};
 
 fn version_string() -> &'static str {
     option_env!("GIT_HASH").map_or("unknown", |h| h)
@@ -106,59 +104,6 @@ pub enum Commands {
     /// Update g to the latest version
     #[command(name = "update")]
     Update,
-}
-
-struct HandlerContainer<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> {
-    aliases: &'a CA,
-    config: &'a TC,
-    sink: &'a O,
-}
-
-impl<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> HandlerContainer<'a, CA, TC, O> {
-    const fn new(aliases: &'a CA, config: &'a TC, sink: &'a O) -> Self {
-        Self {
-            aliases,
-            config,
-            sink,
-        }
-    }
-
-    const fn commit(&self) -> CommitHandler<'_, CA, TC, O> {
-        CommitHandler::new(self.aliases, self.config, self.sink)
-    }
-
-    const fn pull(&self) -> PullHandler<'_, O> {
-        PullHandler::new(self.sink)
-    }
-
-    const fn log(&self) -> LogHandler<'_, O> {
-        LogHandler::new(self.sink)
-    }
-
-    const fn status(&self) -> StatusHandler<'_, O> {
-        StatusHandler::new(self.sink)
-    }
-
-    const fn diff(&self) -> DiffHandler<'_, O> {
-        DiffHandler::new(self.sink)
-    }
-
-    const fn time_travel(&self) -> TimeTravelHandler<'_, O> {
-        TimeTravelHandler::new(self.sink)
-    }
-
-    #[allow(clippy::unused_self)]
-    const fn reset(&self) -> ResetHandler {
-        ResetHandler::new()
-    }
-
-    const fn revert(&self) -> RevertHandler<'_, O> {
-        RevertHandler::new(self.sink)
-    }
-
-    const fn config(&self) -> ConfigHandler<'_, TC> {
-        ConfigHandler::new(self.config)
-    }
 }
 
 pub fn run_cli(

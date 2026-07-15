@@ -3,6 +3,7 @@ pub mod clock;
 pub mod co_author_aliases;
 pub mod commit;
 pub mod config;
+pub mod container;
 pub mod git;
 pub mod handler;
 pub mod has_stash;
