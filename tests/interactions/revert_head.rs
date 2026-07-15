@@ -1,4 +1,5 @@
 use crate::abilities::{AccessScenarioContext, UseTrunk};
+use g_cli::Commands;
 use screenplay::{Ability, Actor, Interaction};
 
 pub struct RevertHead;
@@ -7,9 +8,24 @@ impl Interaction for RevertHead {
     fn perform_as(&self, actor: &Actor) {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
-        let hash = &trunk.commit_hashes(&asc.actor_context(actor).working_dir)[0];
+        let dir = &asc.actor_context(actor).working_dir;
+        let log = trunk.dispatch_and_capture(Commands::Log, dir);
+        let hash = log
+            .lines()
+            .filter(|l| l.starts_with("commit "))
+            .map(|l| l.strip_prefix("commit ").unwrap().to_string())
+            .next()
+            .unwrap();
         trunk
-            .revert(&asc.actor_context(actor).working_dir, hash)
+            .dispatch(
+                Commands::Revert {
+                    resolve: false,
+                    abort: false,
+                    noninteractive: true,
+                    hash: Some(hash),
+                },
+                dir,
+            )
             .expect("g rv should succeed");
     }
 }

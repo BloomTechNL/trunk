@@ -1,4 +1,5 @@
 use crate::abilities::{AccessScenarioContext, UseTrunk};
+use g_cli::Commands;
 use screenplay::{Ability, Actor, Interaction};
 
 /// Run `g p` in the actor's repo.
@@ -9,7 +10,7 @@ impl Interaction for Pull {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
         trunk
-            .pull(&asc.actor_context(actor).working_dir)
+            .dispatch(Commands::Pull, &asc.actor_context(actor).working_dir)
             .expect("g p should succeed");
     }
 }

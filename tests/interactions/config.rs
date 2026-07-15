@@ -1,4 +1,5 @@
 use crate::abilities::{AccessScenarioContext, UseTrunk};
+use g_cli::Commands;
 use screenplay::{Ability, Actor, Interaction};
 
 /// Configure trunk settings via `g config`.
@@ -12,10 +13,12 @@ impl Interaction for Config {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
         trunk
-            .config(
+            .dispatch(
+                Commands::Config {
+                    co_authors_required: self.co_authors_required,
+                    auto_update_period: self.auto_update_period,
+                },
                 &asc.actor_context(actor).working_dir,
-                self.co_authors_required,
-                self.auto_update_period,
             )
             .expect("g config should succeed");
     }

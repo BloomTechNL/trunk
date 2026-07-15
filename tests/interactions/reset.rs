@@ -1,4 +1,5 @@
 use crate::abilities::{AccessScenarioContext, UseTrunk};
+use g_cli::Commands;
 use screenplay::{Ability, Actor, Interaction};
 
 pub struct Reset;
@@ -8,7 +9,7 @@ impl Interaction for Reset {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
         trunk
-            .reset(&asc.actor_context(actor).working_dir)
+            .dispatch(Commands::Reset, &asc.actor_context(actor).working_dir)
             .expect("g r should succeed");
     }
 }

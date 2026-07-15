@@ -1,4 +1,5 @@
 use crate::abilities::{AccessScenarioContext, UseTrunk};
+use g_cli::Commands;
 use screenplay::{Ability, Actor, Interaction};
 
 pub struct ResolveCommit;
@@ -8,7 +9,15 @@ impl Interaction for ResolveCommit {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
         trunk
-            .commit_resolve(&asc.actor_context(actor).working_dir)
+            .dispatch(
+                Commands::Commit {
+                    message: None,
+                    co_authors: vec![],
+                    resolve: true,
+                    abort: false,
+                },
+                &asc.actor_context(actor).working_dir,
+            )
             .expect("g c --resolve should succeed");
     }
 }

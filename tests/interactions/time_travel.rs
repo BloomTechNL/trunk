@@ -1,4 +1,5 @@
 use crate::abilities::{AccessScenarioContext, UseTrunk};
+use g_cli::Commands;
 use screenplay::{Ability, Actor, Interaction};
 
 pub struct TimeTravel {
@@ -10,7 +11,12 @@ impl Interaction for TimeTravel {
         let trunk = UseTrunk::by(actor);
         let asc = AccessScenarioContext::by(actor);
         trunk
-            .time_travel(&asc.actor_context(actor).working_dir, self.target)
+            .dispatch(
+                Commands::TimeTravel {
+                    target: self.target.to_string(),
+                },
+                &asc.actor_context(actor).working_dir,
+            )
             .expect("g tt should succeed");
     }
 }
