@@ -108,6 +108,59 @@ pub enum Commands {
     Update,
 }
 
+struct HandlerContainer<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> {
+    aliases: &'a CA,
+    config: &'a TC,
+    sink: &'a O,
+}
+
+impl<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> HandlerContainer<'a, CA, TC, O> {
+    const fn new(aliases: &'a CA, config: &'a TC, sink: &'a O) -> Self {
+        Self {
+            aliases,
+            config,
+            sink,
+        }
+    }
+
+    const fn commit(&self) -> CommitHandler<'_, CA, TC, O> {
+        CommitHandler::new(self.aliases, self.config, self.sink)
+    }
+
+    const fn pull(&self) -> PullHandler<'_, O> {
+        PullHandler::new(self.sink)
+    }
+
+    const fn log(&self) -> LogHandler<'_, O> {
+        LogHandler::new(self.sink)
+    }
+
+    const fn status(&self) -> StatusHandler<'_, O> {
+        StatusHandler::new(self.sink)
+    }
+
+    const fn diff(&self) -> DiffHandler<'_, O> {
+        DiffHandler::new(self.sink)
+    }
+
+    const fn time_travel(&self) -> TimeTravelHandler<'_, O> {
+        TimeTravelHandler::new(self.sink)
+    }
+
+    #[allow(clippy::unused_self)]
+    const fn reset(&self) -> ResetHandler {
+        ResetHandler::new()
+    }
+
+    const fn revert(&self) -> RevertHandler<'_, O> {
+        RevertHandler::new(self.sink)
+    }
+
+    const fn config(&self) -> ConfigHandler<'_, TC> {
+        ConfigHandler::new(self.config)
+    }
+}
+
 pub fn run_cli(
     cli: Cli,
     dir: &Path,
@@ -121,15 +174,7 @@ pub fn run_cli(
         let _ = fart_player.play_asynchronously();
     }
 
-    let commit_handler = CommitHandler::new(aliases, config, output);
-    let pull_handler = PullHandler::new(output);
-    let log_handler = LogHandler::new(output);
-    let status_handler = StatusHandler::new(output);
-    let diff_handler = DiffHandler::new(output);
-    let time_travel_handler = TimeTravelHandler::new(output);
-    let reset_handler = ResetHandler::new();
-    let revert_handler = RevertHandler::new(output);
-    let config_handler = ConfigHandler::new(config);
+    let container = HandlerContainer::new(aliases, config, output);
 
     match cli.command {
         Commands::Commit {
@@ -137,25 +182,25 @@ pub fn run_cli(
             co_authors,
             resolve,
             abort,
-        } => commit_handler.handle(&CommitInput::from_cli(
+        } => container.commit().handle(&CommitInput::from_cli(
             PathBuf::from(dir),
             message,
             co_authors,
             resolve,
             abort,
         )?),
-        Commands::Pull => pull_handler.handle(dir),
-        Commands::Log => log_handler.handle(dir),
-        Commands::Status => status_handler.handle(dir),
-        Commands::Diff => diff_handler.handle(dir),
-        Commands::TimeTravel { target } => time_travel_handler.handle((dir, &target)),
-        Commands::Reset => reset_handler.handle(dir),
+        Commands::Pull => container.pull().handle(dir),
+        Commands::Log => container.log().handle(dir),
+        Commands::Status => container.status().handle(dir),
+        Commands::Diff => container.diff().handle(dir),
+        Commands::TimeTravel { target } => container.time_travel().handle((dir, &target)),
+        Commands::Reset => container.reset().handle(dir),
         Commands::Revert {
             hash,
             resolve,
             abort,
             noninteractive,
-        } => revert_handler.handle(&RevertInput::from_cli(
+        } => container.revert().handle(&RevertInput::from_cli(
             PathBuf::from(dir),
             hash,
             resolve,
@@ -171,7 +216,9 @@ pub fn run_cli(
         Commands::Config {
             co_authors_required,
             auto_update_period,
-        } => config_handler.handle((co_authors_required, auto_update_period)),
+        } => container
+            .config()
+            .handle((co_authors_required, auto_update_period)),
         Commands::Update => updater.update(output),
     }
 }
