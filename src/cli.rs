@@ -121,31 +121,41 @@ pub fn run_cli(
         let _ = fart_player.play_asynchronously();
     }
 
+    let commit_handler = CommitHandler::new(aliases, config, output);
+    let pull_handler = PullHandler::new(output);
+    let log_handler = LogHandler::new(output);
+    let status_handler = StatusHandler::new(output);
+    let diff_handler = DiffHandler::new(output);
+    let time_travel_handler = TimeTravelHandler::new(output);
+    let reset_handler = ResetHandler::new();
+    let revert_handler = RevertHandler::new(output);
+    let config_handler = ConfigHandler::new(config);
+
     match cli.command {
         Commands::Commit {
             message,
             co_authors,
             resolve,
             abort,
-        } => CommitHandler::new(aliases, config, output).handle(&CommitInput::from_cli(
+        } => commit_handler.handle(&CommitInput::from_cli(
             PathBuf::from(dir),
             message,
             co_authors,
             resolve,
             abort,
         )?),
-        Commands::Pull => PullHandler::new(output).handle(dir),
-        Commands::Log => LogHandler::new(output).handle(dir),
-        Commands::Status => StatusHandler::new(output).handle(dir),
-        Commands::Diff => DiffHandler::new(output).handle(dir),
-        Commands::TimeTravel { target } => TimeTravelHandler::new(output).handle((dir, &target)),
-        Commands::Reset => ResetHandler::new().handle(dir),
+        Commands::Pull => pull_handler.handle(dir),
+        Commands::Log => log_handler.handle(dir),
+        Commands::Status => status_handler.handle(dir),
+        Commands::Diff => diff_handler.handle(dir),
+        Commands::TimeTravel { target } => time_travel_handler.handle((dir, &target)),
+        Commands::Reset => reset_handler.handle(dir),
         Commands::Revert {
             hash,
             resolve,
             abort,
             noninteractive,
-        } => RevertHandler::new(output).handle(&RevertInput::from_cli(
+        } => revert_handler.handle(&RevertInput::from_cli(
             PathBuf::from(dir),
             hash,
             resolve,
@@ -161,7 +171,7 @@ pub fn run_cli(
         Commands::Config {
             co_authors_required,
             auto_update_period,
-        } => ConfigHandler::new(config).handle((co_authors_required, auto_update_period)),
+        } => config_handler.handle((co_authors_required, auto_update_period)),
         Commands::Update => updater.update(output),
     }
 }
