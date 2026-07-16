@@ -1,9 +1,10 @@
 use crate::config::TrunkConfig;
 use crate::output::OutputSink;
 use crate::play_fart_sound::FartPlayer;
-use crate::slot::Slot;
 use crate::update::Updater;
 use crate::CoAuthorAliases;
+
+use super::slot::Slot;
 
 pub struct Dependencies<
     FP: FartPlayer,

@@ -4,8 +4,8 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 use crate::commit::CommitInput;
+use crate::composition_root::Dependencies;
 use crate::config::TrunkConfig;
-use crate::dependencies::Dependencies;
 use crate::handler_container::HandlerContainer;
 use crate::output::OutputSink;
 use crate::revert::RevertInput;
@@ -169,32 +169,5 @@ pub fn run_cli(
             .config()
             .handle((co_authors_required, auto_update_period)),
         Commands::Update => deps.updater().update(deps.output()),
-    }
-}
-
-pub struct AppService<
-    FP: FartPlayer,
-    CA: CoAuthorAliases,
-    U: Updater,
-    O: OutputSink,
-    TC: TrunkConfig,
-> {
-    deps: Dependencies<FP, CA, U, O, TC>,
-}
-
-impl<FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: TrunkConfig>
-    AppService<FP, CA, U, O, TC>
-{
-    #[must_use]
-    pub const fn new(deps: Dependencies<FP, CA, U, O, TC>) -> Self {
-        Self { deps }
-    }
-
-    pub fn dispatch_command(&self, cli: Cli, repo: PathBuf) -> Result<()> {
-        if !matches!(cli.command, Commands::Update) {
-            self.deps.updater().auto_update(self.deps.trunk_config())?;
-        }
-
-        run_cli(cli, repo.as_path(), &self.deps)
     }
 }

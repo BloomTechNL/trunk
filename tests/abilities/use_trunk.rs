@@ -3,9 +3,7 @@ use crate::common::in_memory_co_author_aliases::InMemoryCoAuthorAliases;
 use crate::common::in_memory_trunk_config::InMemoryTrunkConfig;
 use crate::common::mock_fart_player::MockFartPlayer;
 use crate::common::mock_updater::MockUpdater;
-use g_cli::cli::AppService;
-use g_cli::dependencies::Dependencies;
-use g_cli::slot::Slot;
+use g_cli::composition_root::{AppService, Dependencies, Slot};
 use g_cli::{Cli, Commands};
 use screenplay::Ability;
 use std::path::Path;
@@ -38,13 +36,12 @@ impl UseTrunk {
     }
 
     pub fn dispatch(&self, command: Commands, dir: &Path) -> anyhow::Result<()> {
-        self.app()
-            .dispatch_command(Cli { command }, dir.to_path_buf())
+        self.app().dispatch_command(Cli { command }, dir)
     }
 
     pub fn dispatch_and_capture(&self, command: Commands, dir: &Path) -> String {
         self.app()
-            .dispatch_command(Cli { command }, dir.to_path_buf())
+            .dispatch_command(Cli { command }, dir)
             .unwrap_or_else(|_| panic!("command should succeed"));
         self.output.take()
     }
