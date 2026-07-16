@@ -1,15 +1,17 @@
 #![allow(dead_code)]
 use g_cli::config::{Config, TrunkConfig};
 use std::cell::RefCell;
+use std::rc::Rc;
 
+#[derive(Clone)]
 pub struct InMemoryTrunkConfig {
-    config: RefCell<Config>,
+    config: Rc<RefCell<Config>>,
 }
 
 impl InMemoryTrunkConfig {
     pub fn new() -> Self {
         Self {
-            config: RefCell::new(Config::default()),
+            config: Rc::new(RefCell::new(Config::default())),
         }
     }
 }

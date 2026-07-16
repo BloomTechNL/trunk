@@ -111,7 +111,6 @@ pub fn run_cli(
     cli: Cli,
     dir: &Path,
     deps: &Dependencies<
-        '_,
         impl FartPlayer,
         impl CoAuthorAliases,
         impl Updater,
@@ -120,10 +119,11 @@ pub fn run_cli(
     >,
 ) -> Result<()> {
     if cli.command != Commands::Fart && has_stash(dir) {
-        let _ = deps.fart_player.play_asynchronously();
+        let _ = deps.fart_player().play_asynchronously();
     }
 
-    let container = HandlerContainer::new(deps.co_author_aliases, deps.trunk_config, deps.output);
+    let container =
+        HandlerContainer::new(deps.co_author_aliases(), deps.trunk_config(), deps.output());
 
     match cli.command {
         Commands::Commit {
@@ -156,11 +156,11 @@ pub fn run_cli(
             abort,
             !noninteractive,
         )),
-        Commands::Fart => deps.fart_player.play(),
-        Commands::FartDaemon => deps.fart_player.run_daemon(dir),
+        Commands::Fart => deps.fart_player().play(),
+        Commands::FartDaemon => deps.fart_player().run_daemon(dir),
         Commands::AddAlias { alias, name, email } => {
             let alias = alias.trim_start_matches('@');
-            deps.co_author_aliases.add_alias(alias, &name, &email)
+            deps.co_author_aliases().add_alias(alias, &name, &email)
         }
         Commands::Config {
             co_authors_required,
@@ -168,32 +168,31 @@ pub fn run_cli(
         } => container
             .config()
             .handle((co_authors_required, auto_update_period)),
-        Commands::Update => deps.updater.update(deps.output),
+        Commands::Update => deps.updater().update(deps.output()),
     }
 }
 
 pub struct AppService<
-    'a,
     FP: FartPlayer,
     CA: CoAuthorAliases,
     U: Updater,
     O: OutputSink,
     TC: TrunkConfig,
 > {
-    deps: Dependencies<'a, FP, CA, U, O, TC>,
+    deps: Dependencies<FP, CA, U, O, TC>,
 }
 
-impl<'a, FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: TrunkConfig>
-    AppService<'a, FP, CA, U, O, TC>
+impl<FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: TrunkConfig>
+    AppService<FP, CA, U, O, TC>
 {
     #[must_use]
-    pub const fn new(deps: Dependencies<'a, FP, CA, U, O, TC>) -> Self {
+    pub const fn new(deps: Dependencies<FP, CA, U, O, TC>) -> Self {
         Self { deps }
     }
 
     pub fn dispatch_command(&self, cli: Cli, repo: PathBuf) -> Result<()> {
         if !matches!(cli.command, Commands::Update) {
-            self.deps.updater.auto_update(self.deps.trunk_config)?;
+            self.deps.updater().auto_update(self.deps.trunk_config())?;
         }
 
         run_cli(cli, repo.as_path(), &self.deps)

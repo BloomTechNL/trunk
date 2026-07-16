@@ -2,15 +2,17 @@
 use g_cli::CoAuthorAliases;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
+#[derive(Clone)]
 pub struct InMemoryCoAuthorAliases {
-    pub aliases: RefCell<HashMap<String, String>>,
+    pub aliases: Rc<RefCell<HashMap<String, String>>>,
 }
 
 impl InMemoryCoAuthorAliases {
     pub fn new() -> Self {
         Self {
-            aliases: RefCell::new(HashMap::new()),
+            aliases: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 }

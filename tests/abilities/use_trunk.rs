@@ -5,6 +5,7 @@ use crate::common::mock_fart_player::MockFartPlayer;
 use crate::common::mock_updater::MockUpdater;
 use g_cli::cli::AppService;
 use g_cli::dependencies::Dependencies;
+use g_cli::slot::Slot;
 use g_cli::{Cli, Commands};
 use screenplay::Ability;
 use std::path::Path;
@@ -48,23 +49,27 @@ impl UseTrunk {
         self.output.take()
     }
 
-    const fn app(
+    fn app(
         &self,
     ) -> AppService<
-        '_,
         MockFartPlayer,
         InMemoryCoAuthorAliases,
         MockUpdater,
         CapturingSink,
         InMemoryTrunkConfig,
     > {
-        let dependencies = Dependencies {
-            fart_player: &self.fart_player,
-            co_author_aliases: &self.co_author_aliases,
-            updater: &self.updater,
-            output: &self.output,
-            trunk_config: &self.trunk_config,
-        };
+        let fart_player = self.fart_player.clone();
+        let co_author_aliases = self.co_author_aliases.clone();
+        let updater = self.updater.clone();
+        let output = self.output.clone();
+        let trunk_config = self.trunk_config.clone();
+        let dependencies = Dependencies::new(
+            Slot::register(move || fart_player),
+            Slot::register(move || co_author_aliases),
+            Slot::register(move || updater),
+            Slot::register(move || output),
+            Slot::register(move || trunk_config),
+        );
         AppService::new(dependencies)
     }
 

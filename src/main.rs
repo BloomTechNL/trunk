@@ -5,6 +5,7 @@ use clap::Parser;
 use g_cli::cli::AppService;
 use g_cli::dependencies::Dependencies;
 use g_cli::output::StdoutSink;
+use g_cli::slot::Slot;
 use g_cli::{
     Cli, RealClock, RealCoAuthorAliases, RealFartPlayer, RealLastUpdateStore, RealTrunkConfig,
     RealUpdater,
@@ -22,20 +23,19 @@ fn main() {
 
     let config_dir = trunk_config_dir();
 
-    let co_author_aliases = RealCoAuthorAliases::new(config_dir.join("aliases"));
+    let aliases_path = config_dir.join("aliases");
+    let trunk_config_path = config_dir.join("trunk.json");
+    let last_update_path = config_dir.join("last_update");
 
-    let trunk_config = RealTrunkConfig::new(config_dir.join("trunk.json"));
-
-    let last_update_store = RealLastUpdateStore::new(config_dir.join("last_update"));
-    let updater = RealUpdater::new(RealClock, last_update_store);
-
-    let dependencies = Dependencies {
-        fart_player: &RealFartPlayer,
-        co_author_aliases: &co_author_aliases,
-        updater: &updater,
-        output: &StdoutSink,
-        trunk_config: &trunk_config,
-    };
+    let dependencies = Dependencies::new(
+        Slot::register(|| RealFartPlayer),
+        Slot::register(move || RealCoAuthorAliases::new(aliases_path)),
+        Slot::register(move || {
+            RealUpdater::new(RealClock, RealLastUpdateStore::new(last_update_path))
+        }),
+        Slot::register(|| StdoutSink),
+        Slot::register(move || RealTrunkConfig::new(trunk_config_path)),
+    );
 
     let app_service = AppService::new(dependencies);
 

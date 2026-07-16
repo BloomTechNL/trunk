@@ -15,6 +15,7 @@ pub mod pull;
 pub mod query;
 pub mod reset;
 pub mod revert;
+pub mod slot;
 pub mod time_travel;
 pub mod update;
 
@@ -30,5 +31,6 @@ pub use pull::PullHandler;
 pub use query::{DiffHandler, LogHandler, StatusHandler};
 pub use reset::ResetHandler;
 pub use revert::{get_revert_info, RevertHandler, RevertInfo};
+pub use slot::Slot;
 pub use time_travel::TimeTravelHandler;
 pub use update::{RealUpdater, Updater};
