@@ -4,7 +4,7 @@ use crate::common::in_memory_trunk_config::InMemoryTrunkConfig;
 use crate::common::mock_fart_player::MockFartPlayer;
 use crate::common::mock_updater::MockUpdater;
 use g_cli::cli::AppService;
-use g_cli::container::Dependencies;
+use g_cli::dependencies::Dependencies;
 use g_cli::{Cli, Commands};
 use screenplay::Ability;
 use std::path::Path;

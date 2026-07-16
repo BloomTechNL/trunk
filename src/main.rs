@@ -3,7 +3,7 @@ use std::process;
 
 use clap::Parser;
 use g_cli::cli::AppService;
-use g_cli::container::Dependencies;
+use g_cli::dependencies::Dependencies;
 use g_cli::output::StdoutSink;
 use g_cli::{
     Cli, RealClock, RealCoAuthorAliases, RealFartPlayer, RealLastUpdateStore, RealTrunkConfig,

@@ -5,7 +5,8 @@ use clap::{Parser, Subcommand};
 
 use crate::commit::CommitInput;
 use crate::config::TrunkConfig;
-use crate::container::{Dependencies, HandlerContainer};
+use crate::dependencies::Dependencies;
+use crate::handler_container::HandlerContainer;
 use crate::output::OutputSink;
 use crate::revert::RevertInput;
 use crate::{has_stash, play_fart_sound::FartPlayer, CoAuthorAliases, Handler, Updater};
