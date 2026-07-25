@@ -25,7 +25,7 @@ fn bob_commits_kent_pulls() {
             content: "hello world\n",
         },
         Commit {
-            message: "add hello.txt",
+            message: Some("add hello.txt"),
             co_authors: vec!["SOLO"],
         },
         Ensure::that(Log, contains("add hello.txt")),
@@ -55,14 +55,14 @@ fn commit_stages_deleted_files() {
             content: "goodbye\n",
         },
         Commit {
-            message: "add file that will be deleted",
+            message: Some("add file that will be deleted"),
             co_authors: vec!["SOLO"],
         },
         DeleteFile {
             name: "to_delete.txt",
         },
         Commit {
-            message: "delete the file",
+            message: Some("delete the file"),
             co_authors: vec!["SOLO"],
         },
         Ensure::that(Log, contains("delete the file")),
@@ -83,4 +83,22 @@ fn commit_stages_deleted_files() {
             is_false(),
         ),
     ));
+}
+
+#[test]
+fn missing_commit_message_is_rejected() {
+    let ctx = ScenarioContext::new(TestContext::new());
+    let bob = developer_bob(&ctx);
+
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "dev" },));
+    bob.attempts_to((InitialCommit,));
+
+    bob.attempts_to((Ensure::that(
+        doing(Commit {
+            message: None,
+            co_authors: vec!["SOLO"],
+        }),
+        fails().with_error("A commit message is required"),
+    ),));
 }

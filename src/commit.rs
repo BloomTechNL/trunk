@@ -225,7 +225,7 @@ impl CommitInput {
             CommitAction::Resolve
         } else {
             CommitAction::Commit {
-                message: message.unwrap(),
+                message: message.ok_or_else(|| anyhow::anyhow!("A commit message is required"))?,
                 co_authors: parse_co_authors(co_authors)?,
             }
         };

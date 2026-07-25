@@ -21,7 +21,7 @@ fn committing_solo_work() {
             content: "solo",
         },
         Commit {
-            message: "solo commit",
+            message: Some("solo commit"),
             co_authors: vec!["SOLO"],
         },
         Ensure::that(Log, contains("solo commit")),
@@ -46,7 +46,7 @@ fn committing_without_co_authors_is_rejected() {
         },
         Ensure::that(
             doing(Commit {
-                message: "no authors",
+                message: Some("no authors"),
                 co_authors: vec![],
             }),
             fails().with_error(
@@ -76,7 +76,7 @@ fn committing_with_a_known_alias() {
             content: "alias",
         },
         Commit {
-            message: "alias commit",
+            message: Some("alias commit"),
             co_authors: vec!["@jdoe"],
         },
         Ensure::that(Log, contains("alias commit")),
@@ -105,7 +105,7 @@ fn committing_with_an_unknown_alias_is_rejected() {
         },
         Ensure::that(
             doing(Commit {
-                message: "unknown alias",
+                message: Some("unknown alias"),
                 co_authors: vec!["@unknown"],
             }),
             fails().with_error("Unknown co-author alias: @unknown"),
@@ -138,7 +138,7 @@ fn committing_with_multiple_co_authors() {
             content: "multi",
         },
         Commit {
-            message: "multi commit",
+            message: Some("multi commit"),
             co_authors: vec!["@jdoe", "@asmith"],
         },
         Ensure::that(Log, contains("multi commit")),
@@ -171,7 +171,7 @@ fn combining_solo_with_other_co_authors_is_rejected() {
         },
         Ensure::that(
             doing(Commit {
-                message: "invalid commit",
+                message: Some("invalid commit"),
                 co_authors: vec!["@jdoe", "SOLO"],
             }),
             fails().with_error("SOLO cannot be combined with other co-authors."),
@@ -198,7 +198,7 @@ fn committing_without_co_authors_when_config_disabled() {
             content: "content",
         },
         Commit {
-            message: "commit without co-authors",
+            message: Some("commit without co-authors"),
             co_authors: vec![],
         },
         Ensure::that(Log, contains("commit without co-authors")),
@@ -230,7 +230,7 @@ fn committing_with_co_authors_when_config_disabled() {
             content: "content",
         },
         Commit {
-            message: "commit with co-author",
+            message: Some("commit with co-author"),
             co_authors: vec!["@jdoe"],
         },
         Ensure::that(Log, contains("Co-authored-by: John Doe <jdoe@example.com>")),
@@ -256,7 +256,7 @@ fn committing_solo_when_config_disabled() {
             content: "solo",
         },
         Commit {
-            message: "solo commit",
+            message: Some("solo commit"),
             co_authors: vec!["SOLO"],
         },
         Ensure::that(Log, contains("solo commit")),

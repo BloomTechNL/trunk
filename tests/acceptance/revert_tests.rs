@@ -19,7 +19,7 @@ fn reverting_a_commit() {
             content: "this will be reverted\n",
         },
         Commit {
-            message: "add file to revert",
+            message: Some("add file to revert"),
             co_authors: vec!["SOLO"],
         },
         RevertHead,
@@ -52,7 +52,7 @@ fn reverting_without_a_remote_tracking_branch() {
             content: "a\n",
         },
         Commit {
-            message: "add a",
+            message: Some("add a"),
             co_authors: vec!["SOLO"],
         },
     ));
@@ -63,7 +63,7 @@ fn reverting_without_a_remote_tracking_branch() {
             content: "b\n",
         },
         Commit {
-            message: "add b",
+            message: Some("add b"),
             co_authors: vec!["SOLO"],
         },
         RevertHead,

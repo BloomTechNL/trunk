@@ -21,7 +21,7 @@ fn time_travel_blocks_writes_and_now_restores() {
             content: "v1\n",
         },
         Commit {
-            message: "v1",
+            message: Some("v1"),
             co_authors: vec!["SOLO"],
         },
     ));
@@ -32,7 +32,7 @@ fn time_travel_blocks_writes_and_now_restores() {
             content: "v2\n",
         },
         Commit {
-            message: "v2",
+            message: Some("v2"),
             co_authors: vec!["SOLO"],
         },
         TimeTravel { target: "HEAD~1" },
@@ -42,7 +42,7 @@ fn time_travel_blocks_writes_and_now_restores() {
         },
         Ensure::that(
             doing(Commit {
-                message: "this should be blocked",
+                message: Some("this should be blocked"),
                 co_authors: vec!["SOLO"],
             }),
             fails().with_error("time travelling"),
@@ -57,7 +57,7 @@ fn time_travel_blocks_writes_and_now_restores() {
             content: "back\n",
         },
         Commit {
-            message: "commit after returning from time travel",
+            message: Some("commit after returning from time travel"),
             co_authors: vec!["SOLO"],
         },
         Ensure::that(Log, contains("commit after returning from time travel")),

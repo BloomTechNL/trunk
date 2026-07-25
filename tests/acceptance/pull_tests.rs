@@ -58,7 +58,7 @@ fn pull_succeeds_when_clean() {
             content: "feature\n",
         },
         Commit {
-            message: "add feature",
+            message: Some("add feature"),
             co_authors: vec!["SOLO"],
         },
     ));

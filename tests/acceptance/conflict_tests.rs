@@ -26,7 +26,7 @@ fn resolving_a_merge_conflict() {
             content: "version A\n",
         },
         Commit {
-            message: "clone_a: add shared",
+            message: Some("clone_a: add shared"),
             co_authors: vec!["SOLO"],
         },
     ));
@@ -44,7 +44,7 @@ fn resolving_a_merge_conflict() {
             content: "version A2\n",
         },
         Commit {
-            message: "clone_a: update shared",
+            message: Some("clone_a: update shared"),
             co_authors: vec!["SOLO"],
         },
     ));
@@ -52,7 +52,7 @@ fn resolving_a_merge_conflict() {
     kent.attempts_to((
         Ensure::that(
             doing(Commit {
-                message: "clone_b: conflicting change",
+                message: Some("clone_b: conflicting change"),
                 co_authors: vec!["SOLO"],
             }),
             fails(),
@@ -85,7 +85,7 @@ fn aborting_a_merge_conflict() {
             content: "original\n",
         },
         Commit {
-            message: "seed conflict file",
+            message: Some("seed conflict file"),
             co_authors: vec!["SOLO"],
         },
     ));
@@ -98,7 +98,7 @@ fn aborting_a_merge_conflict() {
             content: "clone_a update\n",
         },
         Commit {
-            message: "clone_a update",
+            message: Some("clone_a update"),
             co_authors: vec!["SOLO"],
         },
     ));
@@ -110,7 +110,7 @@ fn aborting_a_merge_conflict() {
         },
         Ensure::that(
             doing(Commit {
-                message: "clone_b conflicting",
+                message: Some("clone_b conflicting"),
                 co_authors: vec!["SOLO"],
             }),
             fails(),
@@ -139,7 +139,7 @@ fn bob_cannot_commit_conflicts() {
             content: "version A\n",
         },
         Commit {
-            message: "bob: add shared",
+            message: Some("bob: add shared"),
             co_authors: vec!["SOLO"],
         },
     ));
@@ -157,7 +157,7 @@ fn bob_cannot_commit_conflicts() {
             content: "version A2\n",
         },
         Commit {
-            message: "bob: update shared",
+            message: Some("bob: update shared"),
             co_authors: vec!["SOLO"],
         },
     ));
@@ -167,7 +167,7 @@ fn bob_cannot_commit_conflicts() {
     kent.attempts_to((
         Ensure::that(
             doing(Commit {
-                message: "kent: conflicting change",
+                message: Some("kent: conflicting change"),
                 co_authors: vec!["SOLO"],
             }),
             fails(),
@@ -198,7 +198,7 @@ fn commit_is_blocked_while_in_conflict_state() {
             content: "A\n",
         },
         Commit {
-            message: "A init",
+            message: Some("A init"),
             co_authors: vec!["SOLO"],
         },
     ));
@@ -211,7 +211,7 @@ fn commit_is_blocked_while_in_conflict_state() {
             content: "A updated\n",
         },
         Commit {
-            message: "A update",
+            message: Some("A update"),
             co_authors: vec!["SOLO"],
         },
     ));
@@ -223,14 +223,14 @@ fn commit_is_blocked_while_in_conflict_state() {
         },
         Ensure::that(
             doing(Commit {
-                message: "B conflicting",
+                message: Some("B conflicting"),
                 co_authors: vec!["SOLO"],
             }),
             fails(),
         ),
         Ensure::that(
             doing(Commit {
-                message: "should be blocked",
+                message: Some("should be blocked"),
                 co_authors: vec!["SOLO"],
             }),
             fails().with_error("middle of resolving a conflict"),
@@ -257,7 +257,7 @@ fn bob_cannot_commit_conflicts_when_reverting() {
             content: "version A\n",
         },
         Commit {
-            message: "bob: add shared",
+            message: Some("bob: add shared"),
             co_authors: vec!["SOLO"],
         },
     ));
@@ -275,7 +275,7 @@ fn bob_cannot_commit_conflicts_when_reverting() {
             content: "version A2\n",
         },
         Commit {
-            message: "bob: update shared",
+            message: Some("bob: update shared"),
             co_authors: vec!["SOLO"],
         },
     ));
@@ -286,7 +286,7 @@ fn bob_cannot_commit_conflicts_when_reverting() {
     kent.attempts_to((
         Ensure::that(
             doing(Commit {
-                message: "kent: conflicting change",
+                message: Some("kent: conflicting change"),
                 co_authors: vec!["SOLO"],
             }),
             fails(),
