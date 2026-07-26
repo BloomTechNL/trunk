@@ -21,6 +21,7 @@ def scan_codebase():
         "-W", "clippy::pedantic",
         "-W", "clippy::nursery",
         "-W", "clippy::cargo",
+        "-W", "clippy::unwrap_used",
         "-A", "clippy::missing_errors_doc"
     ]
 

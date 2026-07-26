@@ -13,9 +13,13 @@ impl Interaction for RevertHead {
         let hash = log
             .lines()
             .filter(|l| l.starts_with("commit "))
-            .map(|l| l.strip_prefix("commit ").unwrap().to_string())
+            .map(|l| {
+                l.strip_prefix("commit ")
+                    .expect("line starts with 'commit '")
+                    .to_string()
+            })
             .next()
-            .unwrap();
+            .expect("no commit found in log");
         trunk
             .dispatch(
                 Commands::Revert {
