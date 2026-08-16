@@ -20,8 +20,18 @@ impl UseFileSystem {
         fs::create_dir(dir.join(name)).expect("create_dir");
     }
 
+    #[allow(clippy::unused_self)]
+    pub fn create_symlink(&self, dir: &Path, name: &str, target: &str) {
+        std::os::unix::fs::symlink(target, dir.join(name)).expect("create symlink");
+    }
+
     pub fn file_exists(&self, dir: &Path, name: &str) -> bool {
         dir.join(name).exists()
+    }
+
+    #[allow(clippy::unused_self)]
+    pub fn path_exists(&self, dir: &Path, name: &str) -> bool {
+        fs::symlink_metadata(dir.join(name)).is_ok()
     }
 
     pub fn read_file(&self, dir: &Path, name: &str) -> String {

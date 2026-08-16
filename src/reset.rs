@@ -54,7 +54,7 @@ fn cmd_reset(dir: &Path) -> Result<()> {
             if let Some(path_str) = entry.path() {
                 let full_path = workdir.join(path_str);
 
-                if !full_path.exists() {
+                if fs::symlink_metadata(&full_path).is_err() {
                     continue;
                 }
 

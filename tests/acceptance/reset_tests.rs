@@ -1,7 +1,9 @@
 use crate::abilities::{ScenarioContext, TestContext};
 use crate::cast::developer_bob;
-use crate::interactions::{CloneRepo, CreateDir, InitialCommit, Reset, SetUpRemote, WriteFile};
-use crate::questions::{FileContent, FileExists};
+use crate::interactions::{
+    CloneRepo, CreateDir, CreateSymlink, InitialCommit, Reset, SetUpRemote, WriteFile,
+};
+use crate::questions::{FileContent, FileExists, PathExists};
 use screenplay::*;
 
 #[test]
@@ -41,6 +43,30 @@ fn reset_clears_tracked_and_untracked_changes() {
         Ensure::that(
             FileExists {
                 name: "subdir/untracked_in_subdir.txt",
+            },
+            is_false(),
+        ),
+    ));
+}
+
+#[test]
+fn reset_removes_untracked_broken_symlinks() {
+    let ctx = ScenarioContext::new(TestContext::new());
+    let bob = developer_bob(&ctx);
+
+    bob.attempts_to((SetUpRemote,));
+    bob.attempts_to((CloneRepo { name: "bob" },));
+    bob.attempts_to((InitialCommit,));
+
+    bob.attempts_to((
+        CreateSymlink {
+            name: "broken-link.txt",
+            target: "does-not-exist.txt",
+        },
+        Reset,
+        Ensure::that(
+            PathExists {
+                name: "broken-link.txt",
             },
             is_false(),
         ),
