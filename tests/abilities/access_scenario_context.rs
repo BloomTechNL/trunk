@@ -49,7 +49,7 @@ impl AccessScenarioContext {
         }
     }
 
-    pub fn actor_context(&self, actor: &Actor) -> Ref<ActorContext> {
+    pub fn actor_context(&self, actor: &Actor) -> Ref<'_, ActorContext> {
         Ref::map(self.context.borrow(), |ctx| &ctx.actors[actor.name()])
     }
 
@@ -57,7 +57,7 @@ impl AccessScenarioContext {
         self.context.borrow().base_dir.path().to_path_buf()
     }
 
-    pub fn actor_context_mut(&self, actor: &Actor) -> RefMut<ActorContext> {
+    pub fn actor_context_mut(&self, actor: &Actor) -> RefMut<'_, ActorContext> {
         RefMut::map(self.context.borrow_mut(), |ctx| {
             ctx.actors.entry(actor.name()).or_insert(ActorContext {
                 working_dir: PathBuf::new(),

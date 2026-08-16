@@ -13,7 +13,7 @@ impl Ability for UseGit {}
 
 impl UseGit {
     pub const fn new() -> Self {
-        UseGit {
+        Self {
             repo: RefCell::new(PathBuf::new()),
         }
     }

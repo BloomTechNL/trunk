@@ -21,8 +21,5 @@
   "src/reset.rs||clippy::unnecessary_debug_formatting||unnecessary `Debug` formatting in `format!` args": 6,
   "src/revert.rs||clippy::must_use_candidate||this method could have a `#[must_use]` attribute": 2,
   "src/time_travel.rs||clippy::cast_possible_wrap||casting `u64` to `i64` may wrap around the value": 2,
-  "tests/abilities/access_scenario_context.rs||mismatched_lifetime_syntaxes||hiding a lifetime that's elided elsewhere is confusing": 2,
-  "tests/abilities/mod.rs||unused_imports||unused import: `ActorContext`": 1,
-  "tests/abilities/use_file_system.rs||clippy::unused_self||unused `self` argument": 5,
-  "tests/abilities/use_git.rs||clippy::use_self||unnecessary structure name repetition": 1
+  "tests/abilities/use_file_system.rs||clippy::unused_self||unused `self` argument": 5
 }

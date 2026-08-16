@@ -6,9 +6,7 @@ mod use_git;
 mod use_trunk;
 mod version_track;
 
-pub use access_scenario_context::{
-    AccessScenarioContext, ActorContext, ScenarioContext, TestContext,
-};
+pub use access_scenario_context::{AccessScenarioContext, ScenarioContext, TestContext};
 pub use clock_control::ClockControl;
 pub use hear::Hear;
 pub use use_file_system::UseFileSystem;
