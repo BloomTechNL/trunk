@@ -65,7 +65,7 @@ impl<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> HandlerContainer<'
     }
 
     #[must_use]
-    pub const fn config(&self) -> ConfigHandler<'_, TC> {
-        ConfigHandler::new(self.config)
+    pub const fn config(&self) -> ConfigHandler<'_, TC, O> {
+        ConfigHandler::new(self.config, self.sink)
     }
 }

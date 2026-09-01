@@ -1,3 +1,4 @@
+mod config_output;
 mod diff;
 mod file_content;
 mod file_exists;
@@ -7,6 +8,7 @@ mod path_exists;
 mod status;
 mod trunk_version;
 
+pub use config_output::ConfigOutput;
 pub use diff::Diff;
 pub use file_content::FileContent;
 pub use file_exists::FileExists;

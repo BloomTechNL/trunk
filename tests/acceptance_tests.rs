@@ -13,6 +13,8 @@ mod questions;
 mod co_author_tests;
 #[path = "acceptance/commit_tests.rs"]
 mod commit_tests;
+#[path = "acceptance/config_tests.rs"]
+mod config_tests;
 #[path = "acceptance/conflict_tests.rs"]
 mod conflict_tests;
 #[path = "acceptance/diff_tests.rs"]

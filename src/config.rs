@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 
 use crate::git::repo_root;
 use crate::handler::Handler;
+use crate::output::OutputSink;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Config {
@@ -200,37 +201,56 @@ impl RealTrunkConfig {
     }
 }
 
-pub struct ConfigHandler<'a, TC: TrunkConfig> {
+pub struct ConfigHandler<'a, TC: TrunkConfig, O: OutputSink> {
     config: &'a TC,
+    sink: &'a O,
 }
 
-impl<'a, TC: TrunkConfig> ConfigHandler<'a, TC> {
-    pub const fn new(config: &'a TC) -> Self {
-        Self { config }
+impl<'a, TC: TrunkConfig, O: OutputSink> ConfigHandler<'a, TC, O> {
+    pub const fn new(config: &'a TC, sink: &'a O) -> Self {
+        Self { config, sink }
     }
 }
 
-impl<TC: RepoScopedTrunkConfig> Handler<(Option<bool>, Option<u64>, bool)>
-    for ConfigHandler<'_, TC>
+impl<TC: RepoScopedTrunkConfig, O: OutputSink> ConfigHandler<'_, TC, O> {
+    fn print_current_config(&self) -> Result<()> {
+        let json = serde_json::to_string_pretty(&self.config.load())?;
+        self.sink.write_str(&format!("{json}\n"));
+        Ok(())
+    }
+
+    fn set_co_authors_required(&self, local: bool, required: bool) -> Result<()> {
+        if local {
+            self.config.set_local_co_authors_required(required)
+        } else {
+            self.config.set_co_authors_required(required)
+        }
+    }
+
+    fn set_auto_update_period(&self, local: bool, period: u64) -> Result<()> {
+        if local {
+            self.config.set_local_auto_update_period(period)
+        } else {
+            self.config.set_auto_update_period(period)
+        }
+    }
+}
+
+impl<TC: RepoScopedTrunkConfig, O: OutputSink> Handler<(Option<bool>, Option<u64>, bool)>
+    for ConfigHandler<'_, TC, O>
 {
     fn handle(
         &self,
         (co_authors_required, auto_update_period, local): (Option<bool>, Option<u64>, bool),
     ) -> Result<()> {
-        if local {
-            if let Some(required) = co_authors_required {
-                self.config.set_local_co_authors_required(required)?;
-            }
-            if let Some(period) = auto_update_period {
-                self.config.set_local_auto_update_period(period)?;
-            }
-        } else {
-            if let Some(required) = co_authors_required {
-                self.config.set_co_authors_required(required)?;
-            }
-            if let Some(period) = auto_update_period {
-                self.config.set_auto_update_period(period)?;
-            }
+        if co_authors_required.is_none() && auto_update_period.is_none() {
+            return self.print_current_config();
+        }
+        if let Some(required) = co_authors_required {
+            self.set_co_authors_required(local, required)?;
+        }
+        if let Some(period) = auto_update_period {
+            self.set_auto_update_period(local, period)?;
         }
         Ok(())
     }
