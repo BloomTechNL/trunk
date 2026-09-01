@@ -82,11 +82,9 @@ mod tests {
     use super::*;
     use std::cell::Cell;
 
-    // Dummy ability for tests
     struct Logging;
     impl Ability for Logging {}
 
-    // Dummy interaction that records it was called
     struct FlagInteraction<'a> {
         flag: &'a Cell<bool>,
     }

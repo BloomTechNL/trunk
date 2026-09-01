@@ -13,7 +13,6 @@ use anyhow::{bail, Result};
 // Remote helpers (shared with revert)
 // ---------------------------------------------------------------------------
 
-/// Returns `true` when at least one remote is configured for this repo.
 pub fn has_remote(dir: &Path, sink: &impl OutputSink) -> bool {
     git_capture(dir, &["remote"], sink).is_ok_and(|out| !out.trim().is_empty())
 }
