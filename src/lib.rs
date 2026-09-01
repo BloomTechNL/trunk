@@ -22,7 +22,10 @@ pub use cli::{run_cli, Cli, Commands};
 pub use clock::{Clock, RealClock};
 pub use co_author_aliases::{CoAuthorAliases, RealCoAuthorAliases};
 pub use composition_root::{AppService, Dependencies, Slot};
-pub use config::{Config, ConfigHandler, RealTrunkConfig, RepoAwareTrunkConfig, TrunkConfig};
+pub use config::{
+    Config, ConfigHandler, LocalTrunkConfig, RealTrunkConfig, RepoAwareTrunkConfig,
+    RepoScopedTrunkConfig, TrunkConfig,
+};
 pub use handler::Handler;
 pub use has_stash::has_stash;
 pub use last_update_store::{LastUpdateStore, RealLastUpdateStore};

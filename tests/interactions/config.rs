@@ -6,6 +6,7 @@ use screenplay::{Ability, Actor, Interaction};
 pub struct Config {
     pub co_authors_required: Option<bool>,
     pub auto_update_period: Option<u64>,
+    pub local: bool,
 }
 
 impl Interaction for Config {
@@ -17,6 +18,7 @@ impl Interaction for Config {
                 Commands::Config {
                     co_authors_required: self.co_authors_required,
                     auto_update_period: self.auto_update_period,
+                    local: self.local,
                 },
                 &asc.actor_context(actor).working_dir,
             )

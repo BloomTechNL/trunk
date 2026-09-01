@@ -1,5 +1,5 @@
 use crate::cli::{Cli, Commands};
-use crate::config::TrunkConfig;
+use crate::config::{RepoScopedTrunkConfig, TrunkConfig};
 use crate::output::OutputSink;
 use crate::play_fart_sound::FartPlayer;
 use crate::update::Updater;
@@ -17,7 +17,7 @@ pub struct AppService<
     deps: Dependencies<FP, CA, U, O, TC>,
 }
 
-impl<FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: TrunkConfig>
+impl<FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: RepoScopedTrunkConfig>
     AppService<FP, CA, U, O, TC>
 {
     #[must_use]

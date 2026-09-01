@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
@@ -32,12 +32,29 @@ impl Default for Config {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 struct PartialConfig {
-    #[serde(rename = "coAuthorsRequired")]
+    #[serde(rename = "coAuthorsRequired", skip_serializing_if = "Option::is_none")]
     co_authors_required: Option<bool>,
-    #[serde(rename = "autoUpdatePeriod")]
+    #[serde(rename = "autoUpdatePeriod", skip_serializing_if = "Option::is_none")]
     auto_update_period: Option<u64>,
+}
+
+fn read_partial_config(path: &Path) -> PartialConfig {
+    if !path.exists() {
+        return PartialConfig::default();
+    }
+    let Ok(content) = std::fs::read_to_string(path) else {
+        return PartialConfig::default();
+    };
+    serde_json::from_str(&content).unwrap_or_else(|e| {
+        eprintln!(
+            "Warning: Failed to parse {}: {}. Ignoring.",
+            path.display(),
+            e
+        );
+        PartialConfig::default()
+    })
 }
 
 #[must_use]
@@ -45,32 +62,14 @@ pub fn merge_repo_override(mut config: Config, repo: &Path) -> Config {
     let Some(root) = repo_root(repo) else {
         return config;
     };
-    let path = root.join(".trunk.json");
-    if !path.exists() {
-        return config;
+    let partial = read_partial_config(&root.join(".trunk.json"));
+    if let Some(required) = partial.co_authors_required {
+        config.co_authors_required = required;
     }
-    let Ok(content) = std::fs::read_to_string(&path) else {
-        return config;
-    };
-    match serde_json::from_str::<PartialConfig>(&content) {
-        Ok(partial) => {
-            if let Some(required) = partial.co_authors_required {
-                config.co_authors_required = required;
-            }
-            if let Some(period) = partial.auto_update_period {
-                config.auto_update_period = period;
-            }
-            config
-        }
-        Err(e) => {
-            eprintln!(
-                "Warning: Failed to parse {}: {}. Ignoring.",
-                path.display(),
-                e
-            );
-            config
-        }
+    if let Some(period) = partial.auto_update_period {
+        config.auto_update_period = period;
     }
+    config
 }
 
 pub trait TrunkConfig {
@@ -81,6 +80,16 @@ pub trait TrunkConfig {
     fn set_auto_update_period(&self, period: u64) -> Result<()>;
 }
 
+pub trait LocalTrunkConfig {
+    fn set_local_co_authors_required(&self, required: bool) -> Result<()>;
+
+    fn set_local_auto_update_period(&self, period: u64) -> Result<()>;
+}
+
+pub trait RepoScopedTrunkConfig: TrunkConfig + LocalTrunkConfig {}
+
+impl<TC: TrunkConfig + LocalTrunkConfig> RepoScopedTrunkConfig for TC {}
+
 pub struct RepoAwareTrunkConfig<TC: TrunkConfig> {
     inner: TC,
     repo: PathBuf,
@@ -89,6 +98,21 @@ pub struct RepoAwareTrunkConfig<TC: TrunkConfig> {
 impl<TC: TrunkConfig> RepoAwareTrunkConfig<TC> {
     pub const fn new(inner: TC, repo: PathBuf) -> Self {
         Self { inner, repo }
+    }
+
+    fn write_local(&self, mutate: impl FnOnce(&mut PartialConfig)) -> Result<()> {
+        let Some(root) = repo_root(&self.repo) else {
+            bail!(
+                "Not inside a git repository, so there is no repo to attach a local config to. \
+                 Run this from within a git repo, or omit --local to set the global config."
+            );
+        };
+        let path = root.join(".trunk.json");
+        let mut partial = read_partial_config(&path);
+        mutate(&mut partial);
+        let json = serde_json::to_string_pretty(&partial)?;
+        std::fs::write(&path, json)?;
+        Ok(())
     }
 }
 
@@ -103,6 +127,16 @@ impl<TC: TrunkConfig> TrunkConfig for RepoAwareTrunkConfig<TC> {
 
     fn set_auto_update_period(&self, period: u64) -> Result<()> {
         self.inner.set_auto_update_period(period)
+    }
+}
+
+impl<TC: TrunkConfig> LocalTrunkConfig for RepoAwareTrunkConfig<TC> {
+    fn set_local_co_authors_required(&self, required: bool) -> Result<()> {
+        self.write_local(|c| c.co_authors_required = Some(required))
+    }
+
+    fn set_local_auto_update_period(&self, period: u64) -> Result<()> {
+        self.write_local(|c| c.auto_update_period = Some(period))
     }
 }
 
@@ -176,16 +210,27 @@ impl<'a, TC: TrunkConfig> ConfigHandler<'a, TC> {
     }
 }
 
-impl<TC: TrunkConfig> Handler<(Option<bool>, Option<u64>)> for ConfigHandler<'_, TC> {
+impl<TC: RepoScopedTrunkConfig> Handler<(Option<bool>, Option<u64>, bool)>
+    for ConfigHandler<'_, TC>
+{
     fn handle(
         &self,
-        (co_authors_required, auto_update_period): (Option<bool>, Option<u64>),
+        (co_authors_required, auto_update_period, local): (Option<bool>, Option<u64>, bool),
     ) -> Result<()> {
-        if let Some(required) = co_authors_required {
-            self.config.set_co_authors_required(required)?;
-        }
-        if let Some(period) = auto_update_period {
-            self.config.set_auto_update_period(period)?;
+        if local {
+            if let Some(required) = co_authors_required {
+                self.config.set_local_co_authors_required(required)?;
+            }
+            if let Some(period) = auto_update_period {
+                self.config.set_local_auto_update_period(period)?;
+            }
+        } else {
+            if let Some(required) = co_authors_required {
+                self.config.set_co_authors_required(required)?;
+            }
+            if let Some(period) = auto_update_period {
+                self.config.set_auto_update_period(period)?;
+            }
         }
         Ok(())
     }

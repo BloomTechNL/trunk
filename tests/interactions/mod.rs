@@ -19,6 +19,7 @@ mod revert_head;
 mod set_up_remote;
 mod time_travel;
 mod update;
+mod work_outside_repo;
 mod write_file;
 
 pub use abort_commit::AbortCommit;
@@ -42,4 +43,5 @@ pub use revert_head::RevertHead;
 pub use set_up_remote::SetUpRemote;
 pub use time_travel::TimeTravel;
 pub use update::Update;
+pub use work_outside_repo::WorkOutsideRepo;
 pub use write_file::WriteFile;

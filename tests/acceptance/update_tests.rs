@@ -67,6 +67,7 @@ fn test_application_does_not_update_if_user_turns_this_off() {
     bob.attempts_to((Config {
         co_authors_required: None,
         auto_update_period: Some(0),
+        local: false,
     },));
 
     bob.attempts_to((
@@ -103,6 +104,7 @@ fn explicit_update_works_even_when_auto_update_disabled() {
     bob.attempts_to((Config {
         co_authors_required: None,
         auto_update_period: Some(0),
+        local: false,
     },));
 
     bob.attempts_to((
@@ -126,6 +128,7 @@ fn auto_update_also_runs_on_config_calls() {
         Config {
             co_authors_required: Some(false),
             auto_update_period: None,
+            local: false,
         },
         Ensure::that(TrunkVersion, equals(1)),
     ));
@@ -142,6 +145,7 @@ fn test_update_period_is_configurable() {
     bob.attempts_to((Config {
         co_authors_required: None,
         auto_update_period: Some(1),
+        local: false,
     },));
 
     bob.attempts_to((

@@ -5,7 +5,7 @@ use clap::{Parser, Subcommand};
 
 use crate::commit::CommitInput;
 use crate::composition_root::Dependencies;
-use crate::config::TrunkConfig;
+use crate::config::RepoScopedTrunkConfig;
 use crate::handler_container::HandlerContainer;
 use crate::output::OutputSink;
 use crate::revert::RevertInput;
@@ -101,6 +101,9 @@ pub enum Commands {
         /// Auto-update period in seconds. 0 disables auto-update. Defaults to 604800 (1 week).
         #[arg(long = "auto-update-period")]
         auto_update_period: Option<u64>,
+        /// Write to this repo's `.trunk.json` instead of the global config.
+        #[arg(long)]
+        local: bool,
     },
     /// Update g to the latest version
     #[command(name = "update")]
@@ -115,7 +118,7 @@ pub fn run_cli(
         impl CoAuthorAliases,
         impl Updater,
         impl OutputSink,
-        impl TrunkConfig,
+        impl RepoScopedTrunkConfig,
     >,
 ) -> Result<()> {
     if cli.command != Commands::Fart && has_stash(dir) {
@@ -165,9 +168,10 @@ pub fn run_cli(
         Commands::Config {
             co_authors_required,
             auto_update_period,
+            local,
         } => container
             .config()
-            .handle((co_authors_required, auto_update_period)),
+            .handle((co_authors_required, auto_update_period, local)),
         Commands::Update => deps.updater().update(deps.output()),
     }
 }
