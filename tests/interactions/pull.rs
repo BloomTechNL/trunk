@@ -2,7 +2,6 @@ use crate::abilities::{AccessScenarioContext, UseTrunk};
 use g_cli::Commands;
 use screenplay::{Ability, Actor, Interaction};
 
-/// Run `g p` in the actor's repo.
 pub struct Pull;
 
 impl Interaction for Pull {

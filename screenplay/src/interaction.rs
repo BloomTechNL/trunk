@@ -23,7 +23,6 @@ use crate::actor::Actor;
 /// }
 /// ```
 pub trait Interaction {
-    /// Execute this interaction with the given actor's abilities.
     fn perform_as(&self, actor: &Actor);
 }
 
@@ -37,7 +36,6 @@ pub trait Interaction {
 /// [`Actor::attempts_to`](crate::Actor::attempts_to). Library users do not
 /// need to implement this trait directly.
 pub trait Interactions {
-    /// Execute every interaction in the tuple, in order.
     fn perform_all(&self, actor: &Actor);
 }
 

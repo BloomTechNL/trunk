@@ -2,7 +2,6 @@ use crate::abilities::{AccessScenarioContext, UseTrunk};
 use g_cli::Commands;
 use screenplay::{Ability, Actor, Interaction};
 
-/// Add a co-author alias via `g add-alias`.
 pub struct AddAlias {
     pub alias: &'static str,
     pub name: &'static str,

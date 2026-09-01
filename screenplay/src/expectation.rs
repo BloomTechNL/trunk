@@ -24,9 +24,7 @@ use std::fmt::Debug;
 /// }
 /// ```
 pub trait Expectation<T> {
-    /// Return `true` when `value` meets the expectation.
     fn test(&self, value: &T) -> bool;
-    /// Produce a human-readable failure message for the given `value`.
     fn message(&self, value: &T) -> String;
 }
 

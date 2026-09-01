@@ -2,7 +2,6 @@ use crate::abilities::{AccessScenarioContext, UseTrunk};
 use g_cli::Commands;
 use screenplay::{Ability, Actor, Question};
 
-/// Ask for the output of `g l` in the actor's repo.
 pub struct Log;
 
 impl Question<String> for Log {

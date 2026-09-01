@@ -2,7 +2,6 @@ use crate::abilities::{AccessScenarioContext, UseTrunk};
 use g_cli::Commands;
 use screenplay::{Ability, Actor, Interaction};
 
-/// Configure trunk settings via `g config`.
 pub struct Config {
     pub co_authors_required: Option<bool>,
     pub auto_update_period: Option<u64>,

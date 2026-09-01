@@ -19,6 +19,5 @@ use crate::actor::Actor;
 /// }
 /// ```
 pub trait Question<T> {
-    /// Answer the question using the actor's abilities.
     fn answered_by(&self, actor: &Actor) -> T;
 }

@@ -2,7 +2,6 @@ use crate::abilities::{AccessScenarioContext, UseTrunk};
 use g_cli::Commands;
 use screenplay::{Ability, Actor, Interaction};
 
-/// Run `g c` in the actor's repo.
 pub struct Commit {
     pub message: Option<&'static str>,
     pub co_authors: Vec<&'static str>,
