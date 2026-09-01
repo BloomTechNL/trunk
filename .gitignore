@@ -1,3 +1,4 @@
 target/
 .output.txt
 .claude/tdd_state.env
+.trunk.json
