@@ -12,18 +12,6 @@
         ]
       }
     ],
-    "PreToolUse": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/guard-tdd-state.sh",
-            "statusMessage": "Guarding TDD state..."
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "matcher": "",
