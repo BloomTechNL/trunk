@@ -1,7 +1,8 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
+use crate::git::repo_root;
 use crate::handler::Handler;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -31,12 +32,78 @@ impl Default for Config {
     }
 }
 
+#[derive(Debug, Clone, Deserialize)]
+struct PartialConfig {
+    #[serde(rename = "coAuthorsRequired")]
+    co_authors_required: Option<bool>,
+    #[serde(rename = "autoUpdatePeriod")]
+    auto_update_period: Option<u64>,
+}
+
+#[must_use]
+pub fn merge_repo_override(mut config: Config, repo: &Path) -> Config {
+    let Some(root) = repo_root(repo) else {
+        return config;
+    };
+    let path = root.join(".trunk.json");
+    if !path.exists() {
+        return config;
+    }
+    let Ok(content) = std::fs::read_to_string(&path) else {
+        return config;
+    };
+    match serde_json::from_str::<PartialConfig>(&content) {
+        Ok(partial) => {
+            if let Some(required) = partial.co_authors_required {
+                config.co_authors_required = required;
+            }
+            if let Some(period) = partial.auto_update_period {
+                config.auto_update_period = period;
+            }
+            config
+        }
+        Err(e) => {
+            eprintln!(
+                "Warning: Failed to parse {}: {}. Ignoring.",
+                path.display(),
+                e
+            );
+            config
+        }
+    }
+}
+
 pub trait TrunkConfig {
     fn load(&self) -> Config;
 
     fn set_co_authors_required(&self, required: bool) -> Result<()>;
 
     fn set_auto_update_period(&self, period: u64) -> Result<()>;
+}
+
+pub struct RepoAwareTrunkConfig<TC: TrunkConfig> {
+    inner: TC,
+    repo: PathBuf,
+}
+
+impl<TC: TrunkConfig> RepoAwareTrunkConfig<TC> {
+    pub const fn new(inner: TC, repo: PathBuf) -> Self {
+        Self { inner, repo }
+    }
+}
+
+impl<TC: TrunkConfig> TrunkConfig for RepoAwareTrunkConfig<TC> {
+    fn load(&self) -> Config {
+        merge_repo_override(self.inner.load(), &self.repo)
+    }
+
+    fn set_co_authors_required(&self, required: bool) -> Result<()> {
+        self.inner.set_co_authors_required(required)
+    }
+
+    fn set_auto_update_period(&self, period: u64) -> Result<()> {
+        self.inner.set_auto_update_period(period)
+    }
 }
 
 pub struct RealTrunkConfig {

@@ -21,6 +21,8 @@ mod diff_tests;
 mod fart_tests;
 #[path = "acceptance/pull_tests.rs"]
 mod pull_tests;
+#[path = "acceptance/repo_trunk_config_tests.rs"]
+mod repo_trunk_config_tests;
 #[path = "acceptance/reset_tests.rs"]
 mod reset_tests;
 #[path = "acceptance/revert_tests.rs"]

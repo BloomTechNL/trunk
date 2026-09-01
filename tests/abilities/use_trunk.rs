@@ -4,7 +4,7 @@ use crate::common::in_memory_trunk_config::InMemoryTrunkConfig;
 use crate::common::mock_fart_player::MockFartPlayer;
 use crate::common::mock_updater::MockUpdater;
 use g_cli::composition_root::{AppService, Dependencies, Slot};
-use g_cli::{Cli, Commands};
+use g_cli::{Cli, Commands, RepoAwareTrunkConfig};
 use screenplay::Ability;
 use std::path::Path;
 
@@ -36,11 +36,11 @@ impl UseTrunk {
     }
 
     pub fn dispatch(&self, command: Commands, dir: &Path) -> anyhow::Result<()> {
-        self.app().dispatch_command(Cli { command }, dir)
+        self.app(dir).dispatch_command(Cli { command }, dir)
     }
 
     pub fn dispatch_and_capture(&self, command: Commands, dir: &Path) -> String {
-        self.app()
+        self.app(dir)
             .dispatch_command(Cli { command }, dir)
             .unwrap_or_else(|_| panic!("command should succeed"));
         self.output.take()
@@ -48,18 +48,19 @@ impl UseTrunk {
 
     fn app(
         &self,
+        dir: &Path,
     ) -> AppService<
         MockFartPlayer,
         InMemoryCoAuthorAliases,
         MockUpdater,
         CapturingSink,
-        InMemoryTrunkConfig,
+        RepoAwareTrunkConfig<InMemoryTrunkConfig>,
     > {
         let fart_player = self.fart_player.clone();
         let co_author_aliases = self.co_author_aliases.clone();
         let updater = self.updater.clone();
         let output = self.output.clone();
-        let trunk_config = self.trunk_config.clone();
+        let trunk_config = RepoAwareTrunkConfig::new(self.trunk_config.clone(), dir.to_path_buf());
         let dependencies = Dependencies::new(
             Slot::register(move || fart_player),
             Slot::register(move || co_author_aliases),

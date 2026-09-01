@@ -15,9 +15,10 @@ fn main() {
     let cli = Cli::parse();
 
     let config_dir = trunk_config_dir();
-    let app_service = g_cli::composition_root::assemble(&config_dir);
+    let repo_dir = std::path::Path::new(".");
+    let app_service = g_cli::composition_root::assemble(&config_dir, repo_dir);
 
-    if let Err(e) = app_service.dispatch_command(cli, std::path::Path::new(".")) {
+    if let Err(e) = app_service.dispatch_command(cli, repo_dir) {
         eprintln!("Error: {e}");
         process::exit(1);
     }

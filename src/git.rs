@@ -101,3 +101,10 @@ pub fn is_detached_head(dir: &Path, sink: &impl OutputSink) -> bool {
     std::fs::read_to_string(head_path)
         .is_ok_and(|content| !content.trim_start().starts_with("ref:"))
 }
+
+pub fn repo_root(dir: &Path) -> Option<PathBuf> {
+    git2::Repository::discover(dir)
+        .ok()?
+        .workdir()
+        .map(Path::to_path_buf)
+}
