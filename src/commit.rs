@@ -5,6 +5,7 @@ use crate::git::{
     git_capture, git_passthrough, has_conflict_markers, is_detached_head, is_rebasing,
 };
 use crate::handler::Handler;
+use crate::hold_music::{HoldMusic, Playback};
 use crate::output::OutputSink;
 use crate::CoAuthorAliases;
 use anyhow::{bail, Result};
@@ -32,19 +33,30 @@ pub fn has_remote_tracking(dir: &Path, sink: &impl OutputSink) -> bool {
 // g c  — commit + sync
 // ---------------------------------------------------------------------------
 
-pub struct CommitHandler<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> {
+pub struct CommitHandler<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink, HM: HoldMusic> {
     aliases: &'a CA,
     config: &'a TC,
     sink: &'a O,
+    music: &'a HM,
 }
 
-impl<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> CommitHandler<'a, CA, TC, O> {
-    pub const fn new(aliases: &'a CA, config: &'a TC, sink: &'a O) -> Self {
+impl<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink, HM: HoldMusic>
+    CommitHandler<'a, CA, TC, O, HM>
+{
+    pub const fn new(aliases: &'a CA, config: &'a TC, sink: &'a O, music: &'a HM) -> Self {
         Self {
             aliases,
             config,
             sink,
+            music,
         }
+    }
+
+    fn start_hold_music(&self) -> Option<Box<dyn Playback>> {
+        if self.config.load().hold_music_muted {
+            return None;
+        }
+        self.music.start().ok()
     }
 
     fn cmd_commit(&self, dir: &Path, message: &str, co_authors: &dyn MessagePostfix) -> Result<()> {
@@ -66,7 +78,10 @@ impl<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> CommitHandler<'a, 
         let final_message = format!("{message}{postfix}");
 
         git_passthrough(dir, &["add", "-A"], self.sink)?;
-        git_passthrough(dir, &["commit", "-m", &final_message], self.sink)?;
+        {
+            let _music = self.start_hold_music();
+            git_passthrough(dir, &["commit", "-m", &final_message], self.sink)?;
+        }
 
         if !has_remote(dir, self.sink) {
             return Ok(());
@@ -108,8 +123,8 @@ impl<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> CommitHandler<'a, 
     }
 }
 
-impl<CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> Handler<&CommitInput>
-    for CommitHandler<'_, CA, TC, O>
+impl<CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink, HM: HoldMusic> Handler<&CommitInput>
+    for CommitHandler<'_, CA, TC, O, HM>
 {
     fn handle(&self, input: &CommitInput) -> Result<()> {
         match &input.action {

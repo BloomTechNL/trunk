@@ -1,4 +1,5 @@
 use crate::config::TrunkConfig;
+use crate::hold_music::HoldMusic;
 use crate::output::OutputSink;
 use crate::play_fart_sound::FartPlayer;
 use crate::update::Updater;
@@ -12,16 +13,24 @@ pub struct Dependencies<
     U: Updater,
     O: OutputSink,
     TC: TrunkConfig,
+    HM: HoldMusic,
 > {
     fart_player: Slot<FP>,
     co_author_aliases: Slot<CA>,
     updater: Slot<U>,
     output: Slot<O>,
     trunk_config: Slot<TC>,
+    hold_music: Slot<HM>,
 }
 
-impl<FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: TrunkConfig>
-    Dependencies<FP, CA, U, O, TC>
+impl<
+        FP: FartPlayer,
+        CA: CoAuthorAliases,
+        U: Updater,
+        O: OutputSink,
+        TC: TrunkConfig,
+        HM: HoldMusic,
+    > Dependencies<FP, CA, U, O, TC, HM>
 {
     #[must_use]
     pub const fn new(
@@ -30,6 +39,7 @@ impl<FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: TrunkCo
         updater: Slot<U>,
         output: Slot<O>,
         trunk_config: Slot<TC>,
+        hold_music: Slot<HM>,
     ) -> Self {
         Self {
             fart_player,
@@ -37,6 +47,7 @@ impl<FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: TrunkCo
             updater,
             output,
             trunk_config,
+            hold_music,
         }
     }
 
@@ -58,5 +69,9 @@ impl<FP: FartPlayer, CA: CoAuthorAliases, U: Updater, O: OutputSink, TC: TrunkCo
 
     pub fn trunk_config(&self) -> &TC {
         self.trunk_config.resolve()
+    }
+
+    pub fn hold_music(&self) -> &HM {
+        self.hold_music.resolve()
     }
 }

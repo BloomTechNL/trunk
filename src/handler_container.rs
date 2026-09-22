@@ -1,5 +1,6 @@
 use crate::commit::CommitHandler;
 use crate::config::{ConfigHandler, TrunkConfig};
+use crate::hold_music::HoldMusic;
 use crate::output::OutputSink;
 use crate::pull::PullHandler;
 use crate::query::{DiffHandler, LogHandler, StatusHandler};
@@ -8,24 +9,29 @@ use crate::revert::RevertHandler;
 use crate::time_travel::TimeTravelHandler;
 use crate::CoAuthorAliases;
 
-pub struct HandlerContainer<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> {
+pub struct HandlerContainer<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink, HM: HoldMusic>
+{
     aliases: &'a CA,
     config: &'a TC,
     sink: &'a O,
+    music: &'a HM,
 }
 
-impl<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink> HandlerContainer<'a, CA, TC, O> {
-    pub const fn new(aliases: &'a CA, config: &'a TC, sink: &'a O) -> Self {
+impl<'a, CA: CoAuthorAliases, TC: TrunkConfig, O: OutputSink, HM: HoldMusic>
+    HandlerContainer<'a, CA, TC, O, HM>
+{
+    pub const fn new(aliases: &'a CA, config: &'a TC, sink: &'a O, music: &'a HM) -> Self {
         Self {
             aliases,
             config,
             sink,
+            music,
         }
     }
 
     #[must_use]
-    pub const fn commit(&self) -> CommitHandler<'_, CA, TC, O> {
-        CommitHandler::new(self.aliases, self.config, self.sink)
+    pub const fn commit(&self) -> CommitHandler<'_, CA, TC, O, HM> {
+        CommitHandler::new(self.aliases, self.config, self.sink, self.music)
     }
 
     #[must_use]

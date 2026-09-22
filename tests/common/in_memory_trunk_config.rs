@@ -30,4 +30,9 @@ impl TrunkConfig for InMemoryTrunkConfig {
         self.config.borrow_mut().auto_update_period = period;
         Ok(())
     }
+
+    fn set_hold_music_muted(&self, muted: bool) -> anyhow::Result<()> {
+        self.config.borrow_mut().hold_music_muted = muted;
+        Ok(())
+    }
 }

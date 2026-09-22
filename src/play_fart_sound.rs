@@ -1,18 +1,15 @@
 use anyhow::{Context, Result};
+
+use crate::assets::Asset;
 use nix::sys::signal::{self};
 use nix::unistd::Pid;
 use rand::RngExt;
 use rodio::{Decoder, DeviceSinkBuilder, Player};
-use rust_embed::RustEmbed;
 use std::collections::HashMap;
 use std::fs;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
-
-#[derive(RustEmbed)]
-#[folder = "assets/"]
-struct Asset;
 
 fn play_fart_sound() -> Result<()> {
     let random_index = rand::random_range(1..=6);

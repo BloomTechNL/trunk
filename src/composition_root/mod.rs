@@ -6,8 +6,8 @@ use std::path::Path;
 
 use crate::output::StdoutSink;
 use crate::{
-    RealClock, RealCoAuthorAliases, RealFartPlayer, RealLastUpdateStore, RealTrunkConfig,
-    RealUpdater, RepoAwareTrunkConfig,
+    RealClock, RealCoAuthorAliases, RealFartPlayer, RealHoldMusic, RealLastUpdateStore,
+    RealTrunkConfig, RealUpdater, RepoAwareTrunkConfig,
 };
 
 pub use app_service::AppService;
@@ -24,6 +24,7 @@ pub fn assemble(
     RealUpdater<RealClock, RealLastUpdateStore>,
     StdoutSink,
     RepoAwareTrunkConfig<RealTrunkConfig>,
+    RealHoldMusic,
 > {
     let aliases_path = config_dir.join("aliases");
     let trunk_config_path = config_dir.join("trunk.json");
@@ -40,6 +41,7 @@ pub fn assemble(
         Slot::register(move || {
             RepoAwareTrunkConfig::new(RealTrunkConfig::new(trunk_config_path), repo_dir)
         }),
+        Slot::register(|| RealHoldMusic),
     );
 
     AppService::new(dependencies)

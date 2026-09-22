@@ -74,6 +74,42 @@ macro_rules! trunk_config_test_suite {
                 let cfg = config.load();
                 assert_eq!(cfg.auto_update_period, 0);
             }
+
+            #[test]
+            fn test_hold_music_is_not_muted_by_default() {
+                $init_macro!(config);
+                let cfg = config.load();
+                assert!(!cfg.hold_music_muted);
+            }
+
+            #[test]
+            fn test_set_hold_music_muted() {
+                $init_macro!(config);
+                config.set_hold_music_muted(true).expect("should succeed");
+                let cfg = config.load();
+                assert!(cfg.hold_music_muted);
+            }
+
+            #[test]
+            fn test_unset_hold_music_muted() {
+                $init_macro!(config);
+                config.set_hold_music_muted(true).expect("should succeed");
+                config.set_hold_music_muted(false).expect("should succeed");
+                let cfg = config.load();
+                assert!(!cfg.hold_music_muted);
+            }
+
+            #[test]
+            fn test_muting_hold_music_leaves_other_settings_alone() {
+                $init_macro!(config);
+                config
+                    .set_auto_update_period(3_600)
+                    .expect("should succeed");
+                config.set_hold_music_muted(true).expect("should succeed");
+                let cfg = config.load();
+                assert_eq!(cfg.auto_update_period, 3_600);
+                assert!(cfg.co_authors_required);
+            }
         }
     };
 }
@@ -173,6 +209,21 @@ macro_rules! repo_aware_trunk_config_test_suite {
                 $init_macro!(config, nested);
                 let cfg = config.load();
                 assert!(!cfg.co_authors_required);
+            }
+
+            #[test]
+            fn test_repo_local_file_overrides_hold_music_muted() {
+                let repo = git_repo();
+                std::fs::write(
+                    repo.path().join(".trunk.json"),
+                    r#"{"holdMusicMuted": true}"#,
+                )
+                .expect("should write repo-local config");
+                $init_macro!(config, repo.path());
+                let cfg = config.load();
+                assert!(cfg.hold_music_muted);
+                assert!(cfg.co_authors_required);
+                assert_eq!(cfg.auto_update_period, 604_800);
             }
 
             #[test]

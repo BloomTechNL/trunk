@@ -14,6 +14,9 @@ pub struct Config {
     #[serde(rename = "autoUpdatePeriod")]
     #[serde(default = "default_auto_update_period")]
     pub auto_update_period: u64,
+    #[serde(rename = "holdMusicMuted")]
+    #[serde(default)]
+    pub hold_music_muted: bool,
 }
 
 const fn default_co_authors_required() -> bool {
@@ -29,6 +32,7 @@ impl Default for Config {
         Self {
             co_authors_required: true,
             auto_update_period: 604_800,
+            hold_music_muted: false,
         }
     }
 }
@@ -39,6 +43,8 @@ struct PartialConfig {
     co_authors_required: Option<bool>,
     #[serde(rename = "autoUpdatePeriod", skip_serializing_if = "Option::is_none")]
     auto_update_period: Option<u64>,
+    #[serde(rename = "holdMusicMuted", skip_serializing_if = "Option::is_none")]
+    hold_music_muted: Option<bool>,
 }
 
 fn read_partial_config(path: &Path) -> PartialConfig {
@@ -70,6 +76,9 @@ pub fn merge_repo_override(mut config: Config, repo: &Path) -> Config {
     if let Some(period) = partial.auto_update_period {
         config.auto_update_period = period;
     }
+    if let Some(muted) = partial.hold_music_muted {
+        config.hold_music_muted = muted;
+    }
     config
 }
 
@@ -79,6 +88,8 @@ pub trait TrunkConfig {
     fn set_co_authors_required(&self, required: bool) -> Result<()>;
 
     fn set_auto_update_period(&self, period: u64) -> Result<()>;
+
+    fn set_hold_music_muted(&self, muted: bool) -> Result<()>;
 }
 
 pub trait LocalTrunkConfig {
@@ -128,6 +139,10 @@ impl<TC: TrunkConfig> TrunkConfig for RepoAwareTrunkConfig<TC> {
 
     fn set_auto_update_period(&self, period: u64) -> Result<()> {
         self.inner.set_auto_update_period(period)
+    }
+
+    fn set_hold_music_muted(&self, muted: bool) -> Result<()> {
+        self.inner.set_hold_music_muted(muted)
     }
 }
 
@@ -183,6 +198,10 @@ impl TrunkConfig for RealTrunkConfig {
 
     fn set_auto_update_period(&self, period: u64) -> Result<()> {
         self.write_config(|c| c.auto_update_period = period)
+    }
+
+    fn set_hold_music_muted(&self, muted: bool) -> Result<()> {
+        self.write_config(|c| c.hold_music_muted = muted)
     }
 }
 
