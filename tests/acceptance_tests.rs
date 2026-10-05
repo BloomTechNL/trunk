@@ -21,10 +21,6 @@ mod conflict_tests;
 mod diff_tests;
 #[path = "acceptance/fart_tests.rs"]
 mod fart_tests;
-#[path = "acceptance/hold_music_tests.rs"]
-mod hold_music_tests;
-#[path = "acceptance/mute_tests.rs"]
-mod mute_tests;
 #[path = "acceptance/pull_tests.rs"]
 mod pull_tests;
 #[path = "acceptance/repo_trunk_config_tests.rs"]

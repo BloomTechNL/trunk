@@ -7,7 +7,6 @@ use crate::commit::CommitInput;
 use crate::composition_root::Dependencies;
 use crate::config::RepoScopedTrunkConfig;
 use crate::handler_container::HandlerContainer;
-use crate::hold_music::HoldMusic;
 use crate::output::OutputSink;
 use crate::revert::RevertInput;
 use crate::{has_stash, play_fart_sound::FartPlayer, CoAuthorAliases, Handler, Updater};
@@ -78,12 +77,6 @@ pub enum Commands {
     /// Play a fart sound
     #[command(name = "fart")]
     Fart,
-    /// Mute the hold music that plays while the pre-commit hook runs.
-    #[command(name = "mute")]
-    Mute,
-    /// Unmute the hold music that plays while the pre-commit hook runs.
-    #[command(name = "unmute")]
-    Unmute,
     /// Run the fart daemon (internal use)
     #[command(name = "_fart_daemon", hide = true)]
     FartDaemon,
@@ -126,19 +119,14 @@ pub fn run_cli(
         impl Updater,
         impl OutputSink,
         impl RepoScopedTrunkConfig,
-        impl HoldMusic,
     >,
 ) -> Result<()> {
     if cli.command != Commands::Fart && has_stash(dir) {
         let _ = deps.fart_player().play_asynchronously();
     }
 
-    let container = HandlerContainer::new(
-        deps.co_author_aliases(),
-        deps.trunk_config(),
-        deps.output(),
-        deps.hold_music(),
-    );
+    let container =
+        HandlerContainer::new(deps.co_author_aliases(), deps.trunk_config(), deps.output());
 
     match cli.command {
         Commands::Commit {
@@ -172,8 +160,6 @@ pub fn run_cli(
             !noninteractive,
         )),
         Commands::Fart => deps.fart_player().play(),
-        Commands::Mute => deps.trunk_config().set_hold_music_muted(true),
-        Commands::Unmute => deps.trunk_config().set_hold_music_muted(false),
         Commands::FartDaemon => deps.fart_player().run_daemon(dir),
         Commands::AddAlias { alias, name, email } => {
             let alias = alias.trim_start_matches('@');
